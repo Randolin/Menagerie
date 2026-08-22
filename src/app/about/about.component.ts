@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
 
 @Component({
   selector: 'moxy-about',
@@ -7,102 +8,95 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
     <div class="hero">
       <h1>How Moxy works — and exactly what it does and doesn’t protect</h1>
       <p class="lede">
-        Moxy is a static page. There is no backend, no database, no analytics, no cookies.
-        Everything below is verifiable in the source.
+        Moxy is a static page plus one small open-source server that stores only
+        ciphertext it can never read. No accounts, no email, no names, no analytics,
+        no cookies. Everything below is verifiable in the source.
       </p>
     </div>
 
     <div class="card">
-      <h2>🔗 Your profile is the link</h2>
+      <h2>🥚 Hatching: two phrases are the whole identity</h2>
       <p>
-        When you finish the survey, your answers are compressed and encoded into the part of
-        the URL after the # sign — the “fragment”. Browsers never send the fragment over the
-        network, so even the server that hosts this page cannot see your profile. The QR code
-        is just that same link, drawn as squares. Sharing your profile means handing someone
-        the data itself; deleting every copy of the link deletes the profile.
+        Hatching mints two random phrases. The <strong>view phrase</strong> (six words —
+        your creature’s name plus three more) is what you share: as text, a link, or a QR
+        code. The <strong>edit phrase</strong> (five words, ~65 bits of entropy) is yours
+        alone and is the only way to change or delete the profile. Each phrase is run
+        through PBKDF2 (300,000 rounds of SHA-512) to derive an address on the server and
+        an AES-256-GCM encryption key — the server sees only the addresses and ciphertext,
+        never a phrase, never a key, never an answer.
+      </p>
+      <ul>
+        <li>Keep the edit phrase → you can log in from any device and edit or delete.</li>
+        <li>Lose it → the profile can never be edited again. Nobody can help; that’s the point.</li>
+        <li>
+          The phrases are unrelated: a view phrase can never edit, and the server checks
+          writes with a token it stores only as a hash.
+        </li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>🦊 Your creature is your view phrase</h2>
+      <p>
+        The first three words of your view phrase — like “brave-amber-otter” — are your
+        creature: shown as your profile’s identity and drawn into your QR code’s colors.
+        That’s deliberate: everyone you share with sees the same recognizable creature.
       </p>
       <p class="sub">
-        Corollary: anyone you give the link to can see the open answers and can pass the link
-        on. Treat it like a business card, not a secret.
+        The flip side, honestly: those three words are public-by-design, so the secret
+        part of a view phrase is really the last three words (~39 bits). That prices a
+        targeted brute-force at roughly a GPU-year — a real curtain, not a vault door.
+        Your edit control never rests on it. “New creature” re-mints the whole view
+        phrase: every old link, QR code, and desire fingerprint dies instantly, and
+        that is the unlink lever.
       </p>
     </div>
 
     <div class="card">
       <h2>🎭 The desires section: mutual reveal, honestly explained</h2>
       <p>
-        Desires never travel as readable answers. Each positive answer (anything warmer than
-        “Not for me”) is turned into a scrambled fingerprint — a salted hash. When two
-        profiles are compared, the page checks whether both carry a fingerprint for the same
-        desire, and only then reveals it. One-sided interests stay invisible, and the
-        fingerprints are padded and shuffled so even the number of desires you marked isn’t
-        exposed.
+        Desires never travel as readable answers. Each positive answer (anything warmer
+        than “Not for me”) becomes a salted fingerprint in your profile’s viewable half.
+        Comparing checks whether both profiles carry a fingerprint for the same desire and
+        only then reveals it. One-sided interests stay invisible, and the fingerprints are
+        padded and shuffled so even their count is hidden.
       </p>
       <div class="notice-warn notice">
         <strong>The honest limit: </strong>
-        because there’s no server to referee, a technically skilled person with your link
-        could test every possible desire against the fingerprints and recover your positive
-        answers. “Not for me” answers are never encoded in any form, so they are genuinely
-        unknowable. Rule of thumb: mark a desire only if you’d be comfortable with an
-        enthusiastic match knowing it — the curtain is real, but it’s a curtain, not a wall.
+        a technically skilled person who can view your profile could test every possible
+        desire against the fingerprints and recover your positive answers. “Not for me”
+        answers are never encoded in any form, so they are genuinely unknowable. Mark a
+        desire only if you’d be comfortable with an enthusiastic match knowing it.
       </div>
     </div>
 
     <div class="card">
-      <h2>🔑 The vault: an account with no identity</h2>
+      <h2>🖥️ What the server can and cannot see</h2>
       <p>
-        The vault gives you “log back in and edit” without an account. We generate a five-word
-        passphrase (from a 7,776-word list — about 65 bits of entropy). Your passphrase is run
-        through PBKDF2 (300,000 rounds of SHA-512) to derive two things: a locator that names
-        your vault in this browser’s storage, and an AES-256-GCM key that encrypts it. The
-        passphrase itself is never stored — not hashed, not anywhere.
-      </p>
-      <ul>
-        <li>Keep the passphrase → you can unlock, edit, and re-share.</li>
-        <li>Lose it → the vault is unrecoverable ciphertext. Nobody can help, and that’s the point.</li>
-        <li>
-          Your share link and your passphrase are unrelated — a link can never unlock a vault,
-          and read access never grants edit access.
-        </li>
-        <li>Vaults are stored per-browser. Export the encrypted file to move or back it up.</li>
-      </ul>
-    </div>
-
-    <div class="card">
-      <h2>🦊 Your creature — recognizable on purpose</h2>
-      <p>
-        Every profile gets a pet identity — a name like “brave-amber-otter”, its creature,
-        and a color that styles your QR code. It’s derived from a small random seed that
-        travels inside your share links, so people can recognize the same profile across
-        links and comparisons.
+        The server holds, per profile: two opaque 128-bit addresses (unguessable, and
+        one-way — they can’t be reversed into phrases), two encrypted blobs, a write-token
+        hash, and hour-coarse timestamps. It cannot decrypt anything, cannot forge an
+        update, and never asks who you are. IP addresses are used only for in-memory rate
+        limiting and are never written down.
       </p>
       <p class="sub">
-        The honest flip side: because the creature is stable, two links you shared
-        separately can be recognized as coming from the same profile. That’s a deliberate
-        choice — recognizability over unlinkability — and it’s reversible: “Regenerate” on
-        the share page mints a fresh creature, unlinking you from everything shared before.
-        The seed reveals nothing else; it’s random, not derived from your answers.
+        What a server operator <em>could</em> observe or do — the honest ledger: see when
+        a profile is viewed or edited and how big it is (activity patterns, not content);
+        tell that a view identity and an edit identity belong to the same profile; count
+        profiles; and withhold, delete, or serve stale ciphertext — a nuisance that denies
+        availability, never reads data, and is detected the moment decryption fails.
+        Compared to the old links-carry-everything design, a server now exists and sees
+        traffic at all: that’s the trade that makes typeable phrases and tiny QR codes
+        possible. You can self-host it — one dependency-free file in the repository.
       </p>
     </div>
 
     <div class="card">
-      <h2>🔄 Optional sync — what the server can and cannot see</h2>
+      <h2>🧹 Housekeeping, stated plainly</h2>
       <p>
-        If you enable sync, your encrypted vault is stored on a sync server under a random
-        address (the “locator”) derived from your passphrase. The server holds three things:
-        that opaque address, the ciphertext, and a hash of a write token that proves
-        passphrase knowledge for updates. It cannot decrypt anything, cannot reverse the
-        locator into your passphrase (a one-way, 300,000-round derivation guards it, and the
-        address space is 2¹²⁸ — unguessable), and never asks who you are. Enter the same
-        passphrase on any device pointed at the same server, and your vault follows you.
-      </p>
-      <p class="sub">
-        What it can observe: the size of your encrypted vault, when requests arrive, and the
-        transport IP address — which is used only for in-memory rate limiting and never
-        written down. Honest limits: a server operator (or anyone who somehow learns your
-        locator) could delete or squat your slot — a nuisance that denies availability, never
-        reads data, and is detected the moment decryption fails; changing your passphrase
-        moves you to a fresh address. Sync is off unless you turn it on, and you can
-        self-host the server — it's a single dependency-free file in the repository.
+        Profiles that never save an answer are deleted after {{ gcEmpty }}. Profiles
+        untouched — no edit and no view — for {{ gcIdle }} are deleted too. Any save or
+        view resets the clock. Deletion is real deletion: the row is gone.
       </p>
     </div>
 
@@ -120,16 +114,21 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
     <div class="card">
       <h2>🛠️ Verify or self-host it</h2>
       <p>
-        Moxy is open source (MIT). Build the Angular app and drop the output onto any static
-        host (GitHub Pages works). Because profiles live in the links, profiles made on one
-        copy of Moxy open fine on any other copy — append your fragment to any Moxy URL.
+        Moxy is open source (MIT). The app is a static bundle (GitHub Pages works); the
+        server is a single Node file with zero dependencies. Point any copy of the app at
+        any server via its config file — your phrases work wherever that same server is
+        reachable.
       </p>
       <p class="sub">
-        Threat-model fine print: Moxy can’t protect you from what you choose to share, from
-        someone photographing your screen, or from a compromised device or browser extension.
-        It simply refuses to create the databases such attacks usually target.
+        Threat-model fine print: Moxy can’t protect you from what you choose to share,
+        from someone photographing your screen, or from a compromised device or browser
+        extension. It simply refuses to create the identity databases such attacks
+        usually target.
       </p>
     </div>
   `,
 })
-export class AboutComponent {}
+export class AboutComponent {
+  protected readonly gcEmpty = GC_EMPTY_HUMAN;
+  protected readonly gcIdle = GC_IDLE_HUMAN;
+}

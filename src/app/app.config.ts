@@ -1,15 +1,23 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import {
+  ApplicationConfig,
+  inject,
+  provideAppInitializer,
+  provideBrowserGlobalErrorListeners,
+} from '@angular/core';
 import { provideRouter, withHashLocation } from '@angular/router';
 import { routes } from './app.routes';
 import { provideComparePanel } from './compare/compare-panels.token';
+import { ServerConfigStore } from './stores/server-config.store';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     // Hash location keeps the site deployable on any static host with no
-    // rewrite rules AND keeps every legacy link (#/survey, #p=…, #c=…)
-    // working natively.
+    // rewrite rules — #/view/<phrase> works from a QR scan anywhere.
     provideRouter(routes, withHashLocation()),
+
+    // Resolve the profile server address before anything routes.
+    provideAppInitializer(() => inject(ServerConfigStore).init()),
 
     // The compare view's datavis panels. Adding a new chart format is one
     // standalone component + one provideComparePanel() line here.

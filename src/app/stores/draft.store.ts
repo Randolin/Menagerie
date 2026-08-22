@@ -1,36 +1,16 @@
-import { computed, effect, inject, Injectable, signal } from '@angular/core';
-import {
-  DraftRepository,
-  mintPersonaSeed,
-  PERSONA_SEED_KEY,
-  type Answers,
-  type AnswerValue,
-  type ItemId,
-  type Section,
-} from '@moxy/core';
-import { APP_STORAGE } from './storage.token';
+import { computed, Injectable, signal } from '@angular/core';
+import type { Answers, AnswerValue, ItemId, Section } from '@moxy/core';
 
 /**
- * The survey answers being edited, autosaved to the unencrypted local draft
- * so a refresh never eats a half-finished survey. The save is synchronous on
- * every change — same semantics as the legacy app; a debounce here loses the
- * answers made in its window when the page reloads (the e2e suite caught
- * exactly that).
+ * The working answer set the item editors bind to — in-memory only. The
+ * durable copy is the encrypted profile record on the server; explicit Save
+ * in the section editor is the durability point. Nothing here ever touches
+ * disk, so a shared computer holds no plaintext answers after the tab closes.
  */
 @Injectable({ providedIn: 'root' })
 export class DraftStore {
-  private readonly repo = new DraftRepository(inject(APP_STORAGE));
-
   readonly answers = signal<Answers>({});
-  /** Vault profile id when editing a saved profile, else null. */
-  readonly editingProfileId = signal<string | null>(null);
   readonly hasAnswers = computed(() => Object.keys(this.answers()).length > 0);
-
-  constructor() {
-    const stored = this.repo.load();
-    if (stored) this.answers.set(stored);
-    effect(() => this.repo.save(this.answers()));
-  }
 
   get(id: ItemId): AnswerValue | undefined {
     return this.answers()[id];
@@ -47,7 +27,7 @@ export class DraftStore {
     });
   }
 
-  /** Opt-in flag for gated sections — same `_optin.<sectionId>` key as legacy. */
+  /** Opt-in flag for gated sections — the reserved `_optin.<sectionId>` key. */
   setOptIn(sectionId: string): void {
     this.set(`_optin.${sectionId}`, 1);
   }
@@ -67,30 +47,11 @@ export class DraftStore {
     }).length;
   }
 
-  /**
-   * Mint the stable persona seed lazily — only once real answers exist, so
-   * the seed alone never makes an empty draft look non-empty.
-   */
-  ensurePersonaSeed(): void {
-    const answers = this.answers();
-    if (typeof answers[PERSONA_SEED_KEY] === 'string') return;
-    if (!this.hasAnswers()) return;
-    this.set(PERSONA_SEED_KEY, mintPersonaSeed());
-  }
-
-  /** New creature, new colors — and no link to previously shared links. */
-  regeneratePersonaSeed(): void {
-    this.set(PERSONA_SEED_KEY, mintPersonaSeed());
-  }
-
-  loadFrom(answers: Answers, profileId: string | null): void {
+  loadFrom(answers: Answers): void {
     this.answers.set(structuredClone(answers) as Answers);
-    this.editingProfileId.set(profileId);
   }
 
   clear(): void {
     this.answers.set({});
-    this.editingProfileId.set(null);
-    this.repo.clear();
   }
 }

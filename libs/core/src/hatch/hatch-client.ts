@@ -1,0 +1,164 @@
+// Fetch-based client for the v2 hatch profile API — framework-free (fetch is
+// global in browsers and Node), unit-tested with an injected fake fetch.
+import {
+  EDIT_TOKEN_HEADER,
+  NEW_EDIT_TOKEN_HEADER,
+  type CreateProfileRequest,
+  type EditRecord,
+  type HatchApiError,
+  type PutProfileRequest,
+  type PutProfileResponse,
+  type ViewRecord,
+} from './hatch-api';
+
+export type HatchFailure =
+  | { kind: 'network'; cause: unknown }
+  | { kind: 'not_found' }
+  | { kind: 'bad_token' }
+  /** CAS lost: the server's current state rides along for a client-side merge. */
+  | { kind: 'conflict'; remote: { blob_view: string; blob_priv: string; version: number } }
+  /** The minted phrase's locator already names a row — remint and retry. */
+  | { kind: 'locator_taken' }
+  | { kind: 'too_large' }
+  | { kind: 'rate_limited' }
+  /** Creation circuit breaker tripped; the server is full, try later. */
+  | { kind: 'at_capacity' }
+  | { kind: 'server'; status: number };
+
+export class HatchError extends Error {
+  readonly failure: HatchFailure;
+
+  constructor(failure: HatchFailure) {
+    super(`hatch ${failure.kind}`);
+    this.name = 'HatchError';
+    this.failure = failure;
+  }
+}
+
+export class HatchClient {
+  private readonly base: string;
+  private readonly fetchFn: typeof fetch;
+
+  constructor(baseUrl: string, fetchFn: typeof fetch = globalThis.fetch.bind(globalThis)) {
+    this.base = baseUrl.replace(/\/+$/, '');
+    this.fetchFn = fetchFn;
+  }
+
+  /**
+   * Hatch: register a freshly minted profile. Throws
+   * HatchError({kind:'locator_taken'}) when either locator collides — the
+   * caller remints both phrases and tries again.
+   */
+  async create(request: CreateProfileRequest, editToken: string): Promise<void> {
+    const res = await this.request('/v2/profiles', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', [EDIT_TOKEN_HEADER]: editToken },
+      body: JSON.stringify(request),
+    });
+    if (!res.ok) throw await this.toError(res);
+  }
+
+  /** Public read; null when no profile answers to the locator. */
+  async getView(viewLocator: string): Promise<ViewRecord | null> {
+    const res = await this.request(`/v2/profiles/view/${viewLocator}`, { method: 'GET' });
+    if (res.status === 404) return null;
+    if (!res.ok) throw await this.toError(res);
+    return (await res.json()) as ViewRecord;
+  }
+
+  /** Edit-side read (locator is the capability); null when unknown. */
+  async getEdit(editLocator: string): Promise<EditRecord | null> {
+    const res = await this.request(`/v2/profiles/edit/${editLocator}`, { method: 'GET' });
+    if (res.status === 404) return null;
+    if (!res.ok) throw await this.toError(res);
+    return (await res.json()) as EditRecord;
+  }
+
+  /**
+   * CAS write; resolves the new version. When the request re-keys the edit
+   * identity (`new_edit_locator`), the matching new token must ride along.
+   * Throws HatchError({kind:'conflict', remote}) on a lost race.
+   */
+  async put(
+    editLocator: string,
+    editToken: string,
+    ifVersion: number,
+    request: PutProfileRequest,
+    newEditToken?: string,
+  ): Promise<number> {
+    const res = await this.request(`/v2/profiles/edit/${editLocator}`, {
+      method: 'PUT',
+      headers: {
+        'content-type': 'application/json',
+        [EDIT_TOKEN_HEADER]: editToken,
+        'if-match': String(ifVersion),
+        ...(newEditToken !== undefined ? { [NEW_EDIT_TOKEN_HEADER]: newEditToken } : {}),
+      },
+      body: JSON.stringify(request),
+    });
+    if (!res.ok) throw await this.toError(res);
+    return ((await res.json()) as PutProfileResponse).version;
+  }
+
+  /** Idempotent: a 404 (already gone) counts as success. */
+  async remove(editLocator: string, editToken: string): Promise<void> {
+    const res = await this.request(`/v2/profiles/edit/${editLocator}`, {
+      method: 'DELETE',
+      headers: { [EDIT_TOKEN_HEADER]: editToken },
+    });
+    if (res.status === 404 || res.ok) return;
+    throw await this.toError(res);
+  }
+
+  async health(): Promise<boolean> {
+    try {
+      const res = await this.request('/v2/health', { method: 'GET' });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  private async request(path: string, init: RequestInit): Promise<Response> {
+    try {
+      return await this.fetchFn(this.base + path, init);
+    } catch (cause) {
+      throw new HatchError({ kind: 'network', cause });
+    }
+  }
+
+  private async toError(res: Response): Promise<HatchError> {
+    let body: HatchApiError | null = null;
+    try {
+      body = (await res.json()) as HatchApiError;
+    } catch {
+      /* non-JSON error body */
+    }
+    switch (res.status) {
+      case 401:
+        return new HatchError({ kind: 'bad_token' });
+      case 404:
+        return new HatchError({ kind: 'not_found' });
+      case 409:
+        // Two distinct 409s: a lost CAS race (carries state) vs. a locator
+        // collision during create/re-key (remint and retry).
+        if (body?.error === 'locator_taken') return new HatchError({ kind: 'locator_taken' });
+        return new HatchError({
+          kind: 'conflict',
+          remote: {
+            blob_view: body?.blob_view ?? '',
+            blob_priv: body?.blob_priv ?? '',
+            version: body?.version ?? 0,
+          },
+        });
+      case 413:
+        return new HatchError({ kind: 'too_large' });
+      case 429:
+        return new HatchError({ kind: 'rate_limited' });
+      case 503:
+        return new HatchError({ kind: 'at_capacity' });
+      default:
+        return new HatchError({ kind: 'server', status: res.status });
+    }
+  }
+}

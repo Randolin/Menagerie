@@ -17,6 +17,6 @@ describe('App shell', () => {
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('.brand')?.textContent).toContain('Moxy');
     const nav = [...el.querySelectorAll('.nav a')].map((a) => a.textContent?.trim());
-    expect(nav).toEqual(['My profile', 'Compare', 'Vault', 'How it works']);
+    expect(nav).toEqual(['My profile', 'Compare', 'How it works']);
   });
 });

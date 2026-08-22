@@ -7,12 +7,9 @@ import {
   signal,
   type Type,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ToastService, copyText, seriesVar } from '@moxy/ui';
-import { DraftStore } from '../stores/draft.store';
-import { VaultStore } from '../stores/vault.store';
+import { ToastService, seriesVar } from '@moxy/ui';
 import { CompareStore } from '../stores/compare.store';
-import { ShareLinkService } from '../share-link.service';
+import { ProfileSessionStore } from '../stores/profile-session.store';
 import {
   COMPARE_PANELS,
   type ComparePanelComponent,
@@ -33,14 +30,14 @@ interface ResolvedPanel {
 
     <div class="card">
       <div class="slot-list">
-        @for (slot of store.model()?.slots ?? []; track slot.code; let i = $index) {
+        @for (slot of store.model()?.slots ?? []; track slot.ref; let i = $index) {
           <div class="slot">
             <span class="person-dot"
                   [style.background]="slot.payload ? color(goodIndexBefore(i)) : 'var(--baseline)'"></span>
             @if (slotEmoji(i); as emoji) { <span aria-hidden="true">{{ emoji }}</span> }
             <span class="person-name">{{ slotName(i) }}</span>
             @if (slot.error) { <span class="fine">{{ slot.error }}</span> }
-            <span class="slot-meta">{{ slot.code.length }} chars</span>
+            <span class="slot-meta">{{ slot.ref }}</span>
             <button class="btn btn-ghost btn-small" [attr.aria-label]="'Remove ' + slotName(i)"
                     (click)="store.remove(i)">✕</button>
           </div>
@@ -50,35 +47,31 @@ interface ResolvedPanel {
       <form style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"
             (submit)="paste($event, pasteInput)">
         <div style="flex:1;min-width:220px">
-          <input #pasteInput type="text" placeholder="Paste a profile link or code…"
-                 aria-label="Paste a profile link">
+          <input #pasteInput type="text" placeholder="Paste a view phrase or link…"
+                 aria-label="Paste a view phrase or link">
         </div>
         <button class="btn" [disabled]="store.full">Add</button>
       </form>
 
       <div class="btn-row" style="margin-top:12px">
-        @if (draft.hasAnswers() && !store.full) {
-          <button class="btn btn-small" (click)="addMine()">＋ My current profile</button>
+        @if (canAddMine()) {
+          <button class="btn btn-small" (click)="addMine()">＋ My profile</button>
         }
-        @if (vault.unlocked() && !store.full) {
-          @for (p of vault.profiles(); track p.id) {
-            <button class="btn btn-small" (click)="addVaultProfile(p.id)">
-              ＋ {{ p.label }} (vault)
-            </button>
-          }
-          @for (c of vault.connections(); track c.id) {
-            <button class="btn btn-small" (click)="addConnection(c.id)">
-              ＋ {{ c.label }} (saved)
+        @for (c of session.connections(); track c.id) {
+          @if (!store.full) {
+            <button class="btn btn-small" (click)="addPhrase(c.viewPhrase)">
+              ＋ {{ c.label }}
             </button>
           }
         }
-        @if (store.codes().length >= 2) {
-          <button class="btn btn-ghost btn-small" (click)="copyCompareLink()">
-            🔗 Copy a link to this comparison
-          </button>
+        @if (store.phrases().length >= 1) {
           <button class="btn btn-ghost btn-small" (click)="store.clear()">Clear all</button>
         }
       </div>
+      <p class="fine" style="margin-top:10px">
+        Comparisons happen entirely in this tab and vanish when you leave — the server
+        only ever sees encrypted lookups.
+      </p>
     </div>
 
     @if (store.model(); as m) {
@@ -89,8 +82,8 @@ interface ResolvedPanel {
       } @else {
         <div class="card">
           <p class="sub">
-            Add at least two profiles to see the comparison. Add your own from the survey,
-            paste links you’ve been sent, or pull saved connections from your vault.
+            Add at least two profiles to see the comparison — your own, people you’ve
+            saved, or any view phrase you’ve been given.
           </p>
         </div>
       }
@@ -99,12 +92,8 @@ interface ResolvedPanel {
 })
 export class CompareComponent {
   protected readonly store = inject(CompareStore);
-  protected readonly draft = inject(DraftStore);
-  protected readonly vault = inject(VaultStore);
-  private readonly shareLink = inject(ShareLinkService);
+  protected readonly session = inject(ProfileSessionStore);
   private readonly toast = inject(ToastService);
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
   protected readonly color = seriesVar;
 
   private readonly resolved = signal<readonly ResolvedPanel[]>([]);
@@ -117,16 +106,12 @@ export class CompareComponent {
     );
   });
 
-  constructor() {
-    // Ingest a legacy #c=a~b link, then normalize the URL (mirrors legacy behavior).
-    const codesParam = this.route.snapshot.params['codes'];
-    if (typeof codesParam === 'string' && codesParam) {
-      for (const code of codesParam.split('~')) {
-        if (code) this.store.addCode(code);
-      }
-      void this.router.navigate(['/compare'], { replaceUrl: true });
-    }
+  protected readonly canAddMine = computed(() => {
+    const mine = this.session.viewPhrase();
+    return Boolean(mine) && !this.store.full && !this.store.phrases().includes(mine!);
+  });
 
+  constructor() {
     const descriptors = [...(inject(COMPARE_PANELS, { optional: true }) ?? [])].sort(
       (a, b) => a.order - b.order,
     );
@@ -152,7 +137,7 @@ export class CompareComponent {
     return m.personas[this.goodIndexBefore(slotIndex)]?.emoji ?? null;
   }
 
-  /** Index of this slot among the successfully decoded ones (drives its color). */
+  /** Index of this slot among the successfully loaded ones (drives its color). */
   protected goodIndexBefore(slotIndex: number): number {
     const m = this.store.model();
     if (!m) return 0;
@@ -174,31 +159,12 @@ export class CompareComponent {
     }
   }
 
-  protected async addMine(): Promise<void> {
-    const { code } = await this.shareLink.encode(this.draft.answers());
-    if (!this.store.addCode(code)) this.toast.show('That profile is already here');
+  protected addMine(): void {
+    const mine = this.session.viewPhrase();
+    if (mine && !this.store.addPhrase(mine)) this.toast.show('That profile is already here');
   }
 
-  protected async addVaultProfile(id: string): Promise<void> {
-    const p = this.vault.profiles().find((x) => x.id === id);
-    if (!p) return;
-    const { code } = await this.shareLink.encode(p.answers);
-    if (!this.store.addCode(code)) this.toast.show('That profile is already here');
-  }
-
-  protected addConnection(id: string): void {
-    const c = this.vault.connections().find((x) => x.id === id);
-    if (!c) return;
-    try {
-      this.store.addFromText(c.code);
-    } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
-    }
-  }
-
-  protected async copyCompareLink(): Promise<void> {
-    this.toast.show(
-      (await copyText(this.store.compareUrl())) ? 'Compare link copied' : 'Copy failed',
-    );
+  protected addPhrase(phrase: string): void {
+    if (!this.store.addPhrase(phrase)) this.toast.show('That profile is already here');
   }
 }

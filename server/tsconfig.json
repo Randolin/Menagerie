@@ -11,6 +11,6 @@
     "types": ["node", "vitest/globals"],
     "erasableSyntaxOnly": true
   },
-  "include": ["./**/*.ts", "../libs/core/src/sync/sync-api.ts"],
+  "include": ["./**/*.ts", "../libs/core/src/hatch/hatch-api.ts", "../libs/core/src/hatch/constants.ts"],
   "exclude": ["vitest.config.ts"]
 }
