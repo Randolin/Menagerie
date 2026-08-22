@@ -7,12 +7,12 @@ export * from './schema/schema';
 
 export { bytesToB64url, b64urlToBytes } from './codec/base64url';
 export { deflate, inflate } from './codec/compress';
-export * from './codec/codec';
+export { buildSharePayload } from './codec/codec';
 export { migrateToCurrent } from './codec/migrate';
 
 export { randomBytes, randomSalt } from './crypto/random';
 export * from './crypto/match-tokens';
-export * from './crypto/vault-crypto';
+export * from './crypto/phrase-kdf';
 export { generatePassphrase } from './crypto/passphrase';
 
 export { itemSimilarity } from './match/similarity';
@@ -31,9 +31,3 @@ export * from './hatch/hatch-api';
 export { HatchClient, HatchError, type HatchFailure } from './hatch/hatch-client';
 
 export * from './storage/storage';
-export { DraftRepository } from './vault/draft-repo';
-export * from './vault/vault-data';
-export * from './vault/vault-merge';
-export * from './vault/vault-repo';
-export * from './sync/sync-api';
-export { SyncClient, SyncError, type SyncFailure } from './sync/sync-client';

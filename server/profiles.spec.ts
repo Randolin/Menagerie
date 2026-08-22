@@ -8,7 +8,6 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ProfilesDb } from './profiles-db.ts';
-import { VaultDb } from './db.ts';
 import { createApp } from './http.ts';
 import { startGc } from './gc.ts';
 import {
@@ -32,7 +31,6 @@ let dbPath: string;
 let server: Server;
 let base: string;
 let profiles: ProfilesDb;
-let vaults: VaultDb;
 /** Raw second connection for backdating rows in GC tests. */
 let raw: DatabaseSync;
 
@@ -77,14 +75,13 @@ beforeAll(async () => {
   dir = mkdtempSync(join(tmpdir(), 'moxy-profiles-'));
   dbPath = join(dir, 'test.db');
   profiles = new ProfilesDb(dbPath);
-  vaults = new VaultDb(':memory:');
   raw = new DatabaseSync(dbPath);
   // Every request here shares one client key; keep the limiter out of the way.
   server = createServer(
-    createApp(vaults, {
+    createApp({
+      profiles,
       maxBlobBytes: 1024,
       trustProxy: false,
-      profiles,
       readsPerMinute: 10_000,
       writesPerMinute: 10_000,
     }),
@@ -98,13 +95,11 @@ afterAll(async () => {
   await new Promise((resolve) => server.close(resolve));
   raw.close();
   profiles.close();
-  vaults.close();
   rmSync(dir, { recursive: true, force: true });
 });
 
 describe('v2 profiles: lifecycle', () => {
-  test('both healths answer on the same app', async () => {
-    expect((await fetch(`${base}/v1/health`)).status).toBe(200);
+  test('health', async () => {
     const v2 = await fetch(`${base}/v2/health`);
     expect(v2.status).toBe(200);
     expect(await v2.json()).toEqual({ ok: true });
@@ -321,9 +316,8 @@ describe('v2 profiles: garbage collection', () => {
 describe('v2 profiles: capacity circuit breaker', () => {
   test('POST answers 503 at_capacity once maxProfiles is reached', async () => {
     const capDb = new ProfilesDb(':memory:');
-    const capVaults = new VaultDb(':memory:');
     const capServer = createServer(
-      createApp(capVaults, { maxBlobBytes: 1024, trustProxy: false, profiles: capDb, maxProfiles: 1 }),
+      createApp({ profiles: capDb, maxBlobBytes: 1024, trustProxy: false, maxProfiles: 1 }),
     );
     await new Promise<void>((resolve) => capServer.listen(0, '127.0.0.1', resolve));
     const address = capServer.address();
@@ -355,7 +349,6 @@ describe('v2 profiles: capacity circuit breaker', () => {
     } finally {
       await new Promise((resolve) => capServer.close(resolve));
       capDb.close();
-      capVaults.close();
     }
   });
 });

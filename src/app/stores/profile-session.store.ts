@@ -324,7 +324,7 @@ export class ProfileSessionStore {
         this.version.set(remote.version);
         this.connections.set(remotePriv.connections);
         this.savedAnswers.set(structuredClone(remotePriv.answers) as Answers);
-        this.draft.loadFrom(remotePriv.answers, null);
+        this.draft.loadFrom(remotePriv.answers);
         this.saveState.set('conflict');
         return;
       }
@@ -377,7 +377,7 @@ export class ProfileSessionStore {
     this.connections.set(priv.connections);
     this.savedAnswers.set(structuredClone(priv.answers) as Answers);
     this.saveState.set('idle');
-    this.draft.loadFrom(priv.answers, null);
+    this.draft.loadFrom(priv.answers);
     this.active.set(true);
     this.writeSession(editPhrase);
     this.remembered.set(this.readRemembered() === editPhrase);

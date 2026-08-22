@@ -85,23 +85,16 @@ export interface Section {
 }
 
 /**
- * The shareable payload, format version 1 ("m1." prefix).
- * `a` carries open answers; `s` (salt) + `m` (match tokens) carry the
- * hashed, mutual-reveal-only desires — present only when desires were
- * answered positively.
+ * The shareable payload, format version 1 — the JSON inside a profile's
+ * view blob. `a` carries open answers; `s` (salt) + `m` (match tokens)
+ * carry the hashed, mutual-reveal-only desires — present only when desires
+ * were answered positively.
  */
 export interface ProfilePayloadV1 {
   v: 1;
   a: Record<ItemId, AnswerValue>;
   s?: string;
   m?: string[];
-  /**
-   * Optional persona seed (8 base64url chars) — stable per profile, drives
-   * the pet name / creature / styled QR. Additive-compatible: every extant
-   * decoder validates only `v` and `a` and ignores unknown fields, so this
-   * does NOT bump PROFILE_VERSION.
-   */
-  e?: string;
 }
 
 /** Widens to a union when a v2 payload lands; migrate.ts upgrades old shapes. */

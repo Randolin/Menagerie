@@ -4,7 +4,7 @@
 // Edit phrase → { editLocator, editKey, editToken }: write capability. The
 // server stores only SHA-256(editToken) and opaque ciphertext — it can never
 // decrypt, never recover a phrase, and never forge a write.
-import { derivePhraseKeys } from '../crypto/vault-crypto';
+import { derivePhraseKeys } from '../crypto/phrase-kdf';
 
 const VIEW_DOMAIN = 'moxy.hatch.view.v1';
 const EDIT_DOMAIN = 'moxy.hatch.edit.v1';

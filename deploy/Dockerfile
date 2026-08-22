@@ -3,11 +3,12 @@
 # Run:                        docker run -d -p 8787:8787 -v moxy-sync-data:/data moxy-sync
 FROM node:24-slim
 
-# Only the server and the shared wire-types file, keeping the relative layout
-# the server's import expects (../libs/core/src/sync/sync-api.ts).
+# Only the server and the shared wire-contract files, keeping the relative
+# layout the server's imports expect (../libs/core/src/hatch/…).
 WORKDIR /app
 COPY server/ server/
-COPY libs/core/src/sync/sync-api.ts libs/core/src/sync/sync-api.ts
+COPY libs/core/src/hatch/hatch-api.ts libs/core/src/hatch/hatch-api.ts
+COPY libs/core/src/hatch/constants.ts libs/core/src/hatch/constants.ts
 
 RUN mkdir /data && chown node:node /data
 USER node

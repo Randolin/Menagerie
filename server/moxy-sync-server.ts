@@ -1,4 +1,4 @@
-// Moxy sync server — zero runtime dependencies, run directly with Node 24+:
+// Moxy profile server — zero runtime dependencies, run directly with Node 24+:
 //
 //   node server/moxy-sync-server.ts
 //
@@ -18,32 +18,28 @@
 // logging, IPs only in the in-memory rate limiter. Run TLS at a reverse
 // proxy in front of this.
 import { createServer } from 'node:http';
-import { DEFAULT_MAX_BLOB_BYTES } from '../libs/core/src/sync/sync-api.ts';
+import { HATCH_DEFAULT_MAX_BLOB_BYTES } from '../libs/core/src/hatch/hatch-api.ts';
 import { GC_EMPTY_MS, GC_IDLE_MS } from '../libs/core/src/hatch/constants.ts';
-import { VaultDb } from './db.ts';
 import { ProfilesDb } from './profiles-db.ts';
 import { createApp } from './http.ts';
 import { startGc } from './gc.ts';
 
 const port = Number(process.env['PORT'] ?? 8787);
 const dbPath = process.env['MOXY_DB_PATH'] ?? './moxy-sync.db';
-const maxBlobBytes = Number(process.env['MOXY_MAX_BLOB_BYTES'] ?? DEFAULT_MAX_BLOB_BYTES);
+const maxBlobBytes = Number(process.env['MOXY_MAX_BLOB_BYTES'] ?? HATCH_DEFAULT_MAX_BLOB_BYTES);
 const trustProxy = process.env['MOXY_TRUST_PROXY'] === '1';
 const maxProfiles = Number(process.env['MOXY_MAX_PROFILES'] ?? 100_000);
 const gcEmptyMs = Number(process.env['MOXY_GC_EMPTY_MS'] ?? GC_EMPTY_MS);
 const gcIdleMs = Number(process.env['MOXY_GC_IDLE_MS'] ?? GC_IDLE_MS);
 const gcSweepMs = Number(process.env['MOXY_GC_SWEEP_MS'] ?? 3_600_000);
 
-const db = new VaultDb(dbPath);
-// Separate connection, same file — vaults (v1) and profiles (v2) coexist
-// until the v1 routes are retired.
 const profiles = new ProfilesDb(dbPath);
 const stopGc = startGc(profiles, {
   emptyTtlMs: gcEmptyMs,
   idleTtlMs: gcIdleMs,
   sweepIntervalMs: gcSweepMs,
 });
-const server = createServer(createApp(db, { maxBlobBytes, trustProxy, profiles, maxProfiles }));
+const server = createServer(createApp({ profiles, maxBlobBytes, trustProxy, maxProfiles }));
 
 server.listen(port, () => {
   const address = server.address();
@@ -55,7 +51,6 @@ function shutdown(): void {
   stopGc();
   server.close(() => {
     profiles.close();
-    db.close();
     process.exit(0);
   });
 }

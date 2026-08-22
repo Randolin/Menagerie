@@ -12,7 +12,7 @@ import { encryptBlob, decryptBlob } from './blob';
 import { emptyPrivData, migratePrivData } from './priv-data';
 import { personaFromViewPhrase } from '../persona/persona';
 import { ADJECTIVES_A, ADJECTIVES_B, ANIMALS } from '../persona/wordlists';
-import { deriveVaultKeys } from '../crypto/vault-crypto';
+import { derivePhraseKeys } from '../crypto/phrase-kdf';
 
 const FROZEN_VIEW_PHRASE = 'amber-azure-fox-canal-stove-plume';
 const FROZEN_EDIT_PHRASE = 'correct horse battery staple luck';
@@ -38,8 +38,8 @@ describe('hatch key derivation (frozen vectors)', () => {
   test('domains are disjoint: same phrase, different roles, different keys', async () => {
     const view = await deriveViewKeys(FROZEN_EDIT_PHRASE);
     const edit = await deriveEditKeys(FROZEN_EDIT_PHRASE);
-    const vault = await deriveVaultKeys(FROZEN_EDIT_PHRASE);
-    const locators = [view.viewLocator, edit.editLocator, vault.locator];
+    const legacy = await derivePhraseKeys(FROZEN_EDIT_PHRASE, 'moxy.vault.v1');
+    const locators = [view.viewLocator, edit.editLocator, legacy.locator];
     expect(new Set(locators).size).toBe(3);
   });
 });

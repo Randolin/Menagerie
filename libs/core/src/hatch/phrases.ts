@@ -7,7 +7,7 @@
 // 300k-iteration KDF that prices a persona-aware targeted attack at roughly
 // a GPU-year — a deliberate curtain, documented in-app. Edit phrase: 5 EFF
 // words (~65 bits) — the strong credential.
-import { normalizePassphrase } from '../crypto/vault-crypto';
+import { normalizePassphrase } from '../crypto/phrase-kdf';
 import { generatePassphrase } from '../crypto/passphrase';
 import { randomBytes } from '../crypto/random';
 import { ADJECTIVES_A, ADJECTIVES_B, ANIMALS } from '../persona/wordlists';
