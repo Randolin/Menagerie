@@ -1,6 +1,8 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import {
   DraftRepository,
+  mintPersonaSeed,
+  PERSONA_SEED_KEY,
   type Answers,
   type AnswerValue,
   type ItemId,
@@ -63,6 +65,22 @@ export class DraftStore {
       const v = a[it.id];
       return v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && v.length === 0);
     }).length;
+  }
+
+  /**
+   * Mint the stable persona seed lazily — only once real answers exist, so
+   * the seed alone never makes an empty draft look non-empty.
+   */
+  ensurePersonaSeed(): void {
+    const answers = this.answers();
+    if (typeof answers[PERSONA_SEED_KEY] === 'string') return;
+    if (!this.hasAnswers()) return;
+    this.set(PERSONA_SEED_KEY, mintPersonaSeed());
+  }
+
+  /** New creature, new colors — and no link to previously shared links. */
+  regeneratePersonaSeed(): void {
+    this.set(PERSONA_SEED_KEY, mintPersonaSeed());
   }
 
   loadFrom(answers: Answers, profileId: string | null): void {

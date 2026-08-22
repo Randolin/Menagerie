@@ -13,6 +13,7 @@ export { PairMatrixComponent } from './charts/pair-matrix.component';
 export { ToastService, type ToastKind } from './widgets/toast.service';
 export { ToastComponent } from './widgets/toast.component';
 export { QrCodeComponent } from './widgets/qr-code.component';
+export { PersonaChipComponent } from './widgets/persona-chip.component';
 
 export { copyText } from './util/clipboard';
 export { downloadText } from './util/download';

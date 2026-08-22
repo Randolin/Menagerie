@@ -11,7 +11,7 @@ import type { ComparePanelComponent } from '../compare-panels.token';
   template: `
     <div class="card">
       <h2>The headline</h2>
-      <moxy-person-key [names]="model().names" />
+      <moxy-person-key [names]="model().names" [emojis]="personaEmojis()" />
       <div class="stat-row">
         @if (overallPct(); as pct) {
           <moxy-stat-tile label="Overall alignment" [value]="pct + '%'"
@@ -42,6 +42,10 @@ import type { ComparePanelComponent } from '../compare-panels.token';
 })
 export class HeadlinePanel implements ComparePanelComponent {
   readonly model = input.required<CompareModel>();
+
+  protected readonly personaEmojis = computed(() =>
+    this.model().personas.map((p) => p?.emoji ?? null),
+  );
 
   protected readonly overallPct = computed(() => {
     const overall = this.model().pair?.overall;

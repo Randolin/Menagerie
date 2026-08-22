@@ -19,6 +19,9 @@ export { itemSimilarity } from './match/similarity';
 export * from './match/scores';
 export * from './match/reveal';
 
+export * from './persona/persona';
+export { ADJECTIVES_A, ADJECTIVES_B, ANIMALS, PERSONA_COLORS } from './persona/wordlists';
+
 export * from './storage/storage';
 export { DraftRepository } from './vault/draft-repo';
 export * from './vault/vault-data';

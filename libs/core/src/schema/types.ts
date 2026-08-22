@@ -95,6 +95,13 @@ export interface ProfilePayloadV1 {
   a: Record<ItemId, AnswerValue>;
   s?: string;
   m?: string[];
+  /**
+   * Optional persona seed (8 base64url chars) — stable per profile, drives
+   * the pet name / creature / styled QR. Additive-compatible: every extant
+   * decoder validates only `v` and `a` and ignores unknown fields, so this
+   * does NOT bump PROFILE_VERSION.
+   */
+  e?: string;
 }
 
 /** Widens to a union when a v2 payload lands; migrate.ts upgrades old shapes. */

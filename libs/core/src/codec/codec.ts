@@ -7,6 +7,7 @@
 import type { Answers, ProfilePayload } from '../schema/types';
 import { PROFILE_VERSION } from '../schema/types';
 import { openItems } from '../schema/schema';
+import { PERSONA_SEED_KEY, PERSONA_SEED_RE } from '../persona/persona';
 import { bytesToB64url, b64urlToBytes } from './base64url';
 import { deflate, inflate } from './compress';
 import { migrateToCurrent } from './migrate';
@@ -39,6 +40,13 @@ export function buildSharePayload(
   if (matchTokens.length && salt) {
     payload.s = salt;
     payload.m = [...matchTokens];
+  }
+  // The persona seed lives under a reserved (non-item) key in the answers
+  // map, so the open-items copy above can never pick it up; it travels in
+  // its own field instead.
+  const seed = answers[PERSONA_SEED_KEY];
+  if (typeof seed === 'string' && PERSONA_SEED_RE.test(seed)) {
+    payload.e = seed;
   }
   return payload;
 }

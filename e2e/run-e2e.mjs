@@ -5,6 +5,8 @@
 // Run: npm run build && npm run e2e
 // Env: MOXY_E2E_SHOTS=dir to also capture screenshots.
 import { chromium } from 'playwright-core';
+import jsQR from 'jsqr';
+import { PNG } from 'pngjs';
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
@@ -129,6 +131,78 @@ try {
   if (!/#p=m1\./.test(url)) fail('share URL malformed: ' + url?.slice(0, 80));
   if ((await page.locator('.qr-box svg').count()) !== 1) fail('QR code missing');
   await shot('04-share.png');
+
+  // --- persona: chip present, styled QR actually scans ----------------------
+  step = 'persona-qr-scan';
+  const personaName = (await page.textContent('.persona-name'))?.trim();
+  if (!/^[a-z]+-[a-z]+-[a-z]+$/.test(personaName ?? '')) {
+    fail('persona name malformed: ' + personaName);
+  }
+  // Screenshot the SVG element itself (its quiet zone is inside the viewBox,
+  // and nothing can overlap an element capture), enlarged because
+  // ~2.8 px/module at the 208px default is marginal for jsQR. Retried:
+  // a re-render between resize and capture replaces the element with a
+  // fresh 208px one — the race CI lost once.
+  const decodeQr = async (expected) => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      // Element screenshots capture the page REGION — the fixed toast paints
+      // over the enlarged QR's bottom-left finder, and removing its .show
+      // class only starts a 200ms opacity fade (CI screenshots mid-fade).
+      // display:none is instant and transition-proof.
+      await page.evaluate(() => {
+        const toast = document.getElementById('toast');
+        if (toast) toast.style.display = 'none';
+      });
+      await page.locator('.qr-svg svg').evaluate((el) => {
+        el.style.width = '640px';
+        el.style.height = '640px';
+      });
+      const png = PNG.sync.read(await page.locator('.qr-svg svg').screenshot());
+      const hit = jsQR(
+        new Uint8ClampedArray(png.data.buffer, png.data.byteOffset, png.data.length),
+        png.width,
+        png.height,
+      );
+      await page.locator('.qr-svg svg').evaluate((el) => {
+        el.style.width = '';
+        el.style.height = '';
+      }).catch(() => {});
+      if (hit?.data === expected) {
+        await page.evaluate(() => {
+          const toast = document.getElementById('toast');
+          if (toast) toast.style.display = '';
+        });
+        return hit.data;
+      }
+      await page.waitForTimeout(300);
+    }
+    return null;
+  };
+  if ((await decodeQr(url.trim())) === null) fail('styled QR did not decode to the share URL');
+
+  // Persona survives a reload (seed persisted in the draft)…
+  step = 'persona-stable';
+  await page.reload();
+  await page.waitForSelector('.persona-name');
+  if ((await page.textContent('.persona-name'))?.trim() !== personaName) {
+    fail('persona changed across reload');
+  }
+  // …and Regenerate mints a new creature whose restyled QR still scans.
+  step = 'persona-regenerate';
+  await page.click('text=Regenerate');
+  await page.waitForFunction(
+    (old) => document.querySelector('.persona-name')?.textContent?.trim() !== old,
+    personaName,
+  );
+  // The url and QR re-emit together with the name, but wait for the url
+  // explicitly before decoding against it.
+  await page.waitForFunction(
+    (old) => document.querySelector('.code-box')?.textContent?.trim() !== old,
+    url.trim(),
+  );
+  const url2 = (await page.textContent('.code-box')).trim();
+  if ((await decodeQr(url2)) === null) fail('post-regenerate QR did not decode to the new URL');
+  if (url2 === url.trim()) fail('regenerate did not change the payload');
 
   // Draft survives reload (autosave).
   step = 'draft-autosave';

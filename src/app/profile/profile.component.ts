@@ -5,19 +5,27 @@ import {
   decodePayload,
   displayName,
   hasDesiresTokens,
+  personaFromPayload,
   SECTIONS,
   type AnswerValue,
   type Item,
+  type Persona,
   type ProfilePayload,
   type ScaleItem,
 } from '@moxy/core';
-import { AnswerTextComponent, ScaleStripComponent, ToastService } from '@moxy/ui';
+import {
+  AnswerTextComponent,
+  PersonaChipComponent,
+  ScaleStripComponent,
+  ToastService,
+} from '@moxy/ui';
 import { CompareStore } from '../stores/compare.store';
 import { VaultStore } from '../stores/vault.store';
 
 interface ProfileView {
   readonly payload: ProfilePayload;
   readonly name: string;
+  readonly persona: Persona | null;
   readonly hasDesires: boolean;
   readonly sections: readonly {
     readonly title: string;
@@ -29,7 +37,7 @@ interface ProfileView {
 @Component({
   selector: 'moxy-profile',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, AnswerTextComponent, ScaleStripComponent],
+  imports: [RouterLink, AnswerTextComponent, PersonaChipComponent, ScaleStripComponent],
   template: `
     @if (view.error()) {
       <div class="card">
@@ -39,7 +47,10 @@ interface ProfileView {
       </div>
     } @else if (view.value(); as v) {
       <div class="card">
-        <h2>{{ v.name }}’s profile</h2>
+        <h2 style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          {{ v.name }}’s profile
+          @if (v.persona; as persona) { <moxy-persona-chip [persona]="persona" /> }
+        </h2>
         <p class="sub">
           This is a Moxy profile — shared with you as a link, stored on no server.
           @if (v.hasDesires) {
@@ -103,6 +114,7 @@ export class ProfileComponent {
       return {
         payload,
         name: displayName(payload, 'Someone'),
+        persona: await personaFromPayload(payload),
         hasDesires: hasDesiresTokens(payload),
         sections,
       };

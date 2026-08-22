@@ -80,6 +80,20 @@ describe('codec', () => {
     expect(encoded.length).toBeLessThan(2400);
   });
 
+  test('persona seed travels in payload.e, never in open answers, within QR budget', async () => {
+    const answers = { ...sampleAnswers(), _persona: 'AbCd12_-' };
+    const payload = buildSharePayload(answers, [], null);
+    expect(payload.e).toBe('AbCd12_-');
+    expect(payload.a['_persona'], 'reserved key must not leak into answers').toBeUndefined();
+
+    const decoded = await decodePayload(await encodePayload(payload));
+    expect(decoded.e).toBe('AbCd12_-');
+
+    // Invalid/absent seeds are dropped silently.
+    expect(buildSharePayload({ ...sampleAnswers(), _persona: 'nope' }, [], null).e).toBeUndefined();
+    expect(buildSharePayload(sampleAnswers(), [], null).e).toBeUndefined();
+  });
+
   test('rejects payloads from a future format version', async () => {
     const encoded = await encodePayload({ v: 99, a: {} } as never);
     await expect(decodePayload(encoded)).rejects.toThrow(/newer Moxy version/);
