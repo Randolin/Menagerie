@@ -36,6 +36,14 @@ core — but it still ships as a fully static site.
   saved connections are stored encrypted in `localStorage`. The passphrase is
   displayed once and stored nowhere. Lose it and the vault is gone — that's
   the design. Share links and the passphrase are unrelated credentials.
+- **Zero-knowledge sync (opt-in).** The same KDF also yields a random 128-bit
+  *locator* and a *write token*, so a vault can follow its passphrase to any
+  device: the sync server stores only `locator → ciphertext + version` plus
+  the SHA-256 of the write token. No account, no email, nothing readable, no
+  IPs persisted. Enter the passphrase (plus the server address) on a new
+  device and the encrypted vault is fetched, decrypted locally, and opened.
+  Devices merge concurrent edits deterministically (last-write-wins per item,
+  tombstones so deletions never resurrect). Local-only remains the default.
 - **Compare 2–4 profiles.** Value alignment on dot strips, a mutual-interest
   matrix of connection types, per-section alignment meters, pairwise affinity
   for groups, a full side-by-side answer grid, and mutual-desire reveals.
@@ -49,8 +57,11 @@ npm install
 npm start            # dev server on http://localhost:4200
 npm run test:core    # domain-library tests (plain Node, no browser, no Angular)
 npm run test:app     # Angular component tests (vitest + jsdom)
+npm run test:server  # sync-server integration tests (real HTTP, in-memory DB)
 npm run build        # production build → dist/moxy/browser
-npm run e2e          # drives the PRODUCTION build in Chromium (build first)
+npm run e2e          # drives the PRODUCTION build in Chromium, spawning the
+                     # sync server for the two-device tests (build first)
+npm run server       # run the sync server (see below)
 ```
 
 ### Architecture
@@ -62,9 +73,12 @@ libs/core   @moxy/core — pure TypeScript domain library, zero framework import
 libs/ui     @moxy/ui — the design system: SCSS token/base partials and
             standalone chart components (dot strips, interest matrix, meters…).
 src/app     The Angular app: hash routing (static-host friendly, legacy-link
-            compatible), signal stores (draft/vault/compare/theme), views.
+            compatible), signal stores (draft/vault/compare/theme/sync), views.
+server      The optional sync server: plain TypeScript run directly by
+            Node ≥ 24 (native type stripping + node:sqlite), zero deps.
 e2e         Playwright suite run against the production build via a dumb
-            static file server — no rewrites, proving the no-server property.
+            static file server — no rewrites, proving the no-server property —
+            plus real two-device sync tests against a spawned sync server.
 ```
 
 ### Extending it
@@ -100,7 +114,37 @@ npx ng build --base-href ./
 ```
 
 Hash routing means no server rewrites are needed — GitHub Pages, Netlify, an
-intranet share, anything that serves files works.
+intranet share, anything that serves files works. The app is fully functional
+without any sync server.
+
+### The sync server (optional)
+
+```sh
+node server/moxy-sync-server.ts     # Node >= 24; no npm install needed
+```
+
+| Env | Default | Meaning |
+|---|---|---|
+| `PORT` | `8787` | listen port (`0` = ephemeral, printed as JSON) |
+| `MOXY_DB_PATH` | `./moxy-sync.db` | SQLite file (`:memory:` for testing) |
+| `MOXY_MAX_BLOB_BYTES` | `262144` | encrypted-vault size cap |
+| `MOXY_TRUST_PROXY` | unset | `1` to honor `X-Forwarded-For` for rate limits |
+
+Run it behind a TLS reverse proxy. The API is four routes:
+`GET /v1/health` · `GET /v1/vault/:locator` · `PUT /v1/vault/:locator`
+(headers `X-Moxy-Write-Token` + `If-Match: <version>`, `0` creates; `409`
+returns the current state for client-side merge) · `DELETE /v1/vault/:locator`.
+The table stores `locator → token-hash, ciphertext, version` with timestamps
+rounded to the hour; IPs live only in the in-memory rate limiter.
+
+Threat model in one paragraph: the server can't read vaults (AES-256-GCM,
+key never leaves the client), can't reverse a locator into a passphrase
+(one-way 300k-round KDF), and can't be enumerated (128-bit locators). Someone
+who *observes* a locator — including a malicious operator — can deny
+availability by deleting or squatting that slot; they can never read or forge
+data, the client detects it as a decryption failure, and changing the
+passphrase moves the vault to a fresh locator. Self-host if you'd rather not
+extend even that much trust.
 
 ## License
 
