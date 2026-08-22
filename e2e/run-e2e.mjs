@@ -6,7 +6,11 @@
 // Env: MOXY_E2E_SHOTS=dir to also capture screenshots.
 import { chromium } from 'playwright-core';
 import { createServer } from 'node:http';
-import { createReadStream, existsSync, statSync, readFileSync, mkdirSync } from 'node:fs';
+import { spawn } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import {
+  createReadStream, existsSync, statSync, readFileSync, mkdirSync, rmSync,
+} from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -35,6 +39,33 @@ const server = createServer((req, res) => {
 });
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const BASE = `http://127.0.0.1:${server.address().port}/`;
+
+// --- the sync server, on its own origin (CORS is genuinely exercised) ------
+const syncDbPath = join(tmpdir(), `moxy-e2e-sync-${process.pid}.db`);
+const syncProc = spawn(process.execPath, [join(root, 'server/moxy-sync-server.ts')], {
+  env: { ...process.env, PORT: '0', MOXY_DB_PATH: syncDbPath },
+  stdio: ['ignore', 'pipe', 'inherit'],
+});
+const SYNC_URL = await new Promise((resolve, reject) => {
+  const timer = setTimeout(() => reject(new Error('sync server did not start')), 15000);
+  let buffer = '';
+  syncProc.stdout.on('data', (chunk) => {
+    buffer += String(chunk);
+    const match = buffer.match(/\{"listening":(\d+)/);
+    if (match) {
+      clearTimeout(timer);
+      resolve(`http://127.0.0.1:${match[1]}`);
+    }
+  });
+  syncProc.on('exit', () => reject(new Error('sync server exited during startup')));
+});
+for (let i = 0; ; i++) {
+  try {
+    if ((await fetch(`${SYNC_URL}/v1/health`)).ok) break;
+  } catch { /* not up yet */ }
+  if (i > 50) throw new Error('sync server health never came up');
+  await new Promise((r) => setTimeout(r, 100));
+}
 
 const browser = await chromium.launch({ executablePath: CHROMIUM });
 const errors = [];
@@ -194,6 +225,107 @@ try {
   await page.goto(BASE + '#/about');
   await page.waitForSelector('text=honest limit');
 
+  // ==========================================================================
+  // SYNC: everything above ran with no server configured — local-only mode is
+  // the regression baseline. Now the zero-knowledge sync flows.
+  // ==========================================================================
+  const waitSynced = async (p) =>
+    p.waitForFunction(
+      () => document.querySelector('[data-sync-status]')?.textContent?.includes('Synced'),
+      { timeout: 20000 },
+    );
+  const setServerField = async (p, url) => {
+    const field = p.locator('input[aria-label="Sync server address"]');
+    await field.fill(url);
+    await field.dispatchEvent('change');
+  };
+
+  // --- device A: fresh context, create vault, add data, enable sync --------
+  step = 'sync-device-a-setup';
+  const devA = await browser.newContext({ viewport: { width: 1180, height: 900 } });
+  const pageA = await devA.newPage();
+  pageA.on('pageerror', (e) => errors.push('A: ' + String(e)));
+  pageA.on('dialog', (d) => d.accept());
+  await pageA.goto(BASE + '#/vault');
+  await pageA.click('text=Create a vault');
+  await pageA.waitForSelector('.passphrase-box');
+  const syncPass = (await pageA.textContent('.passphrase-box')).trim();
+  await pageA.click('text=I’ve saved it — create vault');
+  await pageA.waitForSelector('text=My profiles');
+  await pageA.fill('input[aria-label="Connection name"]', 'Casey');
+  await pageA.fill('input[aria-label="Connection profile link"]', legacyProfile.code);
+  await pageA.click('text=Add connection');
+  await pageA.waitForSelector('.vault-item-name:has-text("Casey")');
+
+  step = 'sync-enable';
+  await setServerField(pageA, SYNC_URL);
+  await pageA.click('text=Enable sync');
+  await waitSynced(pageA);
+
+  // --- device B: empty context + same passphrase = login from a new device --
+  step = 'sync-two-device-login';
+  const devB = await browser.newContext({ viewport: { width: 1180, height: 900 } });
+  const pageB = await devB.newPage();
+  pageB.on('pageerror', (e) => errors.push('B: ' + String(e)));
+  pageB.on('dialog', (d) => d.accept());
+  await pageB.goto(BASE + '#/vault');
+  await setServerField(pageB, SYNC_URL);
+  await pageB.fill('input[aria-label="Vault passphrase"]', syncPass);
+  await pageB.click('button:has-text("Unlock")');
+  await pageB.waitForSelector('.vault-item-name:has-text("Casey")', { timeout: 20000 });
+
+  // --- concurrent edits: A pushes first, stale B merges on 409 --------------
+  step = 'sync-conflict-merge';
+  await pageA.fill('input[aria-label="Connection name"]', 'Alexis');
+  await pageA.fill('input[aria-label="Connection profile link"]', legacyCompare.codes[0]);
+  await pageA.click('text=Add connection');
+  await pageA.waitForTimeout(3000); // debounce (1.5s) + push
+  await pageB.fill('input[aria-label="Connection name"]', 'Drew');
+  await pageB.fill('input[aria-label="Connection profile link"]', legacyCompare.codes[1]);
+  await pageB.click('text=Add connection');
+  // B's push conflicts, merges, re-pushes; the merge surfaces A's item on B.
+  await pageB.waitForSelector('.vault-item-name:has-text("Alexis")', { timeout: 20000 });
+  await pageA.click('text=🔄 Sync now');
+  await pageA.waitForSelector('.vault-item-name:has-text("Drew")', { timeout: 20000 });
+
+  // --- tombstones: deletion propagates and does not resurrect ---------------
+  step = 'sync-tombstone';
+  await pageA
+    .locator('.vault-item', { hasText: 'Drew' })
+    .locator('button:has-text("Remove")')
+    .click();
+  await pageA.waitForTimeout(3000);
+  await pageB.click('text=🔄 Sync now');
+  await pageB.waitForFunction(
+    () => ![...document.querySelectorAll('.vault-item-name')].some((n) => n.textContent === 'Drew'),
+    { timeout: 20000 },
+  );
+  // B edits and pushes; Drew must stay dead on A afterward.
+  await pageB.fill('input[aria-label="Connection name"]', 'Emerson');
+  await pageB.fill('input[aria-label="Connection profile link"]', legacyProfile.code);
+  await pageB.click('text=Add connection');
+  await pageB.waitForTimeout(3000);
+  await pageA.click('text=🔄 Sync now');
+  await pageA.waitForSelector('.vault-item-name:has-text("Emerson")', { timeout: 20000 });
+  const namesOnA = await pageA.$$eval('.vault-item-name', (els) => els.map((e) => e.textContent));
+  if (namesOnA.includes('Drew')) fail('tombstoned connection resurrected');
+
+  await devA.close();
+  await devB.close();
+
+  // --- zero-knowledge at rest: raw server DB must contain no plaintext ------
+  step = 'sync-zero-knowledge-at-rest';
+  syncProc.kill('SIGTERM'); // clean close checkpoints WAL into the main file
+  await new Promise((resolve) => syncProc.on('exit', resolve));
+  let dbBytes = '';
+  for (const suffix of ['', '-wal', '-shm']) {
+    const f = syncDbPath + suffix;
+    if (existsSync(f)) dbBytes += readFileSync(f, 'latin1');
+  }
+  for (const marker of ['Casey', 'Alexis', 'Drew', 'Emerson', 'River', 'connections', 'profiles']) {
+    if (dbBytes.includes(marker)) fail(`plaintext "${marker}" found in server database at rest`);
+  }
+
   if (errors.length) fail('console errors: ' + errors.join(' | '));
   console.log('E2E PASS');
 } catch (err) {
@@ -203,4 +335,8 @@ try {
 } finally {
   await browser.close();
   server.close();
+  if (!syncProc.killed) syncProc.kill('SIGKILL');
+  for (const suffix of ['', '-wal', '-shm']) {
+    rmSync(syncDbPath + suffix, { force: true });
+  }
 }
