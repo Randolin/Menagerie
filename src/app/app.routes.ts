@@ -1,40 +1,40 @@
 import { Routes } from '@angular/router';
-import { compareLinkMatcher, profileLinkMatcher } from './legacy-links';
+import { hatchSessionGuard } from './hatch-session.guard';
 
 export const routes: Routes = [
-  // Legacy data links first — see legacy-links.ts.
   {
-    matcher: profileLinkMatcher,
-    loadComponent: () => import('./profile/profile.component').then((m) => m.ProfileComponent),
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () => import('./landing/landing.component').then((m) => m.LandingComponent),
+  },
+  // The QR bypass: scanning a code lands here directly, no landing page.
+  {
+    path: 'view/:phrase',
+    loadComponent: () => import('./view/view.component').then((m) => m.ViewComponent),
   },
   {
-    matcher: compareLinkMatcher,
-    loadComponent: () => import('./compare/compare.component').then((m) => m.CompareComponent),
-  },
-  { path: '', pathMatch: 'full', redirectTo: 'home' },
-  {
-    path: 'home',
-    loadComponent: () => import('./home/home.component').then((m) => m.HomeComponent),
+    path: 'edit',
+    loadComponent: () =>
+      import('./edit-login/edit-login.component').then((m) => m.EditLoginComponent),
   },
   {
-    path: 'survey',
-    loadComponent: () => import('./survey/survey.component').then((m) => m.SurveyComponent),
+    path: 'me',
+    canActivate: [hatchSessionGuard],
+    loadComponent: () => import('./dashboard/dashboard.component').then((m) => m.DashboardComponent),
   },
   {
-    path: 'share',
-    loadComponent: () => import('./share/share.component').then((m) => m.ShareComponent),
+    path: 'me/section/:id',
+    canActivate: [hatchSessionGuard],
+    loadComponent: () =>
+      import('./section-editor/section-editor.component').then((m) => m.SectionEditorComponent),
   },
   {
     path: 'compare',
     loadComponent: () => import('./compare/compare.component').then((m) => m.CompareComponent),
   },
   {
-    path: 'vault',
-    loadComponent: () => import('./vault/vault.component').then((m) => m.VaultComponent),
-  },
-  {
     path: 'about',
     loadComponent: () => import('./about/about.component').then((m) => m.AboutComponent),
   },
-  { path: '**', redirectTo: 'home' },
+  { path: '**', redirectTo: '' },
 ];

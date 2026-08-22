@@ -1,11 +1,10 @@
 <header class="app-header">
-  <a class="brand" routerLink="/home">
+  <a class="brand" routerLink="/">
     <span class="brand-mark" aria-hidden="true">M</span>Moxy
   </a>
   <nav class="nav" aria-label="Main">
-    <a routerLink="/survey" routerLinkActive="active">My profile</a>
+    <a routerLink="/me" routerLinkActive="active">My profile</a>
     <a routerLink="/compare" routerLinkActive="active">Compare</a>
-    <a routerLink="/vault" routerLinkActive="active">Vault</a>
     <a routerLink="/about" routerLinkActive="active">How it works</a>
   </nav>
   <button class="btn btn-ghost btn-small" title="Theme" aria-label="Toggle theme"
@@ -18,8 +17,8 @@
 
 <footer class="app-footer">
   <p>
-    Moxy runs entirely in your browser. No accounts, no servers, no analytics —
-    <a routerLink="/about">see exactly how</a>.
+    No accounts, no names, no analytics — the server stores only ciphertext it can’t
+    read. <a routerLink="/about">See exactly how</a>.
   </p>
 </footer>
 

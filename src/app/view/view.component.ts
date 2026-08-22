@@ -1,11 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject, resource } from '@angular/core';
-import { Router, RouterLink, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
-  decodePayload,
+  decryptBlob,
+  deriveViewKeys,
   displayName,
+  extractViewPhrase,
   hasDesiresTokens,
-  personaFromPayload,
+  migrateToCurrent,
+  personaFromViewPhrase,
   SECTIONS,
   type AnswerValue,
   type Item,
@@ -20,9 +23,11 @@ import {
   ToastService,
 } from '@moxy/ui';
 import { CompareStore } from '../stores/compare.store';
-import { VaultStore } from '../stores/vault.store';
+import { ProfileSessionStore } from '../stores/profile-session.store';
+import { ServerConfigStore } from '../stores/server-config.store';
 
-interface ProfileView {
+interface LoadedProfile {
+  readonly phrase: string;
   readonly payload: ProfilePayload;
   readonly name: string;
   readonly persona: Persona | null;
@@ -33,17 +38,17 @@ interface ProfileView {
   }[];
 }
 
-/** Single-profile view — what opening someone's shared #p= link shows. */
+/** What a shared view phrase, link, or scanned QR opens. */
 @Component({
-  selector: 'moxy-profile',
+  selector: 'moxy-view',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, AnswerTextComponent, PersonaChipComponent, ScaleStripComponent],
   template: `
     @if (view.error()) {
       <div class="card">
-        <h2>Couldn’t read that profile</h2>
+        <h2>Couldn’t open that profile</h2>
         <p class="sub">{{ errorMessage() }}</p>
-        <a class="btn" routerLink="/home">Go home</a>
+        <a class="btn" routerLink="/">Go to the start</a>
       </div>
     } @else if (view.value(); as v) {
       <div class="card">
@@ -52,22 +57,28 @@ interface ProfileView {
           @if (v.persona; as persona) { <moxy-persona-chip [persona]="persona" /> }
         </h2>
         <p class="sub">
-          This is a Moxy profile — shared with you as a link, stored on no server.
+          A Moxy profile — anonymous by design, stored only as ciphertext the server
+          can’t read.
           @if (v.hasDesires) {
-            It includes a private desires section that only unlocks against a profile with
-            mutual answers.
+            It includes a private desires section that only unlocks against a profile
+            with mutual answers.
           }
         </p>
         <div class="btn-row" style="margin-top:16px">
-          <button class="btn btn-primary" (click)="compareWith()">🔍 Compare with a profile</button>
-          @if (vault.unlocked()) {
-            <button class="btn" (click)="saveToVault(v)">💾 Save to vault</button>
+          <button class="btn btn-primary" (click)="compareWith(v)">🔍 Compare</button>
+          @if (session.active()) {
+            <button class="btn" (click)="saveConnection(v)">💾 Save to my people</button>
           } @else {
-            <a class="btn btn-ghost" routerLink="/vault">Unlock vault to save them</a>
+            <a class="btn btn-ghost" routerLink="/">Hatch your own to compare</a>
           }
         </div>
       </div>
 
+      @if (v.sections.length === 0) {
+        <div class="card">
+          <p class="sub">Nothing here yet — this profile hasn’t saved any open answers.</p>
+        </div>
+      }
       @for (section of v.sections; track section.title) {
         <div class="card grid-section">
           <h2>{{ section.title }}</h2>
@@ -86,23 +97,43 @@ interface ProfileView {
           }
         </div>
       }
+    } @else {
+      <div class="card"><p class="sub">Opening profile…</p></div>
     }
   `,
 })
-export class ProfileComponent {
+export class ViewComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly config = inject(ServerConfigStore);
   private readonly compare = inject(CompareStore);
-  protected readonly vault = inject(VaultStore);
+  protected readonly session = inject(ProfileSessionStore);
   private readonly toast = inject(ToastService);
 
-  private readonly params = toSignal(this.route.params, { initialValue: this.route.snapshot.params });
-  protected readonly code = computed(() => String(this.params()['code'] ?? ''));
+  private readonly params = toSignal(this.route.params, {
+    initialValue: this.route.snapshot.params,
+  });
+  private readonly phrase = computed(() => String(this.params()['phrase'] ?? ''));
 
   protected readonly view = resource({
-    params: () => this.code(),
-    loader: async ({ params }): Promise<ProfileView> => {
-      const payload = await decodePayload(params);
+    params: () => ({ phrase: this.phrase(), state: this.config.state() }),
+    loader: async ({ params }): Promise<LoadedProfile> => {
+      if (params.state === 'loading') return new Promise<never>(() => undefined);
+      if (params.state === 'unconfigured') {
+        throw new Error('No profile server is configured, so nothing can be looked up.');
+      }
+      const phrase = extractViewPhrase(params.phrase);
+      if (!phrase) throw new Error('That’s not a valid Moxy view phrase.');
+      const client = this.config.client();
+      if (!client) throw new Error('No profile server is configured.');
+      const { viewLocator, viewKey } = await deriveViewKeys(phrase);
+      const record = await client.getView(viewLocator);
+      if (!record) {
+        throw new Error(
+          'No profile answers to that phrase. It may have been deleted, expired, or replaced by a new creature.',
+        );
+      }
+      const payload = migrateToCurrent(await decryptBlob(record.blob_view, viewKey));
       const sections = SECTIONS.filter((s) => s.privacy === 'open')
         .map((s) => ({
           title: s.title,
@@ -112,9 +143,10 @@ export class ProfileComponent {
         }))
         .filter((s) => s.items.length > 0);
       return {
+        phrase,
         payload,
         name: displayName(payload, 'Someone'),
-        persona: await personaFromPayload(payload),
+        persona: await personaFromViewPhrase(phrase),
         hasDesires: hasDesiresTokens(payload),
         sections,
       };
@@ -130,13 +162,19 @@ export class ProfileComponent {
     return item as ScaleItem;
   }
 
-  protected compareWith(): void {
-    this.compare.addCode(this.code());
+  protected compareWith(v: LoadedProfile): void {
+    const mine = this.session.viewPhrase();
+    if (mine) this.compare.addPhrase(mine);
+    this.compare.addPhrase(v.phrase);
     void this.router.navigate(['/compare']);
   }
 
-  protected async saveToVault(v: ProfileView): Promise<void> {
-    await this.vault.saveConnection(v.name, this.code());
-    this.toast.show(`Saved ${v.name} to your vault`);
+  protected async saveConnection(v: LoadedProfile): Promise<void> {
+    try {
+      await this.session.addConnection(v.name, v.phrase);
+      this.toast.show(`Saved ${v.name} to your people`);
+    } catch (err) {
+      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+    }
   }
 }
