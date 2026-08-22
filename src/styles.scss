@@ -1,1 +1,5 @@
-/* You can add global styles to this file, and also import other style files */
+/* Moxy global styles: the design system lives in @moxy/ui's style partials.
+   Tokens define the palette (light + dark, chart series, ordinal ramp);
+   base defines the global element/utility classes the templates use. */
+@use '../libs/ui/src/styles/tokens';
+@use '../libs/ui/src/styles/base';
