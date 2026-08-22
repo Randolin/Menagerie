@@ -1,0 +1,434 @@
+{
+  "comment": "Golden schema freeze. Ids/types/sections/privacy are immutable; option lists may only grow.",
+  "items": {
+    "ab.name": {
+      "type": "text",
+      "section": "about",
+      "privacy": "open"
+    },
+    "ab.pronouns": {
+      "type": "text",
+      "section": "about",
+      "privacy": "open"
+    },
+    "ab.age": {
+      "type": "choice",
+      "section": "about",
+      "privacy": "open",
+      "minOptions": 6
+    },
+    "ab.gender": {
+      "type": "multi",
+      "section": "about",
+      "privacy": "open",
+      "minOptions": 10
+    },
+    "ab.orient": {
+      "type": "multi",
+      "section": "about",
+      "privacy": "open",
+      "minOptions": 11
+    },
+    "ab.intro": {
+      "type": "text",
+      "section": "about",
+      "privacy": "open"
+    },
+    "sk.friend": {
+      "type": "interest",
+      "section": "seeking",
+      "privacy": "open"
+    },
+    "sk.network": {
+      "type": "interest",
+      "section": "seeking",
+      "privacy": "open"
+    },
+    "sk.activity": {
+      "type": "interest",
+      "section": "seeking",
+      "privacy": "open"
+    },
+    "sk.casual": {
+      "type": "interest",
+      "section": "seeking",
+      "privacy": "open"
+    },
+    "sk.longterm": {
+      "type": "interest",
+      "section": "seeking",
+      "privacy": "open"
+    },
+    "sk.marriage": {
+      "type": "interest",
+      "section": "seeking",
+      "privacy": "open"
+    },
+    "sk.mono": {
+      "type": "interest",
+      "section": "seeking",
+      "privacy": "open"
+    },
+    "sk.poly": {
+      "type": "interest",
+      "section": "seeking",
+      "privacy": "open"
+    },
+    "sk.open": {
+      "type": "interest",
+      "section": "seeking",
+      "privacy": "open"
+    },
+    "sk.swing": {
+      "type": "interest",
+      "section": "seeking",
+      "privacy": "open"
+    },
+    "sk.ra": {
+      "type": "interest",
+      "section": "seeking",
+      "privacy": "open"
+    },
+    "sk.hookup": {
+      "type": "interest",
+      "section": "seeking",
+      "privacy": "open"
+    },
+    "sk.qpr": {
+      "type": "interest",
+      "section": "seeking",
+      "privacy": "open"
+    },
+    "sk.nesting": {
+      "type": "interest",
+      "section": "seeking",
+      "privacy": "open"
+    },
+    "sk.coparent": {
+      "type": "interest",
+      "section": "seeking",
+      "privacy": "open"
+    },
+    "sk.penpal": {
+      "type": "interest",
+      "section": "seeking",
+      "privacy": "open"
+    },
+    "va.together": {
+      "type": "scale",
+      "section": "values",
+      "privacy": "open"
+    },
+    "va.novelty": {
+      "type": "scale",
+      "section": "values",
+      "privacy": "open"
+    },
+    "va.heart": {
+      "type": "scale",
+      "section": "values",
+      "privacy": "open"
+    },
+    "va.spend": {
+      "type": "scale",
+      "section": "values",
+      "privacy": "open"
+    },
+    "va.express": {
+      "type": "scale",
+      "section": "values",
+      "privacy": "open"
+    },
+    "va.spirit": {
+      "type": "scale",
+      "section": "values",
+      "privacy": "open"
+    },
+    "va.ambition": {
+      "type": "scale",
+      "section": "values",
+      "privacy": "open"
+    },
+    "va.tradition": {
+      "type": "scale",
+      "section": "values",
+      "privacy": "open"
+    },
+    "va.social": {
+      "type": "scale",
+      "section": "values",
+      "privacy": "open"
+    },
+    "va.plan": {
+      "type": "scale",
+      "section": "values",
+      "privacy": "open"
+    },
+    "ls.alcohol": {
+      "type": "choice",
+      "section": "lifestyle",
+      "privacy": "open",
+      "minOptions": 4
+    },
+    "ls.smoke": {
+      "type": "choice",
+      "section": "lifestyle",
+      "privacy": "open",
+      "minOptions": 3
+    },
+    "ls.cannabis": {
+      "type": "choice",
+      "section": "lifestyle",
+      "privacy": "open",
+      "minOptions": 3
+    },
+    "ls.diet": {
+      "type": "choice",
+      "section": "lifestyle",
+      "privacy": "open",
+      "minOptions": 5
+    },
+    "ls.exercise": {
+      "type": "choice",
+      "section": "lifestyle",
+      "privacy": "open",
+      "minOptions": 4
+    },
+    "ls.kids": {
+      "type": "choice",
+      "section": "lifestyle",
+      "privacy": "open",
+      "minOptions": 5
+    },
+    "ls.pets": {
+      "type": "multi",
+      "section": "lifestyle",
+      "privacy": "open",
+      "minOptions": 5
+    },
+    "ls.sleep": {
+      "type": "choice",
+      "section": "lifestyle",
+      "privacy": "open",
+      "minOptions": 4
+    },
+    "ls.tidy": {
+      "type": "choice",
+      "section": "lifestyle",
+      "privacy": "open",
+      "minOptions": 4
+    },
+    "ls.setting": {
+      "type": "choice",
+      "section": "lifestyle",
+      "privacy": "open",
+      "minOptions": 5
+    },
+    "ls.travel": {
+      "type": "choice",
+      "section": "lifestyle",
+      "privacy": "open",
+      "minOptions": 4
+    },
+    "cn.affection": {
+      "type": "multi",
+      "section": "connection",
+      "privacy": "open",
+      "minOptions": 5
+    },
+    "cn.conflict": {
+      "type": "choice",
+      "section": "connection",
+      "privacy": "open",
+      "minOptions": 4
+    },
+    "cn.tempo": {
+      "type": "choice",
+      "section": "connection",
+      "privacy": "open",
+      "minOptions": 4
+    },
+    "cn.alone": {
+      "type": "choice",
+      "section": "connection",
+      "privacy": "open",
+      "minOptions": 3
+    },
+    "cn.social": {
+      "type": "choice",
+      "section": "connection",
+      "privacy": "open",
+      "minOptions": 4
+    },
+    "st.ideal": {
+      "type": "multi",
+      "section": "structure",
+      "privacy": "open",
+      "minOptions": 9
+    },
+    "st.meta": {
+      "type": "choice",
+      "section": "structure",
+      "privacy": "open",
+      "minOptions": 5
+    },
+    "st.capacity": {
+      "type": "choice",
+      "section": "structure",
+      "privacy": "open",
+      "minOptions": 4
+    },
+    "st.disclosure": {
+      "type": "choice",
+      "section": "structure",
+      "privacy": "open",
+      "minOptions": 5
+    },
+    "st.safety": {
+      "type": "choice",
+      "section": "structure",
+      "privacy": "open",
+      "minOptions": 5
+    },
+    "dp.pda": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.cuddle": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.massage": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.talk": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.sext": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.dressup": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.roleplay": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.lightbond": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.rope": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.dom": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.sub": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.switch": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.impact": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.sensation": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.power": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.group": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.party": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.showoff": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.watch": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.toys": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.tantra": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.primal": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.praise": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.aftercare": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "dp.vanilla": {
+      "type": "interest",
+      "section": "desires",
+      "privacy": "match"
+    },
+    "nt.musthave": {
+      "type": "text",
+      "section": "notes",
+      "privacy": "open"
+    },
+    "nt.dealbreak": {
+      "type": "text",
+      "section": "notes",
+      "privacy": "open"
+    },
+    "nt.joy": {
+      "type": "text",
+      "section": "notes",
+      "privacy": "open"
+    }
+  }
+}
