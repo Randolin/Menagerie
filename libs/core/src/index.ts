@@ -22,6 +22,12 @@ export * from './match/reveal';
 export * from './persona/persona';
 export { ADJECTIVES_A, ADJECTIVES_B, ANIMALS, PERSONA_COLORS } from './persona/wordlists';
 
+export * from './hatch/constants';
+export * from './hatch/keys';
+export * from './hatch/phrases';
+export { encryptBlob, decryptBlob } from './hatch/blob';
+export * from './hatch/priv-data';
+
 export * from './storage/storage';
 export { DraftRepository } from './vault/draft-repo';
 export * from './vault/vault-data';

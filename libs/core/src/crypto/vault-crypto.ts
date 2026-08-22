@@ -16,6 +16,57 @@ const subtle = globalThis.crypto.subtle;
 const VAULT_KDF_SALT = 'moxy.vault.v1';
 export const VAULT_KDF_ITERATIONS = 300_000;
 
+export interface PhraseKeys {
+  /** b64url of KDF bytes 0..16 — names the storage slot. 22 chars. */
+  readonly locator: string;
+  /** AES-256-GCM key from KDF bytes 16..48. */
+  readonly key: CryptoKey;
+  /** b64url of KDF bytes 48..64 — bearer token; servers store only its SHA-256. */
+  readonly token: string;
+}
+
+/**
+ * The one passphrase KDF, generalized over a domain salt: one PBKDF2-SHA-512
+ * derivation yields locator + AES key + bearer token, so no output is cheaper
+ * to brute-force than another. Distinct domain salts guarantee that the same
+ * phrase used in different roles can never collide across namespaces.
+ */
+export async function derivePhraseKeys(
+  passphrase: string,
+  domainSalt: string,
+): Promise<PhraseKeys> {
+  const material = await subtle.importKey(
+    'raw',
+    new TextEncoder().encode(normalizePassphrase(passphrase)),
+    'PBKDF2',
+    false,
+    ['deriveBits'],
+  );
+  const bits = await subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      hash: 'SHA-512',
+      salt: new TextEncoder().encode(domainSalt),
+      iterations: VAULT_KDF_ITERATIONS,
+    },
+    material,
+    512,
+  );
+  const bytes = new Uint8Array(bits);
+  const key = await subtle.importKey(
+    'raw',
+    bytes.slice(16, 48),
+    { name: 'AES-GCM' },
+    false,
+    ['encrypt', 'decrypt'],
+  );
+  return {
+    locator: bytesToB64url(bytes.slice(0, 16)),
+    key,
+    token: bytesToB64url(bytes.slice(48, 64)),
+  };
+}
+
 export interface VaultKeys {
   readonly locator: string;
   readonly key: CryptoKey;
@@ -33,34 +84,8 @@ export function normalizePassphrase(pass: string): string {
 }
 
 export async function deriveVaultKeys(passphrase: string): Promise<VaultKeys> {
-  const material = await subtle.importKey(
-    'raw',
-    new TextEncoder().encode(normalizePassphrase(passphrase)),
-    'PBKDF2',
-    false,
-    ['deriveBits'],
-  );
-  const bits = await subtle.deriveBits(
-    {
-      name: 'PBKDF2',
-      hash: 'SHA-512',
-      salt: new TextEncoder().encode(VAULT_KDF_SALT),
-      iterations: VAULT_KDF_ITERATIONS,
-    },
-    material,
-    512,
-  );
-  const bytes = new Uint8Array(bits);
-  const locator = bytesToB64url(bytes.slice(0, 16));
-  const key = await subtle.importKey(
-    'raw',
-    bytes.slice(16, 48),
-    { name: 'AES-GCM' },
-    false,
-    ['encrypt', 'decrypt'],
-  );
-  const writeToken = bytesToB64url(bytes.slice(48, 64));
-  return { locator, key, writeToken };
+  const { locator, key, token } = await derivePhraseKeys(passphrase, VAULT_KDF_SALT);
+  return { locator, key, writeToken: token };
 }
 
 export async function encryptVault(obj: unknown, key: CryptoKey): Promise<string> {

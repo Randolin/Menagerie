@@ -62,3 +62,33 @@ export async function personaFromPayload(payload: ProfilePayload): Promise<Perso
   if (typeof seed !== 'string' || !PERSONA_SEED_RE.test(seed)) return null;
   return derivePersona(seed);
 }
+
+/**
+ * Persona v2 (hatch model): the creature IS the view phrase's first three
+ * words, verbatim — no hashing needed for identity. Only the accent color is
+ * derived, from a hash of the FULL phrase, so it rotates with the secret
+ * tail and is visible only to phrase-holders. Null when the words don't
+ * match the frozen lists.
+ */
+export async function personaFromViewPhrase(viewPhrase: string): Promise<Persona | null> {
+  const words = viewPhrase.trim().toLowerCase().split(/[\s-]+/).filter(Boolean);
+  if (words.length < 3) return null;
+  const [adjA, adjB, animalName] = words;
+  const animal = ANIMALS.find((a) => a.name === animalName);
+  if (!animal || !ADJECTIVES_A.includes(adjA) || !ADJECTIVES_B.includes(adjB)) return null;
+  const digest = new Uint8Array(
+    await globalThis.crypto.subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode(`moxy.persona.v2|${words.join('-')}`),
+    ),
+  );
+  const colorIndex = digest[0] & 15;
+  return {
+    seed: '',
+    words: [adjA, adjB, animal.name],
+    name: `${adjA}-${adjB}-${animal.name}`,
+    emoji: animal.emoji,
+    color: PERSONA_COLORS[colorIndex],
+    colorIndex,
+  };
+}
