@@ -9,7 +9,16 @@ import {
   type ApiError,
   type ApiErrorCode,
 } from '../libs/core/src/sync/sync-api.ts';
+import {
+  EDIT_TOKEN_HEADER,
+  NEW_EDIT_TOKEN_HEADER,
+  HATCH_BLOB_RE,
+  HATCH_LOCATOR_RE,
+  type HatchApiError,
+  type HatchErrorCode,
+} from '../libs/core/src/hatch/hatch-api.ts';
 import type { VaultDb } from './db.ts';
+import type { ProfilesDb } from './profiles-db.ts';
 import { RateLimiter } from './rate-limit.ts';
 
 export interface AppOptions {
@@ -17,12 +26,16 @@ export interface AppOptions {
   trustProxy: boolean;
   readsPerMinute?: number;
   writesPerMinute?: number;
+  /** v2 hatch routes activate when a profiles DB is provided. */
+  profiles?: ProfilesDb;
+  /** Circuit breaker: POST /v2/profiles answers 503 at_capacity beyond this. */
+  maxProfiles?: number;
 }
 
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
-  'access-control-allow-methods': 'GET, PUT, DELETE, OPTIONS',
-  'access-control-allow-headers': `content-type, ${WRITE_TOKEN_HEADER}, if-match`,
+  'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'access-control-allow-headers': `content-type, ${WRITE_TOKEN_HEADER}, if-match, ${EDIT_TOKEN_HEADER}, ${NEW_EDIT_TOKEN_HEADER}`,
   'access-control-max-age': '86400',
 } as const;
 
@@ -37,6 +50,15 @@ function send(res: ServerResponse, status: number, body?: unknown): void {
 
 function sendError(res: ServerResponse, status: number, error: ApiErrorCode, extra?: Partial<ApiError>): void {
   send(res, status, { error, ...extra } satisfies ApiError);
+}
+
+function sendHatchError(
+  res: ServerResponse,
+  status: number,
+  error: HatchErrorCode,
+  extra?: Partial<HatchApiError>,
+): void {
+  send(res, status, { error, ...extra } satisfies HatchApiError);
 }
 
 function clientKey(req: IncomingMessage, trustProxy: boolean): string {
@@ -65,6 +87,228 @@ export function createApp(db: VaultDb, opts: AppOptions) {
   const writeLimiter = new RateLimiter(opts.writesPerMinute ?? 30);
   // HTTP body cap: JSON framing overhead on top of the blob cap.
   const bodyCap = opts.maxBlobBytes * 2;
+  // Hatch bodies carry two blobs.
+  const hatchBodyCap = opts.maxBlobBytes * 3;
+
+  const validBlob = (blob: unknown): blob is string =>
+    typeof blob === 'string' &&
+    HATCH_BLOB_RE.test(blob) &&
+    Buffer.byteLength(blob, 'utf8') <= opts.maxBlobBytes;
+
+  /** Header token → SHA-256 hex, or null if missing/malformed. */
+  const tokenHashFrom = (req: IncomingMessage, header: string): string | null => {
+    const token = req.headers[header];
+    if (typeof token !== 'string' || !HATCH_LOCATOR_RE.test(token)) return null;
+    return createHash('sha256').update(token, 'utf8').digest('hex');
+  };
+
+  async function handleV2(
+    req: IncomingMessage,
+    res: ServerResponse,
+    pathname: string,
+    method: string,
+  ): Promise<void> {
+    if (pathname === '/v2/health' && method === 'GET') {
+      send(res, 200, { ok: true });
+      return;
+    }
+    const profiles = opts.profiles;
+    if (!profiles) {
+      sendHatchError(res, 404, 'not_found');
+      return;
+    }
+
+    const key = clientKey(req, opts.trustProxy);
+    const limiter = method === 'GET' ? readLimiter : writeLimiter;
+    if (!limiter.take(key)) {
+      res.setHeader('retry-after', '60');
+      sendHatchError(res, 429, 'rate_limited');
+      return;
+    }
+
+    // POST /v2/profiles — hatch. Locators are client-derived; a collision
+    // means the phrase is taken (astronomically unlikely) and the client
+    // remints. INSERT ON CONFLICT leaves no pre-registration window to squat.
+    if (pathname === '/v2/profiles' && method === 'POST') {
+      if (opts.maxProfiles !== undefined && profiles.count() >= opts.maxProfiles) {
+        sendHatchError(res, 503, 'at_capacity');
+        return;
+      }
+      const tokenHash = tokenHashFrom(req, EDIT_TOKEN_HEADER);
+      if (!tokenHash) {
+        sendHatchError(res, 400, 'bad_request', { message: 'missing or malformed edit token' });
+        return;
+      }
+      const raw = await readBody(req, hatchBodyCap);
+      if (raw === null) {
+        sendHatchError(res, 413, 'too_large');
+        return;
+      }
+      let body: Record<string, unknown>;
+      try {
+        body = JSON.parse(raw) as Record<string, unknown>;
+      } catch {
+        sendHatchError(res, 400, 'bad_request', { message: 'body must be JSON' });
+        return;
+      }
+      const viewLocator = body['view_locator'];
+      const editLocator = body['edit_locator'];
+      if (
+        typeof viewLocator !== 'string' ||
+        !HATCH_LOCATOR_RE.test(viewLocator) ||
+        typeof editLocator !== 'string' ||
+        !HATCH_LOCATOR_RE.test(editLocator) ||
+        viewLocator === editLocator
+      ) {
+        sendHatchError(res, 400, 'bad_request', { message: 'malformed locators' });
+        return;
+      }
+      if (!validBlob(body['blob_view']) || !validBlob(body['blob_priv'])) {
+        sendHatchError(res, 400, 'bad_request', { message: 'blobs must be base64url' });
+        return;
+      }
+      const outcome = profiles.create(
+        viewLocator,
+        editLocator,
+        tokenHash,
+        body['blob_view'],
+        body['blob_priv'],
+      );
+      if (outcome === 'created') send(res, 201, { version: 1 });
+      else sendHatchError(res, 409, 'locator_taken');
+      return;
+    }
+
+    const viewMatch = pathname.match(/^\/v2\/profiles\/view\/([^/]+)$/);
+    if (viewMatch && method === 'GET') {
+      if (!HATCH_LOCATOR_RE.test(viewMatch[1])) {
+        sendHatchError(res, 400, 'bad_request', { message: 'malformed locator' });
+        return;
+      }
+      const record = profiles.getView(viewMatch[1]);
+      if (!record) sendHatchError(res, 404, 'not_found');
+      else send(res, 200, record);
+      return;
+    }
+
+    const editMatch = pathname.match(/^\/v2\/profiles\/edit\/([^/]+)$/);
+    if (!editMatch) {
+      sendHatchError(res, 404, 'not_found');
+      return;
+    }
+    const editLocator = editMatch[1];
+    if (!HATCH_LOCATOR_RE.test(editLocator)) {
+      sendHatchError(res, 400, 'bad_request', { message: 'malformed locator' });
+      return;
+    }
+
+    // The edit locator is itself a capability (128-bit, derived from the edit
+    // phrase); reads need no token — the blobs are ciphertext anyway.
+    if (method === 'GET') {
+      const record = profiles.getEdit(editLocator);
+      if (!record) sendHatchError(res, 404, 'not_found');
+      else send(res, 200, record);
+      return;
+    }
+
+    const tokenHash = tokenHashFrom(req, EDIT_TOKEN_HEADER);
+    if (!tokenHash) {
+      sendHatchError(res, 400, 'bad_request', { message: 'missing or malformed edit token' });
+      return;
+    }
+
+    if (method === 'DELETE') {
+      const outcome = profiles.delete(editLocator, tokenHash);
+      if (outcome === 'deleted') send(res, 204);
+      else if (outcome === 'bad_token') sendHatchError(res, 401, 'bad_token');
+      else sendHatchError(res, 404, 'not_found');
+      return;
+    }
+
+    if (method === 'PUT') {
+      const ifMatchRaw = req.headers['if-match'];
+      const ifVersion = Number(ifMatchRaw);
+      if (typeof ifMatchRaw !== 'string' || !Number.isInteger(ifVersion) || ifVersion < 1) {
+        sendHatchError(res, 400, 'bad_request', { message: 'If-Match must be a positive integer' });
+        return;
+      }
+      const raw = await readBody(req, hatchBodyCap);
+      if (raw === null) {
+        sendHatchError(res, 413, 'too_large');
+        return;
+      }
+      let body: Record<string, unknown>;
+      try {
+        body = JSON.parse(raw) as Record<string, unknown>;
+      } catch {
+        sendHatchError(res, 400, 'bad_request', { message: 'body must be JSON' });
+        return;
+      }
+      if (!validBlob(body['blob_view']) || !validBlob(body['blob_priv'])) {
+        sendHatchError(res, 400, 'bad_request', { message: 'blobs must be base64url' });
+        return;
+      }
+      if (typeof body['populated'] !== 'boolean') {
+        sendHatchError(res, 400, 'bad_request', { message: 'populated must be boolean' });
+        return;
+      }
+      const newViewLocator = body['new_view_locator'];
+      if (newViewLocator !== undefined && (typeof newViewLocator !== 'string' || !HATCH_LOCATOR_RE.test(newViewLocator))) {
+        sendHatchError(res, 400, 'bad_request', { message: 'malformed new_view_locator' });
+        return;
+      }
+      const newEditLocator = body['new_edit_locator'];
+      let newEditTokenHash: string | undefined;
+      if (newEditLocator !== undefined) {
+        if (typeof newEditLocator !== 'string' || !HATCH_LOCATOR_RE.test(newEditLocator)) {
+          sendHatchError(res, 400, 'bad_request', { message: 'malformed new_edit_locator' });
+          return;
+        }
+        // A new edit identity is a locator + token pair; both derive from the
+        // new phrase, so both must arrive together.
+        const hash = tokenHashFrom(req, NEW_EDIT_TOKEN_HEADER);
+        if (!hash) {
+          sendHatchError(res, 400, 'bad_request', {
+            message: `new_edit_locator requires ${NEW_EDIT_TOKEN_HEADER}`,
+          });
+          return;
+        }
+        newEditTokenHash = hash;
+      }
+
+      const outcome = profiles.put(editLocator, tokenHash, ifVersion, {
+        blob_view: body['blob_view'],
+        blob_priv: body['blob_priv'],
+        populated: body['populated'],
+        newViewLocator: newViewLocator as string | undefined,
+        newEditLocator: newEditLocator as string | undefined,
+        newEditTokenHash,
+      });
+      switch (outcome.status) {
+        case 'updated':
+          send(res, 200, { version: outcome.version });
+          return;
+        case 'conflict':
+          sendHatchError(res, 409, 'version_conflict', {
+            version: outcome.version,
+            blob_view: outcome.blob_view,
+            blob_priv: outcome.blob_priv,
+          });
+          return;
+        case 'bad_token':
+          sendHatchError(res, 401, 'bad_token');
+          return;
+        case 'not_found':
+          sendHatchError(res, 404, 'not_found');
+          return;
+        case 'locator_taken':
+          sendHatchError(res, 409, 'locator_taken');
+          return;
+      }
+    }
+
+    sendHatchError(res, 400, 'bad_request', { message: `unsupported method ${method}` });
+  }
 
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     try {
@@ -77,6 +321,11 @@ export function createApp(db: VaultDb, opts: AppOptions) {
       }
       if (url.pathname === '/v1/health' && method === 'GET') {
         send(res, 200, { ok: true });
+        return;
+      }
+
+      if (url.pathname.startsWith('/v2/')) {
+        await handleV2(req, res, url.pathname, method);
         return;
       }
 

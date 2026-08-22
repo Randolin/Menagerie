@@ -6,24 +6,44 @@
 //   PORT                 listen port (0 = ephemeral; the chosen port is
 //                        printed as a {"listening": <port>} JSON line)
 //   MOXY_DB_PATH         SQLite file (default ./moxy-sync.db; ':memory:' ok)
-//   MOXY_MAX_BLOB_BYTES  vault blob cap (default 262144)
+//   MOXY_MAX_BLOB_BYTES  ciphertext blob cap (default 262144)
 //   MOXY_TRUST_PROXY     '1' to honor X-Forwarded-For for rate limiting
+//   MOXY_MAX_PROFILES    hatch circuit breaker (default 100000; 503 beyond)
+//   MOXY_GC_EMPTY_MS     never-populated profiles die after this (default 7d)
+//   MOXY_GC_IDLE_MS      populated ones after no edit+no view for (default 365d)
+//   MOXY_GC_SWEEP_MS     sweep interval (default 1h)
 //
-// Privacy posture: stores only {locator → token-hash, ciphertext, version};
-// no accounts, no identities, no request logging, IPs only in the in-memory
-// rate limiter. Run TLS at a reverse proxy in front of this.
+// Privacy posture: stores only locator-addressed ciphertext, token hashes,
+// and hour-coarse timestamps; no accounts, no identities, no request
+// logging, IPs only in the in-memory rate limiter. Run TLS at a reverse
+// proxy in front of this.
 import { createServer } from 'node:http';
 import { DEFAULT_MAX_BLOB_BYTES } from '../libs/core/src/sync/sync-api.ts';
+import { GC_EMPTY_MS, GC_IDLE_MS } from '../libs/core/src/hatch/constants.ts';
 import { VaultDb } from './db.ts';
+import { ProfilesDb } from './profiles-db.ts';
 import { createApp } from './http.ts';
+import { startGc } from './gc.ts';
 
 const port = Number(process.env['PORT'] ?? 8787);
 const dbPath = process.env['MOXY_DB_PATH'] ?? './moxy-sync.db';
 const maxBlobBytes = Number(process.env['MOXY_MAX_BLOB_BYTES'] ?? DEFAULT_MAX_BLOB_BYTES);
 const trustProxy = process.env['MOXY_TRUST_PROXY'] === '1';
+const maxProfiles = Number(process.env['MOXY_MAX_PROFILES'] ?? 100_000);
+const gcEmptyMs = Number(process.env['MOXY_GC_EMPTY_MS'] ?? GC_EMPTY_MS);
+const gcIdleMs = Number(process.env['MOXY_GC_IDLE_MS'] ?? GC_IDLE_MS);
+const gcSweepMs = Number(process.env['MOXY_GC_SWEEP_MS'] ?? 3_600_000);
 
 const db = new VaultDb(dbPath);
-const server = createServer(createApp(db, { maxBlobBytes, trustProxy }));
+// Separate connection, same file — vaults (v1) and profiles (v2) coexist
+// until the v1 routes are retired.
+const profiles = new ProfilesDb(dbPath);
+const stopGc = startGc(profiles, {
+  emptyTtlMs: gcEmptyMs,
+  idleTtlMs: gcIdleMs,
+  sweepIntervalMs: gcSweepMs,
+});
+const server = createServer(createApp(db, { maxBlobBytes, trustProxy, profiles, maxProfiles }));
 
 server.listen(port, () => {
   const address = server.address();
@@ -32,7 +52,9 @@ server.listen(port, () => {
 });
 
 function shutdown(): void {
+  stopGc();
   server.close(() => {
+    profiles.close();
     db.close();
     process.exit(0);
   });
