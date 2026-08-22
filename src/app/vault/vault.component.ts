@@ -5,6 +5,7 @@ import { ToastService, copyText, downloadText } from '@moxy/ui';
 import { DraftStore } from '../stores/draft.store';
 import { VaultStore } from '../stores/vault.store';
 import { CompareStore } from '../stores/compare.store';
+import { SyncSettingsStore } from '../stores/sync-settings.store';
 import { ShareLinkService } from '../share-link.service';
 import { UnlockFormComponent } from '../share/unlock-form.component';
 
@@ -20,8 +21,8 @@ import { UnlockFormComponent } from '../share/unlock-form.component';
         <div class="card">
           <h2>Your passphrase — write it down now</h2>
           <p class="sub">
-            Shown once, stored nowhere. Anyone with these five words can open this vault on
-            this device, and no one can without them.
+            Shown once, stored nowhere. Anyone with these five words can open this vault, and
+            no one can without them.
           </p>
           <div class="passphrase-box">{{ pass }}</div>
           <div class="btn-row">
@@ -37,11 +38,22 @@ import { UnlockFormComponent } from '../share/unlock-form.component';
           <h2>Unlock</h2>
           <p class="sub">
             Enter your passphrase. It never leaves this device — it only derives the key that
-            decrypts your vault in this browser’s storage.
+            decrypts your vault.
           </p>
+          <div class="field">
+            <span class="field-label">Sync server <span class="fine">(optional)</span></span>
+            <div class="field-hint">
+              Have a synced vault? Enter its server address and your passphrase — your
+              encrypted vault will be fetched and opened right here.
+            </div>
+            <input type="text" placeholder="https://sync.example.org"
+                   aria-label="Sync server address"
+                   [value]="syncSettings.serverUrl()"
+                   (change)="syncSettings.setServerUrl($any($event.target).value)">
+          </div>
           <moxy-unlock-form [busy]="unlocking()" (passphrase)="unlock($event)" />
           <p class="fine">
-            Vaults live per-device. To move one, export it on the old device and import it here.
+            Without a sync server, vaults live per-device; export/import moves them by file.
           </p>
         </div>
         <div class="card">
@@ -57,7 +69,7 @@ import { UnlockFormComponent } from '../share/unlock-form.component';
         </div>
         <div class="card">
           <h2>Import a vault export</h2>
-          <p class="sub">Moving devices? Pick your exported vault file, then enter its passphrase.</p>
+          <p class="sub">Moving devices by file? Pick your exported vault, then enter its passphrase.</p>
           <form (submit)="importVault($event, file.files, pass.value)">
             <div class="field">
               <input #file type="file" accept="application/json,.json" aria-label="Vault export file">
@@ -126,21 +138,79 @@ import { UnlockFormComponent } from '../share/unlock-form.component';
       </div>
 
       <div class="card">
+        <h2>Sync</h2>
+        @if (!vault.syncEnabled()) {
+          <p class="sub">
+            Keep this vault available on other devices: its encrypted blob is stored on a sync
+            server under a random address derived from your passphrase. The server can never
+            read it — and never learns who you are.
+          </p>
+          <div class="field">
+            <span class="field-label">Sync server</span>
+            <input type="text" placeholder="https://sync.example.org"
+                   aria-label="Sync server address"
+                   [value]="syncSettings.serverUrl()"
+                   (change)="syncSettings.setServerUrl($any($event.target).value)">
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" (click)="enableSync()">Enable sync</button>
+          </div>
+        } @else {
+          <p class="sub" data-sync-status>
+            @switch (vault.syncStatus()) {
+              @case ('synced') { ✅ Synced with {{ syncSettings.serverUrl() }} }
+              @case ('syncing') { ⏳ Syncing… }
+              @case ('conflict-resolving') { ⏳ Merging changes from another device… }
+              @case ('error') { ⚠️ Sync problem — your data is safe on this device. }
+              @default { Sync is on. }
+            }
+          </p>
+          @if (vault.lastSyncError(); as err) { <p class="fine">{{ err }}</p> }
+          <div class="btn-row">
+            <button class="btn btn-small" (click)="syncNow()">🔄 Sync now</button>
+            <button class="btn btn-small btn-danger" (click)="disableSync(true)">
+              Turn off — delete server copy
+            </button>
+            <button class="btn btn-small btn-ghost" (click)="disableSync(false)">
+              Turn off on this device only
+            </button>
+          </div>
+        }
+      </div>
+
+      <div class="card">
         <h2>Housekeeping</h2>
-        <div class="btn-row">
-          <button class="btn" (click)="exportVault()">⬇️ Export vault (encrypted)</button>
-          <button class="btn" (click)="lock()">🔒 Lock vault</button>
-        </div>
-        <p class="fine" style="margin-top:10px">
-          The export file is the same encrypted blob stored in this browser — safe to keep in
-          cloud storage, useless without the passphrase.
-        </p>
+        @if (proposedPassphrase(); as pass) {
+          <p class="sub">
+            Your new passphrase — shown once, stored nowhere. The old one stops working the
+            moment you switch.
+          </p>
+          <div class="passphrase-box">{{ pass }}</div>
+          <div class="btn-row">
+            <button class="btn" (click)="copy(pass, 'Copied — store it safely')">📋 Copy</button>
+            <button class="btn btn-primary" (click)="confirmChangePassphrase(pass)">
+              I’ve saved it — switch
+            </button>
+            <button class="btn btn-ghost" (click)="proposedPassphrase.set(null)">Cancel</button>
+          </div>
+        } @else {
+          <div class="btn-row">
+            <button class="btn" (click)="exportVault()">⬇️ Export vault (encrypted)</button>
+            <button class="btn" (click)="proposeChangePassphrase()">🔁 Change passphrase</button>
+            <button class="btn" (click)="lock()">🔒 Lock vault</button>
+          </div>
+          <p class="fine" style="margin-top:10px">
+            The export file is the same encrypted blob stored in this browser — safe to keep in
+            cloud storage, useless without the passphrase.
+          </p>
+        }
       </div>
     }
   `,
 })
 export class VaultComponent {
   protected readonly vault = inject(VaultStore);
+  protected readonly syncSettings = inject(SyncSettingsStore);
   private readonly draft = inject(DraftStore);
   private readonly compare = inject(CompareStore);
   private readonly shareLink = inject(ShareLinkService);
@@ -149,6 +219,7 @@ export class VaultComponent {
 
   protected readonly unlocking = signal(false);
   protected readonly newPassphrase = signal<string | null>(null);
+  protected readonly proposedPassphrase = signal<string | null>(null);
   private readonly noteTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   protected formatDate(ts: number): string {
@@ -163,7 +234,9 @@ export class VaultComponent {
     this.unlocking.set(true);
     try {
       if (await this.vault.open(pass)) this.toast.show('Vault unlocked');
-      else this.toast.show('No vault found for that passphrase on this device', 'error');
+      else this.toast.show('No vault found for that passphrase', 'error');
+    } catch (err) {
+      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
     } finally {
       this.unlocking.set(false);
     }
@@ -249,6 +322,53 @@ export class VaultComponent {
       await this.vault.saveConnection(name.trim() || 'Unnamed', code);
       this.toast.show('Connection saved');
       (event.target as HTMLFormElement).reset();
+    } catch (err) {
+      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+    }
+  }
+
+  // --- sync actions --------------------------------------------------------
+
+  protected async enableSync(): Promise<void> {
+    try {
+      await this.vault.enableSync();
+      this.toast.show('Sync enabled — this vault now follows your passphrase to any device');
+    } catch (err) {
+      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+    }
+  }
+
+  protected async disableSync(deleteRemote: boolean): Promise<void> {
+    const message = deleteRemote
+      ? 'Turn off sync and delete the server copy? Other devices will stop receiving updates and the server keeps nothing.'
+      : 'Turn off sync on this device only? The server copy and other devices keep syncing; this device diverges from here.';
+    if (!confirm(message)) return;
+    try {
+      await this.vault.disableSync({ deleteRemote });
+      this.toast.show('Sync turned off');
+    } catch (err) {
+      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+    }
+  }
+
+  protected async syncNow(): Promise<void> {
+    try {
+      await this.vault.syncNow();
+      this.toast.show('Synced');
+    } catch (err) {
+      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+    }
+  }
+
+  protected async proposeChangePassphrase(): Promise<void> {
+    this.proposedPassphrase.set(await generatePassphrase(5));
+  }
+
+  protected async confirmChangePassphrase(pass: string): Promise<void> {
+    try {
+      await this.vault.changePassphrase(pass);
+      this.proposedPassphrase.set(null);
+      this.toast.show('Passphrase changed — the old one no longer opens this vault');
     } catch (err) {
       this.toast.show(err instanceof Error ? err.message : String(err), 'error');
     }

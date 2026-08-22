@@ -68,6 +68,28 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
     </div>
 
     <div class="card">
+      <h2>🔄 Optional sync — what the server can and cannot see</h2>
+      <p>
+        If you enable sync, your encrypted vault is stored on a sync server under a random
+        address (the “locator”) derived from your passphrase. The server holds three things:
+        that opaque address, the ciphertext, and a hash of a write token that proves
+        passphrase knowledge for updates. It cannot decrypt anything, cannot reverse the
+        locator into your passphrase (a one-way, 300,000-round derivation guards it, and the
+        address space is 2¹²⁸ — unguessable), and never asks who you are. Enter the same
+        passphrase on any device pointed at the same server, and your vault follows you.
+      </p>
+      <p class="sub">
+        What it can observe: the size of your encrypted vault, when requests arrive, and the
+        transport IP address — which is used only for in-memory rate limiting and never
+        written down. Honest limits: a server operator (or anyone who somehow learns your
+        locator) could delete or squat your slot — a nuisance that denies availability, never
+        reads data, and is detected the moment decryption fails; changing your passphrase
+        moves you to a fresh address. Sync is off unless you turn it on, and you can
+        self-host the server — it's a single dependency-free file in the repository.
+      </p>
+    </div>
+
+    <div class="card">
       <h2>🧭 Who Moxy is for</h2>
       <p>
         Everyone whose connections don’t fit one template: monogamous couples checking

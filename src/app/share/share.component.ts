@@ -151,6 +151,8 @@ export class ShareComponent {
     try {
       if (await this.vault.open(pass)) this.toast.show('Vault unlocked');
       else this.toast.show('No vault found for that passphrase', 'error');
+    } catch (err) {
+      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
     } finally {
       this.unlocking.set(false);
     }
