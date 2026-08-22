@@ -138,31 +138,47 @@ try {
   if (!/^[a-z]+-[a-z]+-[a-z]+$/.test(personaName ?? '')) {
     fail('persona name malformed: ' + personaName);
   }
-  const decodeQr = async () => {
-    // Enlarge the scalable SVG inline — ~2.8 px/module at the 208px default
-    // is marginal for jsQR — and dismiss any toast: at 640px the fixed
-    // bottom-center toast overlaps a finder pattern in the screenshot.
-    await page.evaluate(() => document.getElementById('toast')?.classList.remove('show'));
-    await page.locator('.qr-svg svg').evaluate((el) => {
-      el.style.width = '640px';
-      el.style.height = '640px';
-    });
-    const png = PNG.sync.read(await page.locator('.qr-box').screenshot());
-    const hit = jsQR(
-      new Uint8ClampedArray(png.data.buffer, png.data.byteOffset, png.data.length),
-      png.width,
-      png.height,
-    );
-    await page.locator('.qr-svg svg').evaluate((el) => {
-      el.style.width = '';
-      el.style.height = '';
-    });
-    return hit?.data ?? null;
+  // Screenshot the SVG element itself (its quiet zone is inside the viewBox,
+  // and nothing can overlap an element capture), enlarged because
+  // ~2.8 px/module at the 208px default is marginal for jsQR. Retried:
+  // a re-render between resize and capture replaces the element with a
+  // fresh 208px one — the race CI lost once.
+  const decodeQr = async (expected) => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      // Element screenshots capture the page REGION — the fixed toast paints
+      // over the enlarged QR's bottom-left finder, and removing its .show
+      // class only starts a 200ms opacity fade (CI screenshots mid-fade).
+      // display:none is instant and transition-proof.
+      await page.evaluate(() => {
+        const toast = document.getElementById('toast');
+        if (toast) toast.style.display = 'none';
+      });
+      await page.locator('.qr-svg svg').evaluate((el) => {
+        el.style.width = '640px';
+        el.style.height = '640px';
+      });
+      const png = PNG.sync.read(await page.locator('.qr-svg svg').screenshot());
+      const hit = jsQR(
+        new Uint8ClampedArray(png.data.buffer, png.data.byteOffset, png.data.length),
+        png.width,
+        png.height,
+      );
+      await page.locator('.qr-svg svg').evaluate((el) => {
+        el.style.width = '';
+        el.style.height = '';
+      }).catch(() => {});
+      if (hit?.data === expected) {
+        await page.evaluate(() => {
+          const toast = document.getElementById('toast');
+          if (toast) toast.style.display = '';
+        });
+        return hit.data;
+      }
+      await page.waitForTimeout(300);
+    }
+    return null;
   };
-  const decoded = await decodeQr();
-  if (decoded !== url.trim()) {
-    fail('styled QR decode mismatch: ' + String(decoded).slice(0, 60));
-  }
+  if ((await decodeQr(url.trim())) === null) fail('styled QR did not decode to the share URL');
 
   // Persona survives a reload (seed persisted in the draft)…
   step = 'persona-stable';
@@ -178,10 +194,14 @@ try {
     (old) => document.querySelector('.persona-name')?.textContent?.trim() !== old,
     personaName,
   );
-  await page.waitForSelector('.code-box');
+  // The url and QR re-emit together with the name, but wait for the url
+  // explicitly before decoding against it.
+  await page.waitForFunction(
+    (old) => document.querySelector('.code-box')?.textContent?.trim() !== old,
+    url.trim(),
+  );
   const url2 = (await page.textContent('.code-box')).trim();
-  const decoded2 = await decodeQr();
-  if (decoded2 !== url2) fail('post-regenerate QR decode mismatch');
+  if ((await decodeQr(url2)) === null) fail('post-regenerate QR did not decode to the new URL');
   if (url2 === url.trim()) fail('regenerate did not change the payload');
 
   // Draft survives reload (autosave).
