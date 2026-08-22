@@ -27,6 +27,7 @@ describe('vault', () => {
       code: 'm1.abc',
       notes: 'met at book club',
       addedAt: now,
+      updatedAt: now,
     });
     await repo.persist(session);
 
@@ -61,6 +62,26 @@ describe('vault', () => {
     // Both usable independently; nothing shared through the repo.
     await repo.persist(s1 as VaultSession);
     await repo.persist(s2 as VaultSession);
+  });
+
+  test('a v1 blob at rest migrates to v2 on open (existing vaults keep working)', async () => {
+    const storage = new MemoryStorage();
+    const repo = new VaultRepository(storage);
+    const pass = 'legacy vault five word phrase';
+    const { deriveVaultKeys, encryptVault } = await import('../crypto/vault-crypto');
+    const keys = await deriveVaultKeys(pass);
+    const v1Data = {
+      v: 1,
+      profiles: [],
+      connections: [{ id: 'c', label: 'Old Pal', code: 'm1.x', notes: '', addedAt: 42 }],
+    };
+    storage.setItem('moxy.vault.v1.' + keys.locator, await encryptVault(v1Data, keys.key));
+
+    const session = (await repo.open(pass))!;
+    expect(session.data.v).toBe(2);
+    expect(session.data.tombstones).toEqual([]);
+    expect(session.data.connections[0].updatedAt).toBe(42);
+    expect(session.writeToken).toHaveLength(22);
   });
 
   test('draft repository round-trips and clears', () => {

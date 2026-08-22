@@ -21,4 +21,8 @@ export * from './match/reveal';
 
 export * from './storage/storage';
 export { DraftRepository } from './vault/draft-repo';
+export * from './vault/vault-data';
+export * from './vault/vault-merge';
 export * from './vault/vault-repo';
+export * from './sync/sync-api';
+export { SyncClient, SyncError, type SyncFailure } from './sync/sync-client';

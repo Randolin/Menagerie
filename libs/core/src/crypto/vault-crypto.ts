@@ -19,6 +19,13 @@ export const VAULT_KDF_ITERATIONS = 300_000;
 export interface VaultKeys {
   readonly locator: string;
   readonly key: CryptoKey;
+  /**
+   * Bearer token proving passphrase knowledge to a sync server, from KDF
+   * bytes the original design left unused. The server stores only its
+   * SHA-256, so a server DB leak lets nobody write — and nobody decrypt,
+   * since the AES key is an independent slice of the same one-way output.
+   */
+  readonly writeToken: string;
 }
 
 export function normalizePassphrase(pass: string): string {
@@ -52,7 +59,8 @@ export async function deriveVaultKeys(passphrase: string): Promise<VaultKeys> {
     false,
     ['encrypt', 'decrypt'],
   );
-  return { locator, key };
+  const writeToken = bytesToB64url(bytes.slice(48, 64));
+  return { locator, key, writeToken };
 }
 
 export async function encryptVault(obj: unknown, key: CryptoKey): Promise<string> {

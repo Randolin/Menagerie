@@ -71,7 +71,15 @@ export class VaultStore {
 
   async saveConnection(label: string, code: string, notes = ''): Promise<void> {
     const s = this.require();
-    s.data.connections.push({ id: crypto.randomUUID(), label, code, notes, addedAt: Date.now() });
+    const now = Date.now();
+    s.data.connections.push({
+      id: crypto.randomUUID(),
+      label,
+      code,
+      notes,
+      addedAt: now,
+      updatedAt: now,
+    });
     await this.persist();
   }
 
