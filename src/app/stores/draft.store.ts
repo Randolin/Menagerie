@@ -1,4 +1,4 @@
-import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
+import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import {
   DraftRepository,
   type Answers,
@@ -9,14 +9,15 @@ import {
 import { APP_STORAGE } from './storage.token';
 
 /**
- * The survey answers being edited, autosaved (debounced) to the unencrypted
- * local draft so a refresh never eats a half-finished survey.
+ * The survey answers being edited, autosaved to the unencrypted local draft
+ * so a refresh never eats a half-finished survey. The save is synchronous on
+ * every change — same semantics as the legacy app; a debounce here loses the
+ * answers made in its window when the page reloads (the e2e suite caught
+ * exactly that).
  */
 @Injectable({ providedIn: 'root' })
 export class DraftStore {
   private readonly repo = new DraftRepository(inject(APP_STORAGE));
-  private saveTimer: ReturnType<typeof setTimeout> | null = null;
-  private hydrated = false;
 
   readonly answers = signal<Answers>({});
   /** Vault profile id when editing a saved profile, else null. */
@@ -26,13 +27,7 @@ export class DraftStore {
   constructor() {
     const stored = this.repo.load();
     if (stored) this.answers.set(stored);
-    this.hydrated = true;
-    effect(() => {
-      const current = this.answers();
-      if (!untracked(() => this.hydrated)) return;
-      if (this.saveTimer) clearTimeout(this.saveTimer);
-      this.saveTimer = setTimeout(() => this.repo.save(current), 300);
-    });
+    effect(() => this.repo.save(this.answers()));
   }
 
   get(id: ItemId): AnswerValue | undefined {
