@@ -1,0 +1,8 @@
+# TLS fronting for the sync server with Caddy (automatic Let's Encrypt).
+# Replace the hostname; nginx or traefik work identically — the server just
+# needs TLS terminated in front of it and, with MOXY_TRUST_PROXY=1, an
+# X-Forwarded-For header so rate limiting sees real client addresses
+# (Caddy sets it by default).
+sync.example.org {
+	reverse_proxy 127.0.0.1:8787
+}

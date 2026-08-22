@@ -1,0 +1,10 @@
+# Build context is the repo root; only server/ and the sync-api file are
+# COPYd, but keep the context small anyway.
+node_modules
+dist
+.angular
+.git
+e2e
+src
+public
+libs/ui

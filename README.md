@@ -108,6 +108,10 @@ by the legacy implementation itself, plus an e2e spec that opens legacy
 
 ## Deploying
 
+Pushes to the default branch deploy the app to **GitHub Pages** automatically
+via `.github/workflows/deploy.yml` (after a one-time Settings → Pages →
+Source: "GitHub Actions" toggle). Manual alternative:
+
 ```sh
 npx ng build --base-href ./
 # copy dist/moxy/browser/* to any static host
@@ -115,7 +119,8 @@ npx ng build --base-href ./
 
 Hash routing means no server rewrites are needed — GitHub Pages, Netlify, an
 intranet share, anything that serves files works. The app is fully functional
-without any sync server.
+without any sync server. For the optional sync server there are ready-made
+**Docker** and **systemd + Caddy** recipes in [`deploy/`](deploy/README.md).
 
 ### The sync server (optional)
 
