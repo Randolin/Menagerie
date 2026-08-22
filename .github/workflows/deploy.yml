@@ -1,9 +1,12 @@
 # CI + GitHub Pages deploy.
 #
 # Every push and PR runs the full verification ladder (core, server, and app
-# unit tests, production build, and the Playwright e2e suite — including the
-# two-device sync tests against a real spawned sync server). Pushes to the
-# default branch then publish dist/ to GitHub Pages.
+# unit tests, production build, and the Playwright e2e suite — the whole
+# hatch lifecycle against a real spawned profile server, including GC and the
+# zero-knowledge-at-rest scan). Pushes to the default branch then publish
+# dist/ to GitHub Pages, with the production profile-server URL stamped into
+# moxy.config.json from the MOXY_SERVER_URL repository variable
+# (Settings → Secrets and variables → Actions → Variables).
 #
 # One-time manual step (Actions cannot do this): repo Settings → Pages →
 # Source = "GitHub Actions".
@@ -38,7 +41,7 @@ jobs:
       - name: Core library tests (plain Node, framework-free)
         run: npm run test:core
 
-      - name: Sync server integration tests
+      - name: Profile server integration tests
         run: npm run test:server
 
       - name: App component tests
@@ -52,10 +55,19 @@ jobs:
           PW_VERSION=$(node -p "require('playwright-core/package.json').version")
           npx --yes "playwright@${PW_VERSION}" install --with-deps chromium
 
-      - name: End-to-end suite (drives the production build + real sync server)
+      - name: End-to-end suite (drives the production build + real profile server)
         run: |
           export CHROMIUM_BIN=$(node -p "require('playwright-core').chromium.executablePath()")
           npm run e2e
+
+      - name: Stamp the production profile-server URL into the Pages artifact
+        env:
+          MOXY_SERVER_URL: ${{ vars.MOXY_SERVER_URL }}
+        run: |
+          node -e 'const fs = require("fs");
+            fs.writeFileSync("dist/moxy/browser/moxy.config.json",
+              JSON.stringify({ serverUrl: process.env.MOXY_SERVER_URL ?? "" }) + "\n");'
+          cat dist/moxy/browser/moxy.config.json
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5

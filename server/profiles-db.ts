@@ -197,18 +197,26 @@ export class ProfilesDb {
     return 'deleted';
   }
 
-  /** GC sweep. Returns rows removed (for logging-free observability in tests). */
+  /**
+   * GC sweep. Returns rows removed (observability for tests without logging).
+   * Timestamps are hour-coarse (floored), overstating a row's age by up to an
+   * hour — so the cutoffs grant that hour back, making every TTL a guaranteed
+   * MINIMUM lifetime: nothing dies before ttl, at the price of living up to
+   * an hour longer.
+   */
   sweep(emptyTtlMs: number, idleTtlMs: number, now = Date.now()): number {
+    const emptyCutoff = now - emptyTtlMs - HOUR;
+    const idleCutoff = now - idleTtlMs - HOUR;
     const empty = this.db
       .prepare('DELETE FROM profiles WHERE populated = 0 AND created_at < ?')
-      .run(now - emptyTtlMs);
+      .run(emptyCutoff);
     const idle = this.db
       .prepare(
         `DELETE FROM profiles
           WHERE populated = 1 AND updated_at < ?
             AND (last_viewed_at IS NULL OR last_viewed_at < ?)`,
       )
-      .run(now - idleTtlMs, now - idleTtlMs);
+      .run(idleCutoff, idleCutoff);
     return Number(empty.changes) + Number(idle.changes);
   }
 

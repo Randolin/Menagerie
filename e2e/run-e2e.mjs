@@ -1,6 +1,7 @@
 // Moxy end-to-end suite. Serves the PRODUCTION build (dist/moxy/browser) with
-// a plain static file server — proving the zero-server property — and drives
-// the real UI in Chromium via playwright-core.
+// a plain static file server and drives the real UI in Chromium via
+// playwright-core, against a real spawned profile server on its own origin
+// (so CORS is genuinely exercised).
 //
 // Run: npm run build && npm run e2e
 // Env: MOXY_E2E_SHOTS=dir to also capture screenshots.
@@ -27,11 +28,11 @@ if (!existsSync(join(DIST, 'index.html'))) {
   process.exit(1);
 }
 
-const legacyProfile = JSON.parse(readFileSync(join(root, 'e2e/fixtures/legacy-profile.json'), 'utf8'));
-const legacyCompare = JSON.parse(readFileSync(join(root, 'e2e/fixtures/legacy-compare.json'), 'utf8'));
-
 // --- dumb static server (no rewrites: hash routing must need none) ---------
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.ico': 'image/x-icon' };
+const MIME = {
+  '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
+  '.ico': 'image/x-icon', '.json': 'application/json',
+};
 const server = createServer((req, res) => {
   const path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   let file = join(DIST, path === '/' ? 'index.html' : path);
@@ -42,379 +43,366 @@ const server = createServer((req, res) => {
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const BASE = `http://127.0.0.1:${server.address().port}/`;
 
-// --- the sync server, on its own origin (CORS is genuinely exercised) ------
-const syncDbPath = join(tmpdir(), `moxy-e2e-sync-${process.pid}.db`);
-const syncProc = spawn(process.execPath, [join(root, 'server/moxy-sync-server.ts')], {
-  env: { ...process.env, PORT: '0', MOXY_DB_PATH: syncDbPath },
-  stdio: ['ignore', 'pipe', 'inherit'],
-});
-const SYNC_URL = await new Promise((resolve, reject) => {
-  const timer = setTimeout(() => reject(new Error('sync server did not start')), 15000);
-  let buffer = '';
-  syncProc.stdout.on('data', (chunk) => {
-    buffer += String(chunk);
-    const match = buffer.match(/\{"listening":(\d+)/);
-    if (match) {
-      clearTimeout(timer);
-      resolve(`http://127.0.0.1:${match[1]}`);
-    }
+// --- profile servers, each on its own origin -------------------------------
+const spawnMoxyServer = async (env) => {
+  const proc = spawn(process.execPath, [join(root, 'server/moxy-sync-server.ts')], {
+    env: { ...process.env, PORT: '0', ...env },
+    stdio: ['ignore', 'pipe', 'inherit'],
   });
-  syncProc.on('exit', () => reject(new Error('sync server exited during startup')));
+  const url = await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('profile server did not start')), 15000);
+    let buffer = '';
+    proc.stdout.on('data', (chunk) => {
+      buffer += String(chunk);
+      const match = buffer.match(/\{"listening":(\d+)/);
+      if (match) {
+        clearTimeout(timer);
+        resolve(`http://127.0.0.1:${match[1]}`);
+      }
+    });
+    proc.on('exit', () => reject(new Error('profile server exited during startup')));
+  });
+  for (let i = 0; ; i++) {
+    try {
+      if ((await fetch(`${url}/v2/health`)).ok) break;
+    } catch { /* not up yet */ }
+    if (i > 50) throw new Error('profile server health never came up');
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  return { proc, url };
+};
+
+const dbPath = join(tmpdir(), `moxy-e2e-${process.pid}.db`);
+const main = await spawnMoxyServer({ MOXY_DB_PATH: dbPath });
+// Fast-sweeping GC server on a file DB. Timestamps are hour-coarse and the
+// sweep grants that hour back as slack (TTLs are minimum lifetimes), so
+// short TTLs alone can't expire anything — the test backdates created_at
+// through a second SQLite connection instead, exactly like a real aged row.
+const gcDbPath = join(tmpdir(), `moxy-e2e-gc-${process.pid}.db`);
+const gc = await spawnMoxyServer({
+  MOXY_DB_PATH: gcDbPath,
+  MOXY_GC_EMPTY_MS: '3000',
+  MOXY_GC_IDLE_MS: String(365 * 24 * 3600 * 1000),
+  MOXY_GC_SWEEP_MS: '1000',
 });
-for (let i = 0; ; i++) {
-  try {
-    if ((await fetch(`${SYNC_URL}/v1/health`)).ok) break;
-  } catch { /* not up yet */ }
-  if (i > 50) throw new Error('sync server health never came up');
-  await new Promise((r) => setTimeout(r, 100));
-}
 
 const browser = await chromium.launch({ executablePath: CHROMIUM });
 const errors = [];
-const ctx = await browser.newContext({ viewport: { width: 1180, height: 900 } });
-const page = await ctx.newPage();
-page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-page.on('pageerror', (e) => errors.push(String(e)));
-
 let step = '';
 const fail = (msg) => { throw new Error(`[${step}] ${msg}`); };
-const shot = async (name) => { if (SHOTS) await page.screenshot({ path: join(SHOTS, name), fullPage: true }); };
 
-try {
-  // --- home ----------------------------------------------------------------
-  step = 'home';
+const contexts = [];
+/** Fresh browser context with the profile server seeded via localStorage. */
+async function freshPage(serverUrl = main.url, options = {}) {
+  const ctx = await browser.newContext({ viewport: { width: 1180, height: 900 }, ...options });
+  contexts.push(ctx);
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => errors.push(`${step}: ${String(e)}`));
+  page.on('dialog', (d) => d.accept());
   await page.goto(BASE);
-  await page.waitForSelector('.hero h1');
-  await shot('01-home.png');
-
-  // --- survey --------------------------------------------------------------
-  step = 'survey';
-  await page.click('a[href="#/survey"]');
-  await page.waitForSelector('.survey-progress');
-  await page.fill('.item-block input[type="text"]', 'River');
-  await page.locator('.item-block', { hasText: 'Age range' }).locator('.opt', { hasText: '25–34' }).click();
-  await page.click('text=Next →');
-
-  await page.waitForSelector('text=Friendship');
-  await page.locator('.item-block', { hasText: 'Friendship' }).first().locator('.opt', { hasText: 'Into it' }).click();
-  await page.locator('.item-block', { hasText: 'Polyamory' }).locator('.opt', { hasText: 'Curious' }).click();
-  await page.click('text=Next →');
-
-  await page.waitForSelector('.scale-ticks');
-  await page.locator('.scale-ticks').nth(0).locator('.scale-tick').nth(4).click();
-  await page.locator('.scale-ticks').nth(1).locator('.scale-tick').nth(5).click();
-  await shot('02-survey-values.png');
-  await page.click('text=Next →');
-
-  await page.waitForSelector('text=Alcohol');
-  await page.locator('.item-block').nth(0).locator('.opt').nth(2).click();
-  await page.click('text=Next →');
-  await page.waitForSelector('text=Messaging tempo');
-  await page.click('text=Next →');
-  await page.waitForSelector('text=Structures that could work');
-  await page.click('text=Next →');
-
-  step = 'desires-gate';
-  await page.waitForSelector('.optin-gate');
-  await shot('03-desires-gate.png');
-  await page.click('text=Open this section');
-  await page.waitForSelector('text=Rope');
-  await page.locator('.item-block', { hasText: 'Rope' }).first().locator('.opt', { hasText: 'Into it' }).click();
-  await page.click('text=Next →');
-  await page.waitForSelector('text=Must-haves');
-  await page.click('text=Finish → get my link');
-
-  // --- share ---------------------------------------------------------------
-  step = 'share';
-  await page.waitForSelector('.code-box');
-  const url = await page.textContent('.code-box');
-  if (!/#p=m1\./.test(url)) fail('share URL malformed: ' + url?.slice(0, 80));
-  if ((await page.locator('.qr-box svg').count()) !== 1) fail('QR code missing');
-  await shot('04-share.png');
-
-  // --- persona: chip present, styled QR actually scans ----------------------
-  step = 'persona-qr-scan';
-  const personaName = (await page.textContent('.persona-name'))?.trim();
-  if (!/^[a-z]+-[a-z]+-[a-z]+$/.test(personaName ?? '')) {
-    fail('persona name malformed: ' + personaName);
+  if (serverUrl) {
+    await page.evaluate((url) => localStorage.setItem('moxy.server.v2', url), serverUrl);
+    await page.reload();
   }
-  // Screenshot the SVG element itself (its quiet zone is inside the viewBox,
-  // and nothing can overlap an element capture), enlarged because
-  // ~2.8 px/module at the 208px default is marginal for jsQR. Retried:
-  // a re-render between resize and capture replaces the element with a
-  // fresh 208px one — the race CI lost once.
-  const decodeQr = async (expected) => {
-    for (let attempt = 0; attempt < 3; attempt++) {
-      // Element screenshots capture the page REGION — the fixed toast paints
-      // over the enlarged QR's bottom-left finder, and removing its .show
-      // class only starts a 200ms opacity fade (CI screenshots mid-fade).
-      // display:none is instant and transition-proof.
+  return page;
+}
+
+const shot = async (page, name) => {
+  if (SHOTS) await page.screenshot({ path: join(SHOTS, name), fullPage: true });
+};
+
+/**
+ * Decode the dashboard's styled QR. Element screenshots capture the page
+ * REGION, so the fixed toast is display:none'd (instant, transition-proof)
+ * and the SVG is enlarged (~2.8 px/module at the 208px default is marginal
+ * for jsQR), with retries against re-renders.
+ */
+async function decodeQr(page, expected) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.evaluate(() => {
+      const toast = document.getElementById('toast');
+      if (toast) toast.style.display = 'none';
+    });
+    await page.locator('.qr-svg svg').evaluate((el) => {
+      el.style.width = '640px';
+      el.style.height = '640px';
+    });
+    const png = PNG.sync.read(await page.locator('.qr-svg svg').screenshot());
+    const hit = jsQR(
+      new Uint8ClampedArray(png.data.buffer, png.data.byteOffset, png.data.length),
+      png.width,
+      png.height,
+    );
+    await page.locator('.qr-svg svg').evaluate((el) => {
+      el.style.width = '';
+      el.style.height = '';
+    }).catch(() => {});
+    if (hit?.data === expected) {
       await page.evaluate(() => {
         const toast = document.getElementById('toast');
-        if (toast) toast.style.display = 'none';
+        if (toast) toast.style.display = '';
       });
-      await page.locator('.qr-svg svg').evaluate((el) => {
-        el.style.width = '640px';
-        el.style.height = '640px';
-      });
-      const png = PNG.sync.read(await page.locator('.qr-svg svg').screenshot());
-      const hit = jsQR(
-        new Uint8ClampedArray(png.data.buffer, png.data.byteOffset, png.data.length),
-        png.width,
-        png.height,
-      );
-      await page.locator('.qr-svg svg').evaluate((el) => {
-        el.style.width = '';
-        el.style.height = '';
-      }).catch(() => {});
-      if (hit?.data === expected) {
-        await page.evaluate(() => {
-          const toast = document.getElementById('toast');
-          if (toast) toast.style.display = '';
-        });
-        return hit.data;
-      }
-      await page.waitForTimeout(300);
+      return hit.data;
     }
-    return null;
-  };
-  if ((await decodeQr(url.trim())) === null) fail('styled QR did not decode to the share URL');
-
-  // Persona survives a reload (seed persisted in the draft)…
-  step = 'persona-stable';
-  await page.reload();
-  await page.waitForSelector('.persona-name');
-  if ((await page.textContent('.persona-name'))?.trim() !== personaName) {
-    fail('persona changed across reload');
+    await page.waitForTimeout(300);
   }
-  // …and Regenerate mints a new creature whose restyled QR still scans.
-  step = 'persona-regenerate';
-  await page.click('text=Regenerate');
-  await page.waitForFunction(
-    (old) => document.querySelector('.persona-name')?.textContent?.trim() !== old,
-    personaName,
-  );
-  // The url and QR re-emit together with the name, but wait for the url
-  // explicitly before decoding against it.
+  return null;
+}
+
+/** Open a section from the dashboard, run `edit`, save, wait for return. */
+async function editSection(page, sectionTitle, edit) {
+  await page.locator('.section-card', { hasText: sectionTitle }).click();
+  await page.waitForSelector('.item-block, .optin-gate');
+  await edit();
+  await page.click('text=💾 Save');
+  // Generous: the sandbox CPU is shared with two spawned servers, and other
+  // contexts may be mid-PBKDF2 (300k rounds) at the same time.
+  await page.waitForSelector('.section-grid', { timeout: 45000 });
+}
+
+try {
+  // --- landing: no server configured is an honest, explicit state ----------
+  step = 'landing-unconfigured';
+  const page = await freshPage(null); // no seeding — moxy.config.json is empty
+  await page.waitForSelector('text=No profile server is configured');
+  if (!(await page.locator('button:has-text("Hatch a profile")').isDisabled())) {
+    fail('hatch enabled with no server configured');
+  }
+  await shot(page, '01-landing-unconfigured.png');
+
+  step = 'landing-configure';
+  await page.fill('input[aria-label="Profile server URL"]', main.url);
+  await page.click('text=Use this server');
+  await page.waitForSelector('button:has-text("Hatch a profile"):not([disabled])');
+  await shot(page, '02-landing.png');
+
+  // --- hatch: profile, QR, and both phrases exist before any answer --------
+  step = 'hatch';
+  await page.click('text=Hatch a profile');
+  await page.waitForSelector('.passphrase-box', { timeout: 30000 });
+  const editPhrase = (await page.textContent('.passphrase-box')).trim();
+  if (editPhrase.split(' ').length !== 5) fail(`edit phrase not 5 words: "${editPhrase}"`);
+  const noticeText = await page.textContent('.card:has(.passphrase-box)');
+  if (!noticeText.includes('7 days') || !noticeText.includes('12 months')) {
+    fail('GC policy missing from the hatch notice');
+  }
+  const viewPhrase = (await page.textContent('.code-box')).trim();
+  if (!/^[a-z]+(-[a-z]+){5}$/.test(viewPhrase)) fail(`view phrase malformed: "${viewPhrase}"`);
+  const personaName = (await page.textContent('.persona-name')).trim();
+  if (personaName !== viewPhrase.split('-').slice(0, 3).join('-')) {
+    fail(`persona "${personaName}" is not the phrase head of "${viewPhrase}"`);
+  }
+  await shot(page, '03-dashboard-hatched.png');
+
+  step = 'qr-decode';
+  const viewUrl = `${BASE}#/view/${viewPhrase}`;
+  if ((await decodeQr(page, viewUrl)) === null) fail('QR did not decode to the view URL');
+
+  // --- notice dismissal sticks per device -----------------------------------
+  step = 'notice-dismiss';
+  await page.click('text=I’ve saved it');
+  await page.waitForSelector('.passphrase-box', { state: 'detached' });
+  await page.reload(); // session survives via sessionStorage (guard re-derives keys)
+  await page.waitForSelector('.section-grid', { timeout: 45000 });
+  if (await page.locator('.passphrase-box').count()) fail('notice reappeared after dismissal');
+
+  // --- hub-and-spoke section editing with explicit saves --------------------
+  step = 'sections';
+  await editSection(page, 'About me', async () => {
+    await page.fill('.item-block input[type="text"]', 'River');
+  });
+  await editSection(page, 'Connections I’m open to', async () => {
+    await page.locator('.item-block', { hasText: 'Friendship' }).first()
+      .locator('.opt', { hasText: 'Into it' }).click();
+    await page.locator('.item-block', { hasText: 'Polyamory' })
+      .locator('.opt', { hasText: 'Curious' }).click();
+  });
+  await editSection(page, 'Desires & play', async () => {
+    await page.click('text=Open this section');
+    await page.waitForSelector('text=Rope');
+    await page.locator('.item-block', { hasText: 'Rope' }).first()
+      .locator('.opt', { hasText: 'Into it' }).click();
+    await page.locator('.item-block', { hasText: 'Impact play' })
+      .locator('.opt', { hasText: 'Into it' }).click(); // one-sided vs Sam
+  });
+  const aboutCard = await page.textContent('.section-card:has-text("About me")');
+  if (!aboutCard.includes('1 of')) fail('section completion count not updated: ' + aboutCard);
+  await shot(page, '04-dashboard-filled.png');
+
+  // --- a second profile to compare against ----------------------------------
+  step = 'profile-b';
+  const pageB = await freshPage();
+  await pageB.click('text=Hatch a profile');
+  await pageB.waitForSelector('.passphrase-box', { timeout: 30000 });
+  const viewPhraseB = (await pageB.textContent('.code-box')).trim();
+  await editSection(pageB, 'About me', async () => {
+    await pageB.fill('.item-block input[type="text"]', 'Sam');
+  });
+  await editSection(pageB, 'Connections I’m open to', async () => {
+    await pageB.locator('.item-block', { hasText: 'Friendship' }).first()
+      .locator('.opt', { hasText: 'Into it' }).click();
+  });
+  await editSection(pageB, 'Desires & play', async () => {
+    await pageB.click('text=Open this section');
+    await pageB.waitForSelector('text=Rope');
+    await pageB.locator('.item-block', { hasText: 'Rope' }).first()
+      .locator('.opt', { hasText: 'Curious' }).click();
+  });
+
+  // --- the QR bypass: a fresh device opens the view URL directly ------------
+  step = 'view-fresh-context';
+  const viewer = await freshPage();
+  await viewer.goto(viewUrl);
+  await viewer.waitForSelector('text=River’s profile', { timeout: 30000 });
+  const viewerBody = await viewer.textContent('body');
+  if (!viewerBody.includes(personaName)) fail('persona chip missing on the view page');
+  if (viewerBody.includes('Rope') || viewerBody.includes('Impact play')) {
+    fail('desires leaked into the public view page');
+  }
+  await shot(viewer, '05-view.png');
+
+  // --- edit login from a clean device recovers everything -------------------
+  step = 'edit-login-fresh-context';
+  const editor = await freshPage();
+  await editor.goto(`${BASE}#/edit`);
+  await editor.fill('input[aria-label="Edit phrase"]', editPhrase);
+  await editor.click('text=Open my profile');
+  await editor.waitForSelector('.section-grid', { timeout: 30000 });
+  // The edit-phrase notice reappears on a new device — that's the feature.
+  if (!(await editor.locator('.passphrase-box').count())) {
+    fail('edit-phrase notice missing on a new device');
+  }
+  if ((await editor.textContent('.code-box')).trim() !== viewPhrase) {
+    fail('view phrase not recovered from blob_priv');
+  }
+  await editor.locator('.section-card', { hasText: 'About me' }).click();
+  await editor.waitForSelector('.item-block');
+  if ((await editor.inputValue('.item-block input[type="text"]')) !== 'River') {
+    fail('open answers not restored on login');
+  }
+  await editor.goto(`${BASE}#/me`);
+  await editor.waitForSelector('.section-grid');
+  const desiresCard = await editor.textContent('.section-card:has-text("Desires")');
+  if (!desiresCard.includes('2 of')) fail('desires answers not restored on login: ' + desiresCard);
+
+  // --- compare by phrases: mutual desires reveal, one-sided stay hidden -----
+  step = 'compare';
+  await page.goto(`${BASE}#/compare`);
+  await page.waitForSelector('text=＋ My profile');
+  await page.click('text=＋ My profile');
+  await page.fill('input[aria-label="Paste a view phrase or link"]', viewPhraseB);
+  await page.click('form button:has-text("Add")');
+  await page.waitForSelector('text=Overall alignment', { timeout: 30000 });
+  const compareBody = await page.textContent('body');
+  for (const needle of ['River', 'Sam', 'Friendship', 'Desires — mutual only', 'Rope']) {
+    if (!compareBody.includes(needle)) fail('compare missing: ' + needle);
+  }
+  if (compareBody.includes('Impact play')) fail('one-sided desire leaked in compare');
+  await shot(page, '06-compare.png');
+
+  // --- regenerate: new creature, old links and QRs die ----------------------
+  step = 'regenerate';
+  await page.goto(`${BASE}#/me`);
+  await page.waitForSelector('.section-grid');
+  await page.click('text=🎲 New creature'); // confirm dialog auto-accepted
   await page.waitForFunction(
     (old) => document.querySelector('.code-box')?.textContent?.trim() !== old,
-    url.trim(),
+    viewPhrase,
+    { timeout: 30000 },
   );
-  const url2 = (await page.textContent('.code-box')).trim();
-  if ((await decodeQr(url2)) === null) fail('post-regenerate QR did not decode to the new URL');
-  if (url2 === url.trim()) fail('regenerate did not change the payload');
-
-  // Draft survives reload (autosave).
-  step = 'draft-autosave';
-  await page.reload();
-  await page.waitForSelector('.code-box');
-
-  // --- vault create from share page ---------------------------------------
-  step = 'vault-create';
-  await page.click('text=Generate my passphrase');
-  await page.waitForSelector('.passphrase-box');
-  const pass = (await page.textContent('.passphrase-box')).trim();
-  if (pass.split(' ').length !== 5) fail('passphrase not 5 words: ' + pass);
-  await page.click('text=I’ve saved it — create my vault');
-  await page.waitForSelector('text=Your vault is unlocked');
-  await shot('05-vault-save.png');
-
-  // --- LEGACY LINK: profile ------------------------------------------------
-  step = 'legacy-profile-link';
-  await page.goto(BASE + '#p=' + legacyProfile.code);
-  await page.waitForSelector('text=Alex’s profile');
-  await shot('06-profile.png');
-  await page.click('text=Save to vault'); // vault unlocked from previous step
-
-  // --- compare via paste ---------------------------------------------------
-  step = 'compare';
-  await page.goto(BASE + '#/compare');
-  await page.waitForSelector('input[placeholder*="Paste"]');
-  for (const code of legacyCompare.codes) {
-    await page.fill('input[placeholder*="Paste"]', code);
-    await page.click('form button:has-text("Add")');
+  const viewPhrase2 = (await page.textContent('.code-box')).trim();
+  const personaName2 = (await page.textContent('.persona-name')).trim();
+  if (personaName2 === personaName) fail('creature did not change');
+  if (personaName2 !== viewPhrase2.split('-').slice(0, 3).join('-')) {
+    fail('new persona is not the new phrase head');
   }
-  await page.waitForSelector('text=The headline');
-  const bodyText = await page.textContent('body');
-  for (const needle of ['Overall alignment', 'Mutual connection types', 'Values, side by side',
-    'What each of you is open to', 'Desires — mutual only', 'Rope']) {
-    if (!bodyText.includes(needle)) fail('compare missing: ' + needle);
+  if ((await decodeQr(page, `${BASE}#/view/${viewPhrase2}`)) === null) {
+    fail('post-regenerate QR did not decode to the new view URL');
   }
-  // One-sided desires must never reach the DOM.
-  for (const hidden of ['Impact play', 'Cuddling & non-sexual touch', 'Tantra']) {
-    if (bodyText.includes(hidden)) fail('one-sided desire leaked: ' + hidden);
+  const deadViewer = await freshPage();
+  await deadViewer.goto(viewUrl); // the OLD url
+  await deadViewer.waitForSelector('text=Couldn’t open that profile', { timeout: 30000 });
+  const newViewer = await freshPage();
+  await newViewer.goto(`${BASE}#/view/${viewPhrase2}`);
+  await newViewer.waitForSelector('text=River’s profile', { timeout: 30000 });
+
+  // --- garbage collection: empty profiles die, populated ones live ----------
+  step = 'gc';
+  const gcEmpty = await freshPage(gc.url);
+  await gcEmpty.click('text=Hatch a profile');
+  await gcEmpty.waitForSelector('.passphrase-box', { timeout: 30000 });
+  const gcEmptyPhrase = (await gcEmpty.textContent('.code-box')).trim();
+  const gcAlive = await freshPage(gc.url);
+  await gcAlive.click('text=Hatch a profile');
+  await gcAlive.waitForSelector('.passphrase-box', { timeout: 30000 });
+  const gcAlivePhrase = (await gcAlive.textContent('.code-box')).trim();
+  await editSection(gcAlive, 'About me', async () => {
+    await gcAlive.fill('.item-block input[type="text"]', 'Kai');
+  });
+  // Age both profiles by two hours (past the 3s TTL + 1h coarseness slack).
+  // The empty one becomes GC-eligible; the populated one is immune to the
+  // empty rule and far from idle.
+  {
+    const { DatabaseSync } = await import('node:sqlite');
+    const raw = new DatabaseSync(gcDbPath);
+    raw.prepare('UPDATE profiles SET created_at = ?').run(Date.now() - 2 * 3600 * 1000);
+    raw.close();
   }
-  await shot('07-compare.png');
+  await new Promise((r) => setTimeout(r, 3000)); // a few sweep intervals
+  const gcViewer = await freshPage(gc.url);
+  await gcViewer.goto(`${BASE}#/view/${gcEmptyPhrase}`);
+  await gcViewer.waitForSelector('text=Couldn’t open that profile', { timeout: 30000 });
+  await gcViewer.goto(`${BASE}#/view/${gcAlivePhrase}`);
+  await gcViewer.waitForSelector('text=Kai’s profile', { timeout: 30000 });
 
-  // --- LEGACY LINK: compare ------------------------------------------------
-  step = 'legacy-compare-link';
-  await page.goto(BASE + '#c=' + legacyCompare.codes.join('~'));
-  await page.waitForSelector('text=The headline');
-  const mutual = legacyCompare.expectedMutualDesires.map((m) => m.itemId);
-  if (mutual.includes('dp.rope') && !(await page.textContent('body')).includes('Rope')) {
-    fail('legacy compare link lost the mutual reveal');
-  }
-
-  // --- vault lock / unlock round-trip -------------------------------------
-  step = 'vault-roundtrip';
-  await page.goto(BASE + '#/vault');
-  await page.waitForSelector('text=My profiles');
-  await page.click('text=🔒 Lock vault');
-  await page.waitForSelector('text=New here?');
-  await page.fill('input[aria-label="Vault passphrase"]', pass);
-  await page.click('button:has-text("Unlock")');
-  await page.waitForSelector('text=My profiles', { timeout: 20000 });
-  const vaultText = await page.textContent('body');
-  if (!vaultText.includes('River')) fail('saved profile missing after unlock');
-  if (!vaultText.includes('Alex')) fail('saved connection missing after unlock');
-  await shot('08-vault.png');
-
-  // Reload → vault locks again (key in memory only).
-  step = 'vault-locks-on-reload';
-  await page.reload();
-  await page.waitForSelector('text=New here?');
-
-  // --- dark mode -----------------------------------------------------------
+  // --- dark + mobile ---------------------------------------------------------
   step = 'dark';
-  const dark = await browser.newContext({ viewport: { width: 1180, height: 900 }, colorScheme: 'dark' });
-  const dpage = await dark.newPage();
-  dpage.on('pageerror', (e) => errors.push(String(e)));
-  await dpage.goto(BASE + '#c=' + legacyCompare.codes.join('~'));
-  await dpage.waitForSelector('text=The headline');
-  if (SHOTS) await dpage.screenshot({ path: join(SHOTS, '09-compare-dark.png'), fullPage: true });
-  await dark.close();
+  const dark = await freshPage(main.url, { colorScheme: 'dark' });
+  await dark.goto(`${BASE}#/view/${viewPhrase2}`);
+  await dark.waitForSelector('text=River’s profile', { timeout: 30000 });
+  await shot(dark, '07-view-dark.png');
 
-  // --- mobile --------------------------------------------------------------
   step = 'mobile';
-  const mobile = await browser.newContext({ viewport: { width: 390, height: 844 } });
-  const mpage = await mobile.newPage();
-  mpage.on('pageerror', (e) => errors.push(String(e)));
-  await mpage.goto(BASE + '#/survey');
-  await mpage.waitForSelector('.survey-progress');
-  if (SHOTS) await mpage.screenshot({ path: join(SHOTS, '10-mobile-survey.png') });
-  await mobile.close();
+  const mobile = await freshPage(main.url, { viewport: { width: 390, height: 844 } });
+  await mobile.waitForSelector('text=Hatch a profile');
+  await shot(mobile, '08-mobile-landing.png');
 
-  // --- about ---------------------------------------------------------------
-  step = 'about';
-  await page.goto(BASE + '#/about');
-  await page.waitForSelector('text=honest limit');
-
-  // ==========================================================================
-  // SYNC: everything above ran with no server configured — local-only mode is
-  // the regression baseline. Now the zero-knowledge sync flows.
-  // ==========================================================================
-  const waitSynced = async (p) =>
-    p.waitForFunction(
-      () => document.querySelector('[data-sync-status]')?.textContent?.includes('Synced'),
-      { timeout: 20000 },
-    );
-  const setServerField = async (p, url) => {
-    const field = p.locator('input[aria-label="Sync server address"]');
-    await field.fill(url);
-    await field.dispatchEvent('change');
-  };
-
-  // --- device A: fresh context, create vault, add data, enable sync --------
-  step = 'sync-device-a-setup';
-  const devA = await browser.newContext({ viewport: { width: 1180, height: 900 } });
-  const pageA = await devA.newPage();
-  pageA.on('pageerror', (e) => errors.push('A: ' + String(e)));
-  pageA.on('dialog', (d) => d.accept());
-  await pageA.goto(BASE + '#/vault');
-  await pageA.click('text=Create a vault');
-  await pageA.waitForSelector('.passphrase-box');
-  const syncPass = (await pageA.textContent('.passphrase-box')).trim();
-  await pageA.click('text=I’ve saved it — create vault');
-  await pageA.waitForSelector('text=My profiles');
-  await pageA.fill('input[aria-label="Connection name"]', 'Casey');
-  await pageA.fill('input[aria-label="Connection profile link"]', legacyProfile.code);
-  await pageA.click('text=Add connection');
-  await pageA.waitForSelector('.vault-item-name:has-text("Casey")');
-
-  step = 'sync-enable';
-  await setServerField(pageA, SYNC_URL);
-  await pageA.click('text=Enable sync');
-  await waitSynced(pageA);
-
-  // --- device B: empty context + same passphrase = login from a new device --
-  step = 'sync-two-device-login';
-  const devB = await browser.newContext({ viewport: { width: 1180, height: 900 } });
-  const pageB = await devB.newPage();
-  pageB.on('pageerror', (e) => errors.push('B: ' + String(e)));
-  pageB.on('dialog', (d) => d.accept());
-  await pageB.goto(BASE + '#/vault');
-  await setServerField(pageB, SYNC_URL);
-  await pageB.fill('input[aria-label="Vault passphrase"]', syncPass);
-  await pageB.click('button:has-text("Unlock")');
-  await pageB.waitForSelector('.vault-item-name:has-text("Casey")', { timeout: 20000 });
-
-  // --- concurrent edits: A pushes first, stale B merges on 409 --------------
-  step = 'sync-conflict-merge';
-  await pageA.fill('input[aria-label="Connection name"]', 'Alexis');
-  await pageA.fill('input[aria-label="Connection profile link"]', legacyCompare.codes[0]);
-  await pageA.click('text=Add connection');
-  await pageA.waitForTimeout(3000); // debounce (1.5s) + push
-  await pageB.fill('input[aria-label="Connection name"]', 'Drew');
-  await pageB.fill('input[aria-label="Connection profile link"]', legacyCompare.codes[1]);
-  await pageB.click('text=Add connection');
-  // B's push conflicts, merges, re-pushes; the merge surfaces A's item on B.
-  await pageB.waitForSelector('.vault-item-name:has-text("Alexis")', { timeout: 20000 });
-  await pageA.click('text=🔄 Sync now');
-  await pageA.waitForSelector('.vault-item-name:has-text("Drew")', { timeout: 20000 });
-
-  // --- tombstones: deletion propagates and does not resurrect ---------------
-  step = 'sync-tombstone';
-  await pageA
-    .locator('.vault-item', { hasText: 'Drew' })
-    .locator('button:has-text("Remove")')
-    .click();
-  await pageA.waitForTimeout(3000);
-  await pageB.click('text=🔄 Sync now');
-  await pageB.waitForFunction(
-    () => ![...document.querySelectorAll('.vault-item-name')].some((n) => n.textContent === 'Drew'),
-    { timeout: 20000 },
-  );
-  // B edits and pushes; Drew must stay dead on A afterward.
-  await pageB.fill('input[aria-label="Connection name"]', 'Emerson');
-  await pageB.fill('input[aria-label="Connection profile link"]', legacyProfile.code);
-  await pageB.click('text=Add connection');
-  await pageB.waitForTimeout(3000);
-  await pageA.click('text=🔄 Sync now');
-  await pageA.waitForSelector('.vault-item-name:has-text("Emerson")', { timeout: 20000 });
-  const namesOnA = await pageA.$$eval('.vault-item-name', (els) => els.map((e) => e.textContent));
-  if (namesOnA.includes('Drew')) fail('tombstoned connection resurrected');
-
-  await devA.close();
-  await devB.close();
-
-  // --- zero-knowledge at rest: raw server DB must contain no plaintext ------
-  step = 'sync-zero-knowledge-at-rest';
-  syncProc.kill('SIGTERM'); // clean close checkpoints WAL into the main file
-  await new Promise((resolve) => syncProc.on('exit', resolve));
+  // --- zero knowledge at rest: raw server DB holds no plaintext --------------
+  step = 'zero-knowledge-at-rest';
+  main.proc.kill('SIGTERM'); // clean close checkpoints WAL into the main file
+  await new Promise((resolve) => main.proc.on('exit', resolve));
   let dbBytes = '';
   for (const suffix of ['', '-wal', '-shm']) {
-    const f = syncDbPath + suffix;
+    const f = dbPath + suffix;
     if (existsSync(f)) dbBytes += readFileSync(f, 'latin1');
   }
-  // The structural markers are quoted JSON keys: the schema's own DDL in
-  // sqlite_master legitimately contains the bare words (e.g. the v2
-  // "profiles" table), but plaintext VaultData at rest would carry them
-  // quoted.
-  for (const marker of ['Casey', 'Alexis', 'Drew', 'Emerson', 'River', '"connections"', '"profiles"']) {
-    if (dbBytes.includes(marker)) fail(`plaintext "${marker}" found in server database at rest`);
+  // Markers are chosen so base64url ciphertext can't contain them by chance:
+  // multi-word strings with spaces/hyphens, quoted JSON keys, dotted item ids.
+  for (const marker of [
+    'River', 'Sam', editPhrase, viewPhrase, viewPhrase2,
+    '"answers"', '"viewPhrase"', '"connections"', 'dp.rope', '"a":',
+  ]) {
+    if (dbBytes.includes(marker)) fail(`plaintext ${JSON.stringify(marker)} at rest`);
   }
 
-  if (errors.length) fail('console errors: ' + errors.join(' | '));
+  if (errors.length) fail('page errors: ' + errors.join(' | '));
   console.log('E2E PASS');
 } catch (err) {
-  console.error('E2E FAIL:', err.message);
-  if (SHOTS) await page.screenshot({ path: join(SHOTS, 'FAIL.png'), fullPage: true }).catch(() => {});
+  console.error(`E2E FAIL: [${step}]`, err.message);
+  for (const ctx of contexts) {
+    for (const p of ctx.pages()) {
+      const text = await p.evaluate(() => document.body.innerText.slice(0, 600)).catch(() => '?');
+      console.error(`--- open page ${p.url()}\n${text}`);
+    }
+  }
   process.exitCode = 1;
 } finally {
   await browser.close();
   server.close();
-  if (!syncProc.killed) syncProc.kill('SIGKILL');
+  if (!main.proc.killed) main.proc.kill('SIGKILL');
+  gc.proc.kill('SIGKILL');
   for (const suffix of ['', '-wal', '-shm']) {
-    rmSync(syncDbPath + suffix, { force: true });
+    rmSync(dbPath + suffix, { force: true });
+    rmSync(gcDbPath + suffix, { force: true });
   }
 }

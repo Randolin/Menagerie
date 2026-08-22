@@ -264,6 +264,20 @@ describe('v2 profiles: garbage collection', () => {
       .run(...Object.values(fields), editLocator);
   }
 
+  test('a just-hatched profile survives ANY ttl — coarse stamps never shorten a life', async () => {
+    expect((await createProfile(id('n'), id('o'), TOKEN_A)).status).toBe(201);
+    // created_at is floored to the hour, making the row look up to an hour
+    // old at birth; the sweep's coarseness slack must absorb that even at
+    // ttl 0.
+    expect(profiles.sweep(0, 0)).toBe(0);
+    expect((await fetch(`${base}/v2/profiles/edit/${id('o')}`)).status).toBe(200);
+    const del = await fetch(`${base}/v2/profiles/edit/${id('o')}`, {
+      method: 'DELETE',
+      headers: { [EDIT_TOKEN_HEADER]: TOKEN_A },
+    });
+    expect(del.status).toBe(204);
+  });
+
   test('sweep: empty profiles die after the empty TTL, fresh ones survive', async () => {
     const now = Date.now();
     expect((await createProfile(id('h'), id('i'), TOKEN_A)).status).toBe(201);
