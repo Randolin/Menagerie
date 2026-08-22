@@ -396,7 +396,11 @@ try {
     const f = syncDbPath + suffix;
     if (existsSync(f)) dbBytes += readFileSync(f, 'latin1');
   }
-  for (const marker of ['Casey', 'Alexis', 'Drew', 'Emerson', 'River', 'connections', 'profiles']) {
+  // The structural markers are quoted JSON keys: the schema's own DDL in
+  // sqlite_master legitimately contains the bare words (e.g. the v2
+  // "profiles" table), but plaintext VaultData at rest would carry them
+  // quoted.
+  for (const marker of ['Casey', 'Alexis', 'Drew', 'Emerson', 'River', '"connections"', '"profiles"']) {
     if (dbBytes.includes(marker)) fail(`plaintext "${marker}" found in server database at rest`);
   }
 
