@@ -6,10 +6,12 @@ import {
   displayName,
   hasDesiresTokens,
   pairScores,
+  personaFromPayload,
   revealMutualDesires,
   type DesireReveal,
   type GridSection,
   type PairScores,
+  type Persona,
   type ProfilePayload,
 } from '@moxy/core';
 
@@ -24,6 +26,8 @@ export interface CompareModel {
   /** Successfully decoded payloads, in slot order. */
   readonly payloads: readonly ProfilePayload[];
   readonly names: readonly string[];
+  /** Aligned with payloads/names; null when a payload carries no persona. */
+  readonly personas: readonly (Persona | null)[];
   readonly grid: readonly GridSection[];
   /** Pair scores when exactly two payloads decoded, else null. */
   readonly pair: PairScores | null;
@@ -45,6 +49,7 @@ export async function buildCompareModel(codes: readonly string[]): Promise<Compa
   }
   const payloads = slots.flatMap((s) => (s.payload ? [s.payload] : []));
   const names = payloads.map((p, i) => displayName(p, `Person ${'ABCD'[i] ?? i + 1}`));
+  const personas = await Promise.all(payloads.map((p) => personaFromPayload(p)));
   const grid = payloads.length >= 2 ? buildGrid(payloads) : [];
 
   const pair = payloads.length === 2 ? pairScores(payloads[0], payloads[1]) : null;
@@ -69,6 +74,7 @@ export async function buildCompareModel(codes: readonly string[]): Promise<Compa
     slots,
     payloads,
     names,
+    personas,
     grid,
     pair,
     pairwise,

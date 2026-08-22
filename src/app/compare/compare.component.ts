@@ -37,6 +37,7 @@ interface ResolvedPanel {
           <div class="slot">
             <span class="person-dot"
                   [style.background]="slot.payload ? color(goodIndexBefore(i)) : 'var(--baseline)'"></span>
+            @if (slotEmoji(i); as emoji) { <span aria-hidden="true">{{ emoji }}</span> }
             <span class="person-name">{{ slotName(i) }}</span>
             @if (slot.error) { <span class="fine">{{ slot.error }}</span> }
             <span class="slot-meta">{{ slot.code.length }} chars</span>
@@ -143,6 +144,12 @@ export class CompareComponent {
     const slot = m.slots[slotIndex];
     if (!slot?.payload) return 'Unreadable profile';
     return m.names[this.goodIndexBefore(slotIndex)] ?? '…';
+  }
+
+  protected slotEmoji(slotIndex: number): string | null {
+    const m = this.store.model();
+    if (!m || !m.slots[slotIndex]?.payload) return null;
+    return m.personas[this.goodIndexBefore(slotIndex)]?.emoji ?? null;
   }
 
   /** Index of this slot among the successfully decoded ones (drives its color). */

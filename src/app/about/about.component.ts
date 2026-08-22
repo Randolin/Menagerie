@@ -68,6 +68,23 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
     </div>
 
     <div class="card">
+      <h2>🦊 Your creature — recognizable on purpose</h2>
+      <p>
+        Every profile gets a pet identity — a name like “brave-amber-otter”, its creature,
+        and a color that styles your QR code. It’s derived from a small random seed that
+        travels inside your share links, so people can recognize the same profile across
+        links and comparisons.
+      </p>
+      <p class="sub">
+        The honest flip side: because the creature is stable, two links you shared
+        separately can be recognized as coming from the same profile. That’s a deliberate
+        choice — recognizability over unlinkability — and it’s reversible: “Regenerate” on
+        the share page mints a fresh creature, unlinking you from everything shared before.
+        The seed reveals nothing else; it’s random, not derived from your answers.
+      </p>
+    </div>
+
+    <div class="card">
       <h2>🔄 Optional sync — what the server can and cannot see</h2>
       <p>
         If you enable sync, your encrypted vault is stored on a sync server under a random

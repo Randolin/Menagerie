@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, resource, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { generatePassphrase } from '@moxy/core';
-import { QrCodeComponent, ToastService, copyText } from '@moxy/ui';
+import { PersonaChipComponent, QrCodeComponent, ToastService, copyText } from '@moxy/ui';
 import { DraftStore } from '../stores/draft.store';
 import { VaultStore } from '../stores/vault.store';
 import { ShareLinkService } from '../share-link.service';
@@ -12,7 +12,7 @@ type VaultCardMode = 'closed' | 'passphrase-shown' | 'unlock';
 @Component({
   selector: 'moxy-share',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, QrCodeComponent, UnlockFormComponent],
+  imports: [RouterLink, PersonaChipComponent, QrCodeComponent, UnlockFormComponent],
   template: `
     @if (!draft.hasAnswers()) {
       <div class="card">
@@ -23,6 +23,17 @@ type VaultCardMode = 'closed' | 'passphrase-shown' | 'unlock';
     } @else if (link.value(); as l) {
       <div class="card">
         <h2>Your shareable profile</h2>
+        @if (l.persona; as persona) {
+          <p class="sub" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            This profile is <moxy-persona-chip [persona]="persona" />
+            <button class="btn btn-ghost btn-small" (click)="regenerate()">🎲 Regenerate</button>
+          </p>
+          <p class="fine">
+            Your creature stays the same on every link you share, so people can recognize
+            you — which also means separate links can be recognized as yours. Regenerating
+            picks a fresh creature and unlinks you from anything shared before.
+          </p>
+        }
         <p class="sub">
           {{ l.openCount }} answer{{ l.openCount === 1 ? '' : 's' }}
           travel{{ l.openCount === 1 ? 's' : '' }} openly in this link{{
@@ -48,7 +59,7 @@ type VaultCardMode = 'closed' | 'passphrase-shown' | 'unlock';
               separately shared links can’t be matched to each other.
             </p>
           </div>
-          <moxy-qr-code [text]="l.url" />
+          <moxy-qr-code [text]="l.url" [persona]="l.persona" />
         </div>
       </div>
 
@@ -113,11 +124,23 @@ export class ShareComponent {
   private readonly shareLink = inject(ShareLinkService);
   private readonly toast = inject(ToastService);
 
-  // Fresh salt every time this view loads — the unlinkability property.
+  // Fresh salt every time this view loads (links stay uncorrelatable by
+  // their desire fingerprints; the persona seed is the one deliberate,
+  // user-chosen stable marker). Keyed on answers, so regenerating the
+  // persona re-encodes automatically.
   protected readonly link = resource({
     params: () => this.draft.answers(),
     loader: ({ params }) => this.shareLink.encode(params),
   });
+
+  constructor() {
+    this.draft.ensurePersonaSeed();
+  }
+
+  protected regenerate(): void {
+    this.draft.regeneratePersonaSeed();
+    this.toast.show('New creature minted — past links are no longer recognizably yours');
+  }
 
   protected readonly mode = signal<VaultCardMode>('closed');
   protected readonly passphrase = signal<string | null>(null);
