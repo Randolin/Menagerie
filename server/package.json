@@ -1,0 +1,6 @@
+{
+  "name": "moxy-sync-server",
+  "private": true,
+  "type": "module",
+  "description": "Zero-dependency zero-knowledge vault sync server. Run: node moxy-sync-server.ts (Node >= 24)."
+}

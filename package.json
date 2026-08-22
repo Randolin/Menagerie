@@ -9,7 +9,9 @@
     "test": "ng test",
     "test:core": "vitest run --config libs/core/vitest.config.ts",
     "test:app": "ng test",
-    "e2e": "node e2e/run-e2e.mjs"
+    "e2e": "node e2e/run-e2e.mjs",
+    "server": "node server/moxy-sync-server.ts",
+    "test:server": "vitest run --config server/vitest.config.ts"
   },
   "private": true,
   "packageManager": "npm@11.17.0",

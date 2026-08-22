@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitReturns": true,
+    "skipLibCheck": true,
+    "target": "ES2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "types": ["node", "vitest/globals"],
+    "erasableSyntaxOnly": true
+  },
+  "include": ["./**/*.ts", "../libs/core/src/sync/sync-api.ts"],
+  "exclude": ["vitest.config.ts"]
+}
