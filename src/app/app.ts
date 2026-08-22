@@ -1,12 +1,20 @@
-import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ToastComponent, ToastService } from '@moxy/ui';
+import { ThemeStore } from './stores/theme.store';
 
 @Component({
-  imports: [RouterOutlet],
   selector: 'app-root',
-  styleUrl: './app.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ToastComponent],
   templateUrl: './app.html',
 })
 export class App {
-  protected readonly title = signal('moxy');
+  private readonly theme = inject(ThemeStore);
+  private readonly toast = inject(ToastService);
+
+  protected cycleTheme(): void {
+    const next = this.theme.cycle();
+    this.toast.show(next ? `Theme: ${next}` : 'Theme: follow system');
+  }
 }
