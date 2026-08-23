@@ -4,17 +4,20 @@
 
 Menagerie is a compatibility survey with no identity attached. **Hatch** a profile
 and it exists instantly — a creature name, a QR code, and two phrases — before
-you've answered a single question. Fill in sections at your own pace, share
-your **view phrase** (or its link/QR), and lay profiles side by side to see
-where you overlap, where you differ, and — for the optional desires section —
-what you *both* said yes to, revealed only on a mutual match. Inspired by
+you've answered a single question. Answer themed question packs one card at a
+time, share your **view phrase** (or its link/QR), and lay profiles side by
+side to see where you overlap, where you differ, and — for the optional
+desires section — what you *both* said yes to, revealed only on a mutual
+match. Inspired by
 tools like Mojo Upgrade and collaborative kink lists, generalized to every
 relationship shape: friendship, chosen family, monogamy, marriage, polyamory,
 swinging, relationship anarchy, hookups, asexual and queerplatonic
 partnership.
 
-No accounts. No email. No names. No analytics. The server stores only
-ciphertext it can never read.
+No accounts. No email. No names. No analytics. There isn't even a free-text
+field: every answer is a selection from fixed options, so nothing you can
+type into a profile can identify you — and every answer is comparable and
+plottable. The server stores only ciphertext it can never read.
 
 Built as an Angular 22 + TypeScript workspace with a framework-free domain
 core; the app ships as a static site, the server is one dependency-free
@@ -39,6 +42,12 @@ Node file.
   accent color derives from the public head words only, so nothing displayed
   leaks tail bits. "New creature" re-mints the view phrase; every old link,
   QR, and desire fingerprint dies with it.
+- **Weights instead of essays.** Anything that would have been a "must-have"
+  paragraph is a per-item importance mark — *matters*, *matters a lot*, or
+  *dealbreaker* with the options you could live with. Comparison scores are
+  weighted per direction ("fit for you" vs "fit for them"), a violated
+  dealbreaker is called out by name, and care given/received is scored as an
+  interlock (what one needs vs what the other gives), not similarity.
 - **Mutual-only desires.** Desires never travel as readable data. Positive
   answers become salted hash fingerprints, padded and shuffled; comparing
   reveals a desire only when both profiles carry a fingerprint for it. "Not
@@ -50,10 +59,12 @@ Node file.
   **7 days**; populated profiles untouched *and* unviewed for **12 months**
   are collected too. Any save or view resets the clock. The policy constants
   live in one module shared by the server and the in-app warning copy.
-- **Compare 2–4 profiles.** Value alignment on dot strips, a mutual-interest
-  matrix of connection types, pairwise affinity for groups, a full
-  side-by-side answer grid, and mutual-desire reveals — fetched and decrypted
-  entirely client-side, deliberately transient.
+- **Compare 2–4 profiles.** A values-fingerprint radar overlay, value
+  alignment on dot strips, a mutual-interest matrix of connection types,
+  directional fit scores with dealbreaker alerts and coverage counts,
+  pairwise affinity for groups, a full side-by-side answer grid, and
+  mutual-desire reveals — fetched and decrypted entirely client-side,
+  deliberately transient.
 
 ## Development
 
@@ -88,13 +99,15 @@ libs/ui     @moxy/ui — the design system: SCSS token/base partials and
             meters, styled QR…).
 src/app     The Angular app: hash routing (static-host friendly, QR-scan
             deep links), signal stores (session/draft/compare/config/theme),
-            landing → dashboard → per-section editors, view + compare.
+            landing → dashboard → pack card-stream + section review forms
+            (with per-item importance controls), view + compare.
 server      The profile server: plain TypeScript run directly by Node ≥ 24
             (native type stripping + node:sqlite), zero deps, GC sweeper.
 e2e         Playwright suite run against the production build via a dumb
-            static file server — hatch, sections, QR-scan bypass, edit-phrase
-            recovery, compare with mutual/one-sided desires, regeneration,
-            GC, and a zero-knowledge-at-rest scan of the raw database.
+            static file server — hatch, sections, the pack card stream, a
+            dealbreaker round-trip, QR-scan bypass, edit-phrase recovery,
+            compare with mutual/one-sided desires, regeneration, GC, and a
+            zero-knowledge-at-rest scan of the raw database.
 ```
 
 > **Historical note:** the codebase keeps its original internal name, `moxy`.
@@ -108,8 +121,11 @@ e2e         Playwright suite run against the production build via a dumb
 
 - **New survey question:** append an item to a section in
   `libs/core/src/schema/sections.ts` (options are append-only; ids are
-  forever). Existing profiles keep decoding — the schema freeze test
-  (`schema-v1.freeze.json`) enforces this in CI.
+  forever — including retired ids, which are never reused), then add its id
+  to exactly one pack in `packs.ts` (a guard spec enforces the partition;
+  tag it `tier: 'core'` only if it belongs in the short first pass).
+  Existing profiles keep decoding — the schema freeze test
+  (`schema-v2.freeze.json`) enforces this in CI.
 - **New question *type*:** add it to the `Item` union, then the compiler
   walks you to the three registries (similarity, item editor, answer
   renderer) via exhaustiveness checks.

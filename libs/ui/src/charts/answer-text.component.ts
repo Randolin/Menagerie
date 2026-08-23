@@ -18,7 +18,6 @@ import { interestLabel, type AnswerValue, type Item } from '@moxy/core';
             @for (chip of d.chips; track $index) { <span class="answer-chip">{{ chip }}</span> }
           </span>
         }
-        @case ('freetext') { <span class="answer-freetext">{{ d.text }}</span> }
       }
     }
   `,
@@ -28,9 +27,9 @@ export class AnswerTextComponent {
   readonly value = input.required<AnswerValue | null | undefined>();
 
   protected readonly display = computed(
-    (): { kind: 'empty' } | { kind: 'chips'; chips: string[] } | { kind: 'freetext'; text: string } => {
+    (): { kind: 'empty' } | { kind: 'chips'; chips: string[] } => {
       const v = this.value();
-      if (v === null || v === undefined || v === '') return { kind: 'empty' };
+      if (v === null || v === undefined) return { kind: 'empty' };
       const item = this.item();
       switch (item.type) {
         case 'choice':
@@ -44,8 +43,6 @@ export class AnswerTextComponent {
           return { kind: 'chips', chips: [`${v}/6`] };
         case 'interest':
           return { kind: 'chips', chips: [interestLabel(v as number)] };
-        case 'text':
-          return { kind: 'freetext', text: String(v) };
         default: {
           const exhaustive: never = item;
           return exhaustive;

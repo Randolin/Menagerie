@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { SECTIONS } from '@moxy/core';
+import { getItem, SECTIONS } from '@moxy/core';
 import { MeterComponent, PairMatrixComponent, PersonKeyComponent, StatTileComponent } from '@moxy/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
@@ -12,10 +12,17 @@ import type { ComparePanelComponent } from '../compare-panels.token';
     <div class="card">
       <h2>The headline</h2>
       <moxy-person-key [names]="model().names" [emojis]="personaEmojis()" />
+      @for (alert of alerts(); track alert) {
+        <div class="notice-warn notice">⛔ {{ alert }}</div>
+      }
       <div class="stat-row">
         @if (overallPct(); as pct) {
           <moxy-stat-tile label="Overall alignment" [value]="pct + '%'"
-                          sub="weighted across answered sections" />
+                          [sub]="'from ' + coverage() + ' shared answers'" />
+        }
+        @for (fit of fits(); track fit.label) {
+          <moxy-stat-tile [label]="fit.label" [value]="fit.pct + '%'"
+                          sub="weighted by what matters to them" />
         }
         <moxy-stat-tile label="Mutual connection types"
                         [value]="'' + model().mutualSeekingCount"
@@ -25,6 +32,17 @@ import type { ComparePanelComponent } from '../compare-panels.token';
                           sub="revealed because both said yes" />
         }
       </div>
+      @if (model().interlocks.length) {
+        <div style="margin-top:14px">
+          <h3 style="margin-bottom:6px">Care interlock</h3>
+          <p class="fine" style="margin-top:0">
+            Not similarity — coverage: how much of what one needs the other naturally gives.
+          </p>
+          @for (row of interlockMeters(); track row.label) {
+            <moxy-meter [score]="row.score" [label]="row.label" />
+          }
+        </div>
+      }
       @if (model().pair) {
         <div style="margin-top:14px">
           @for (s of scoredSections(); track s.id) {
@@ -50,6 +68,51 @@ export class HeadlinePanel implements ComparePanelComponent {
   protected readonly overallPct = computed(() => {
     const overall = this.model().pair?.overall;
     return overall == null ? null : Math.round(overall * 100);
+  });
+
+  protected readonly coverage = computed(() => this.model().pair?.coverage ?? 0);
+
+  /** "Fit for <name>" tiles — shown when the two directions actually differ. */
+  protected readonly fits = computed(() => {
+    const m = this.model();
+    const pair = m.pair;
+    if (!pair || pair.fitA.overall == null || pair.fitB.overall == null) return [];
+    const a = Math.round(pair.fitA.overall * 100);
+    const b = Math.round(pair.fitB.overall * 100);
+    if (a === b && a === this.overallPct()) return [];
+    return [
+      { label: `Fit for ${m.names[0]}`, pct: a },
+      { label: `Fit for ${m.names[1]}`, pct: b },
+    ];
+  });
+
+  /** Human sentences for violated dealbreakers, each named to its holder. */
+  protected readonly alerts = computed(() => {
+    const m = this.model();
+    const pair = m.pair;
+    if (!pair) return [];
+    const describe = (holder: string, other: string, ids: readonly string[]) =>
+      ids.map((id) => {
+        const label =
+          (getItem(id)?.item as { label?: string } | undefined)?.label ?? id;
+        return `${other} differs on “${label}” — ${holder} marked it a dealbreaker.`;
+      });
+    return [
+      ...describe(m.names[0], m.names[1], pair.fitA.alerts),
+      ...describe(m.names[1], m.names[0], pair.fitB.alerts),
+    ];
+  });
+
+  protected readonly interlockMeters = computed(() => {
+    const m = this.model();
+    return m.interlocks.flatMap((row) => [
+      ...(row.forA !== null
+        ? [{ label: `${m.names[1]} → ${m.names[0]}'s needs`, score: row.forA }]
+        : []),
+      ...(row.forB !== null
+        ? [{ label: `${m.names[0]} → ${m.names[1]}'s needs`, score: row.forB }]
+        : []),
+    ]);
   });
 
   protected readonly scoredSections = computed(() => {

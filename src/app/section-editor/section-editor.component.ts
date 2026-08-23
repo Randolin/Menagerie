@@ -46,8 +46,14 @@ import { ItemEditorComponent } from '../survey/items/item-editor.component';
             </div>
           </div>
         } @else {
+          @if (s.privacy === 'open') {
+            <p class="fine">
+              Answered something that really matters to you? Mark its importance below the
+              answer — up to “dealbreaker” — and comparisons will weigh it your way.
+            </p>
+          }
           @for (item of s.items; track item.id) {
-            <moxy-item-editor [item]="item" />
+            <moxy-item-editor [item]="item" [showWeight]="s.privacy === 'open'" />
           }
         }
 

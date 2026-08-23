@@ -4,13 +4,14 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import {
   decryptBlob,
   deriveViewKeys,
-  displayName,
   extractViewPhrase,
   hasDesiresTokens,
+  IMPORTANCE_WEIGHTS,
   migrateToCurrent,
   personaFromViewPhrase,
   SECTIONS,
   type AnswerValue,
+  type ImportanceWeight,
   type Item,
   type Persona,
   type ProfilePayload,
@@ -34,7 +35,11 @@ interface LoadedProfile {
   readonly hasDesires: boolean;
   readonly sections: readonly {
     readonly title: string;
-    readonly items: readonly { item: Item; value: AnswerValue }[];
+    readonly items: readonly {
+      item: Item;
+      value: AnswerValue;
+      weight?: ImportanceWeight;
+    }[];
   }[];
 }
 
@@ -88,7 +93,14 @@ interface LoadedProfile {
                                 [names]="[v.name]" />
             } @else {
               <div class="grid-row">
-                <div class="grid-item-label">{{ $any(entry.item).label }}</div>
+                <div class="grid-item-label">
+                  {{ $any(entry.item).label }}
+                  @if (entry.weight; as w) {
+                    <span class="fine" [title]="'They marked this: ' + weightLabel(w)">
+                      {{ w === 3 ? '⛔' : w === 2 ? '★★' : '★' }}
+                    </span>
+                  }
+                </div>
                 <div class="grid-answers">
                   <moxy-answer-text [item]="entry.item" [value]="$any(entry.value)" />
                 </div>
@@ -139,14 +151,19 @@ export class ViewComponent {
           title: s.title,
           items: s.items
             .filter((item) => payload.a[item.id] !== undefined)
-            .map((item) => ({ item, value: payload.a[item.id] })),
+            .map((item) => ({
+              item,
+              value: payload.a[item.id],
+              weight: payload.w?.[item.id],
+            })),
         }))
         .filter((s) => s.items.length > 0);
+      const persona = await personaFromViewPhrase(phrase);
       return {
         phrase,
         payload,
-        name: displayName(payload, 'Someone'),
-        persona: await personaFromViewPhrase(phrase),
+        name: persona?.name ?? 'Someone',
+        persona,
         hasDesires: hasDesiresTokens(payload),
         sections,
       };
@@ -160,6 +177,10 @@ export class ViewComponent {
 
   protected asScale(item: unknown): ScaleItem {
     return item as ScaleItem;
+  }
+
+  protected weightLabel(w: ImportanceWeight): string {
+    return IMPORTANCE_WEIGHTS.find((d) => d.value === w)?.label ?? '';
   }
 
   protected compareWith(v: LoadedProfile): void {

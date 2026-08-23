@@ -13,9 +13,12 @@ import {
   mintEditPhrase,
   mintViewPhrase,
   personaFromViewPhrase,
+  PROFILE_VERSION,
   randomSalt,
   viewUrlFor,
+  type Acceptable,
   type Answers,
+  type Weights,
   type EditKeys,
   type Persona,
   type PrivData,
@@ -56,10 +59,15 @@ export class ProfileSessionStore {
   readonly saveState = signal<SaveState>('idle');
   readonly remembered = signal(false);
 
-  /** Answers as last persisted to the server — drives the dirty flag. */
+  /** Answers/weights as last persisted to the server — drive the dirty flag. */
   private readonly savedAnswers = signal<Answers>({});
+  private readonly savedWeights = signal<Weights>({});
+  private readonly savedAcceptable = signal<Acceptable>({});
   readonly dirty = computed(
-    () => JSON.stringify(this.draft.answers()) !== JSON.stringify(this.savedAnswers()),
+    () =>
+      JSON.stringify(this.draft.answers()) !== JSON.stringify(this.savedAnswers()) ||
+      JSON.stringify(this.draft.weights()) !== JSON.stringify(this.savedWeights()) ||
+      JSON.stringify(this.draft.acceptable()) !== JSON.stringify(this.savedAcceptable()),
   );
 
   private editKeys: EditKeys | null = null;
@@ -85,7 +93,7 @@ export class ProfileSessionStore {
       const viewKeys = await deriveViewKeys(viewPhrase);
       const editKeys = await deriveEditKeys(editPhrase);
       const priv = emptyPrivData(viewPhrase);
-      const payload: ProfilePayload = { v: 1, a: {} };
+      const payload: ProfilePayload = { v: PROFILE_VERSION, a: {} };
       try {
         await client.create(
           {
@@ -151,7 +159,14 @@ export class ProfileSessionStore {
     for (let attempt = 0; ; attempt++) {
       const viewPhrase = await mintViewPhrase();
       const viewKeys = await deriveViewKeys(viewPhrase);
-      const nextPriv: PrivData = { ...priv, viewPhrase, desiresSalt: null, answers };
+      const nextPriv: PrivData = {
+        ...priv,
+        viewPhrase,
+        desiresSalt: null,
+        answers,
+        weights: this.draft.weights(),
+        acceptable: this.draft.acceptable(),
+      };
       const { blobView, blobPriv, populated } = await this.encryptState(nextPriv, viewKeys);
       try {
         const version = await client.put(editKeys.editLocator, editKeys.editToken, this.version(), {
@@ -166,7 +181,7 @@ export class ProfileSessionStore {
         this.persona.set(await personaFromViewPhrase(viewPhrase));
         this.version.set(version);
         this.populated.set(this.populated() || populated);
-        this.savedAnswers.set(structuredClone(answers) as Answers);
+        this.snapshotSaved(nextPriv);
         return;
       } catch (err) {
         if (err instanceof HatchError && err.failure.kind === 'locator_taken' && attempt < 3) {
@@ -185,7 +200,12 @@ export class ProfileSessionStore {
     for (let attempt = 0; ; attempt++) {
       const editPhrase = await mintEditPhrase();
       const nextKeys = await deriveEditKeys(editPhrase);
-      const nextPriv: PrivData = { ...priv, answers };
+      const nextPriv: PrivData = {
+        ...priv,
+        answers,
+        weights: this.draft.weights(),
+        acceptable: this.draft.acceptable(),
+      };
       const blobPriv = await encryptBlob(nextPriv, nextKeys.editKey);
       const { blobView, populated } = await this.encryptState(nextPriv, viewKeys);
       try {
@@ -206,7 +226,7 @@ export class ProfileSessionStore {
         this.editPhrase.set(editPhrase);
         this.version.set(version);
         this.populated.set(this.populated() || populated);
-        this.savedAnswers.set(structuredClone(answers) as Answers);
+        this.snapshotSaved(nextPriv);
         this.writeSession(editPhrase);
         if (this.remembered()) this.writeRemembered(editPhrase);
         return editPhrase;
@@ -238,6 +258,8 @@ export class ProfileSessionStore {
     this.connections.set([]);
     this.saveState.set('idle');
     this.savedAnswers.set({});
+    this.savedWeights.set({});
+    this.savedAcceptable.set({});
     this.editKeys = null;
     this.viewKeys = null;
     this.priv = null;
@@ -297,7 +319,12 @@ export class ProfileSessionStore {
     const { editKeys, viewKeys, priv } = this.requireSession();
     this.saveState.set('saving');
     const answers = structuredClone(this.draft.answers()) as Answers;
-    const nextPriv: PrivData = { ...priv, answers };
+    const nextPriv: PrivData = {
+      ...priv,
+      answers,
+      weights: structuredClone(this.draft.weights()) as Weights,
+      acceptable: structuredClone(this.draft.acceptable()) as Acceptable,
+    };
     try {
       const { blobView, blobPriv, populated } = await this.encryptState(nextPriv, viewKeys);
       const version = await client.put(editKeys.editLocator, editKeys.editToken, this.version(), {
@@ -309,7 +336,7 @@ export class ProfileSessionStore {
       this.version.set(version);
       this.populated.set(this.populated() || populated);
       this.connections.set(nextPriv.connections);
-      this.savedAnswers.set(answers);
+      this.snapshotSaved(nextPriv);
       this.saveState.set('saved');
     } catch (err) {
       if (err instanceof HatchError && err.failure.kind === 'conflict') {
@@ -323,8 +350,8 @@ export class ProfileSessionStore {
         this.priv = remotePriv;
         this.version.set(remote.version);
         this.connections.set(remotePriv.connections);
-        this.savedAnswers.set(structuredClone(remotePriv.answers) as Answers);
-        this.draft.loadFrom(remotePriv.answers);
+        this.snapshotSaved(remotePriv);
+        this.draft.loadFrom(remotePriv.answers, remotePriv.weights, remotePriv.acceptable);
         this.saveState.set('conflict');
         return;
       }
@@ -350,7 +377,13 @@ export class ProfileSessionStore {
     if (wantsTokens && !priv.desiresSalt) priv.desiresSalt = randomSalt();
     const salt = priv.desiresSalt;
     const tokens = wantsTokens && salt ? await buildMatchTokens(answers, salt) : [];
-    const payload = buildSharePayload(answers, tokens, salt);
+    const payload = buildSharePayload(
+      answers,
+      tokens,
+      salt,
+      priv.weights ?? {},
+      priv.acceptable ?? {},
+    );
     return {
       blobView: await encryptBlob(payload, viewKeys.viewKey),
       blobPriv: await encryptBlob(priv, this.editKeys.editKey),
@@ -375,12 +408,19 @@ export class ProfileSessionStore {
     this.version.set(version);
     this.populated.set(populated);
     this.connections.set(priv.connections);
-    this.savedAnswers.set(structuredClone(priv.answers) as Answers);
+    this.snapshotSaved(priv);
     this.saveState.set('idle');
-    this.draft.loadFrom(priv.answers);
+    this.draft.loadFrom(priv.answers, priv.weights, priv.acceptable);
     this.active.set(true);
     this.writeSession(editPhrase);
     this.remembered.set(this.readRemembered() === editPhrase);
+  }
+
+  /** Records what the server now holds, for the dirty comparison. */
+  private snapshotSaved(priv: PrivData): void {
+    this.savedAnswers.set(structuredClone(priv.answers) as Answers);
+    this.savedWeights.set(structuredClone(priv.weights ?? {}) as Weights);
+    this.savedAcceptable.set(structuredClone(priv.acceptable ?? {}) as Acceptable);
   }
 
   private mutateConnections(fn: (list: readonly SavedConnection[]) => SavedConnection[]): void {

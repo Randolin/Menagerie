@@ -2,8 +2,9 @@
 // change so panels stay pure presentations.
 import {
   buildGrid,
-  displayName,
+  COMPLEMENT_PAIRS,
   hasDesiresTokens,
+  interlockScore,
   pairScores,
   revealMutualDesires,
   type DesireReveal,
@@ -22,6 +23,15 @@ export interface CompareSlot {
   readonly error?: string;
 }
 
+/** One give/receive interlock, resolved for a pair. */
+export interface InterlockRow {
+  readonly label: string;
+  /** How well person B covers person A's needs (0..1), or null. */
+  readonly forA: number | null;
+  /** How well person A covers person B's needs (0..1), or null. */
+  readonly forB: number | null;
+}
+
 export interface CompareModel {
   readonly slots: readonly CompareSlot[];
   /** Successfully loaded payloads, in slot order. */
@@ -32,6 +42,8 @@ export interface CompareModel {
   readonly grid: readonly GridSection[];
   /** Pair scores when exactly two payloads decoded, else null. */
   readonly pair: PairScores | null;
+  /** Give/receive interlocks for the pair case. */
+  readonly interlocks: readonly InterlockRow[];
   /** Pairwise overall matrix (for 3+). */
   readonly pairwise: readonly (readonly (number | null)[])[];
   readonly mutualSeekingCount: number;
@@ -42,11 +54,22 @@ export interface CompareModel {
 export async function buildCompareModel(slots: readonly CompareSlot[]): Promise<CompareModel> {
   const good = slots.filter((s) => s.payload);
   const payloads = good.map((s) => s.payload!);
-  const names = payloads.map((p, i) => displayName(p, `Person ${'ABCD'[i] ?? i + 1}`));
+  // The creature IS the name — profiles carry no nickname by design.
+  const names = good.map(
+    (s, i) => s.persona?.name ?? `Creature ${'ABCD'[i] ?? i + 1}`,
+  );
   const personas = good.map((s) => s.persona ?? null);
   const grid = payloads.length >= 2 ? buildGrid(payloads) : [];
 
   const pair = payloads.length === 2 ? pairScores(payloads[0], payloads[1]) : null;
+  const interlocks: InterlockRow[] =
+    payloads.length === 2
+      ? COMPLEMENT_PAIRS.map((cp) => ({
+          label: cp.label,
+          forA: interlockScore(payloads[1], payloads[0], cp),
+          forB: interlockScore(payloads[0], payloads[1], cp),
+        })).filter((row) => row.forA !== null || row.forB !== null)
+      : [];
   const pairwise = payloads.map((_, i) =>
     payloads.map((_, j) => (i === j ? null : pairScores(payloads[i], payloads[j]).overall)),
   );
@@ -71,6 +94,7 @@ export async function buildCompareModel(slots: readonly CompareSlot[]): Promise<
     personas,
     grid,
     pair,
+    interlocks,
     pairwise,
     mutualSeekingCount,
     desireRows,

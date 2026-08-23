@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { SECTIONS } from './sections';
-import { allItems, matchItems, openItems } from './schema';
-import freeze from './fixtures/schema-v1.freeze.json';
+import { RETIRED_ITEM_IDS, RETIRED_SECTION_IDS, SECTIONS } from './sections';
+import { allItems, coreItems, matchItems, openItems } from './schema';
+import freeze from './fixtures/schema-v2.freeze.json';
 
 describe('schema', () => {
   test('is internally consistent', () => {
@@ -20,9 +20,13 @@ describe('schema', () => {
     expect(openItems().length).toBeGreaterThan(30);
     expect(matchItems().length).toBeGreaterThanOrEqual(20);
     expect(SECTIONS.find((s) => s.id === 'desires')?.privacy).toBe('match');
+    // The core tier is the short first pass — keep it meaningful but short.
+    expect(coreItems().length).toBeGreaterThanOrEqual(15);
+    expect(coreItems().length).toBeLessThanOrEqual(30);
+    expect(coreItems().every(({ section }) => section.privacy === 'open')).toBe(true);
   });
 
-  test('honors the v1 freeze: ids/types/sections/privacy immutable, options append-only', () => {
+  test('honors the v2 freeze: ids/types/sections/privacy immutable, options append-only', () => {
     const byId = new Map(
       allItems().map(({ section, item }) => [item.id, { section, item }]),
     );
@@ -40,6 +44,21 @@ describe('schema', () => {
           `${id}: options shrank — indexes in old links would dangle`,
         ).toBeGreaterThanOrEqual(frozen.minOptions as number);
       }
+    }
+  });
+
+  test('retired ids never come back', () => {
+    const itemIds = new Set(allItems().map(({ item }) => item.id));
+    for (const id of RETIRED_ITEM_IDS) {
+      expect(itemIds.has(id), `retired item id ${id} was reused`).toBe(false);
+      // Retired ids also stay out of the freeze — they are gone, not frozen.
+      expect(id in freeze.items, `retired id ${id} present in freeze`).toBe(false);
+    }
+    for (const id of RETIRED_SECTION_IDS) {
+      expect(
+        SECTIONS.some((s) => s.id === id),
+        `retired section id ${id} was reused`,
+      ).toBe(false);
     }
   });
 });

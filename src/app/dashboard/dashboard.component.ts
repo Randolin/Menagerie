@@ -1,7 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN, SECTIONS, extractViewPhrase } from '@moxy/core';
-import { PersonaChipComponent, QrCodeComponent, ToastService, copyText } from '@moxy/ui';
+import {
+  GC_EMPTY_HUMAN,
+  GC_IDLE_HUMAN,
+  SECTIONS,
+  coreItems,
+  extractViewPhrase,
+  visiblePacks,
+  type Pack,
+} from '@moxy/core';
+import { PersonaChipComponent, QrCodeComponent, RingComponent, ToastService, copyText } from '@moxy/ui';
 import { APP_STORAGE } from '../stores/storage.token';
 import { DraftStore } from '../stores/draft.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
@@ -10,7 +18,7 @@ import { CompareStore } from '../stores/compare.store';
 @Component({
   selector: 'moxy-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, PersonaChipComponent, QrCodeComponent],
+  imports: [RouterLink, PersonaChipComponent, QrCodeComponent, RingComponent],
   template: `
     @if (!noticeDismissed()) {
       <div class="card" style="border-color:var(--accent)">
@@ -69,23 +77,50 @@ import { CompareStore } from '../stores/compare.store';
       </div>
     </div>
 
-    <h2 style="margin:18px 4px 10px">Survey sections</h2>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 4px 10px">
+      <h2 style="margin:0">Question packs</h2>
+      <span class="fine core-marker" [class.core-done]="coreDone()">
+        <moxy-ring [fraction]="coreFraction()" [size]="20" label="core completion" />
+        {{ coreDone()
+            ? 'Core complete — comparisons have their footing'
+            : 'Core ' + coreAnswered() + ' of ' + coreTotal + ' — comparisons work best from a full core' }}
+      </span>
+    </div>
     <div class="section-grid">
-      @for (s of sections; track s.id) {
-        <a class="card section-card" [routerLink]="['/me/section', s.id]">
-          <h3>{{ s.title }} @if (s.privacy === 'match') { <span class="fine">🔒 mutual-only</span> }</h3>
-          <p class="sub">{{ s.blurb }}</p>
+      @for (p of packs(); track p.id) {
+        <a class="card section-card" [routerLink]="['/me/pack', p.id]">
+          <h3 style="display:flex;align-items:center;gap:8px">
+            <span>{{ p.emoji }} {{ p.title }}</span>
+            <span style="margin-left:auto">
+              <moxy-ring [fraction]="packFraction(p)" [size]="26"
+                         [label]="p.title + ' completion'" />
+            </span>
+          </h3>
+          <p class="sub">{{ p.blurb }}</p>
           <span class="fine">
-            {{ draft.answeredIn(s) }} of {{ s.items.length }} answered — edit →
+            {{ draft.answeredAmong(p.itemIds) }} of {{ p.itemIds.length }} answered — run →
           </span>
         </a>
       }
     </div>
     @if (session.dirty()) {
       <p class="fine" style="margin:8px 4px">
-        You have unsaved edits — open a section and hit “Save” to publish them.
+        You have unsaved edits — finish a pack or hit “Save” in a section to publish them.
       </p>
     }
+    <details style="margin:4px">
+      <summary class="fine" style="cursor:pointer">Review all answers by section (and set importance)</summary>
+      <div class="section-grid" style="margin-top:10px">
+        @for (s of sections; track s.id) {
+          <a class="card section-card" [routerLink]="['/me/section', s.id]">
+            <h3>{{ s.title }} @if (s.privacy === 'match') { <span class="fine">🔒 mutual-only</span> }</h3>
+            <span class="fine">
+              {{ draft.answeredIn(s) }} of {{ s.items.length }} answered — review →
+            </span>
+          </a>
+        }
+      </div>
+    </details>
 
     <div class="card">
       <h2>My menagerie</h2>
@@ -147,6 +182,8 @@ import { CompareStore } from '../stores/compare.store';
     .section-card:hover { border-color: var(--accent); }
     .section-card h3 { margin: 0; font-size: 17px; }
     .section-card .sub { flex: 1; margin: 0; }
+    .core-marker { display: inline-flex; align-items: center; gap: 6px; }
+    .core-done { color: var(--accent); }
   `,
 })
 export class DashboardComponent {
@@ -161,6 +198,19 @@ export class DashboardComponent {
   protected readonly gcEmpty = GC_EMPTY_HUMAN;
   protected readonly gcIdle = GC_IDLE_HUMAN;
   protected readonly newEditPhrase = signal<string | null>(null);
+
+  protected readonly packs = computed(() => visiblePacks(this.draft.answers()));
+  private readonly coreIds = coreItems().map(({ item }) => item.id);
+  protected readonly coreTotal = this.coreIds.length;
+  protected readonly coreAnswered = computed(() => this.draft.answeredAmong(this.coreIds));
+  protected readonly coreFraction = computed(() =>
+    this.coreTotal === 0 ? 0 : this.coreAnswered() / this.coreTotal,
+  );
+  protected readonly coreDone = computed(() => this.coreAnswered() === this.coreTotal);
+
+  protected packFraction(p: Pack): number {
+    return p.itemIds.length === 0 ? 0 : this.draft.answeredAmong(p.itemIds) / p.itemIds.length;
+  }
 
   private readonly dismissalSeen = signal(0);
   protected readonly noticeDismissed = computed(() => {

@@ -4,7 +4,7 @@ import { AnswerTextComponent, SimDotComponent, seriesVar } from '@moxy/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
 
-const GRID_SECTIONS = ['about', 'lifestyle', 'connection', 'structure', 'notes'];
+const GRID_SECTIONS = ['about', 'lifestyle', 'connection', 'structure', 'plans'];
 
 /** Everything else, in the open — the table-view twin of the charts. */
 @Component({
