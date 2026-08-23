@@ -6,9 +6,9 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="hero">
-      <h1>How Moxy works — and exactly what it does and doesn’t protect</h1>
+      <h1>How Menagerie works — and exactly what it does and doesn’t protect</h1>
       <p class="lede">
-        Moxy is a static page plus one small open-source server that stores only
+        Menagerie is a static page plus one small open-source server that stores only
         ciphertext it can never read. No accounts, no email, no names, no analytics,
         no cookies. Everything below is verifiable in the source.
       </p>
@@ -101,7 +101,7 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
     </div>
 
     <div class="card">
-      <h2>🧭 Who Moxy is for</h2>
+      <h2>🧭 Who Menagerie is for</h2>
       <p>
         Everyone whose connections don’t fit one template: monogamous couples checking
         alignment before moving in; polycules mapping a constellation; swingers and play
@@ -114,13 +114,13 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
     <div class="card">
       <h2>🛠️ Verify or self-host it</h2>
       <p>
-        Moxy is open source (MIT). The app is a static bundle (GitHub Pages works); the
+        Menagerie is open source (MIT). The app is a static bundle (GitHub Pages works); the
         server is a single Node file with zero dependencies. Point any copy of the app at
         any server via its config file — your phrases work wherever that same server is
         reachable.
       </p>
       <p class="sub">
-        Threat-model fine print: Moxy can’t protect you from what you choose to share,
+        Threat-model fine print: Menagerie can’t protect you from what you choose to share,
         from someone photographing your screen, or from a compromised device or browser
         extension. It simply refuses to create the identity databases such attacks
         usually target.

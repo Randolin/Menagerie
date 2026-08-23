@@ -1,8 +1,23 @@
-# Deploying Moxy
+# Deploying Menagerie
 
-Two pieces: the **static app** and the **profile server**. The server is
-where the encrypted profiles live — the app needs one configured to hatch or
-view anything.
+Two pieces: the **static app** (GitHub Pages at **menagerie.love**) and the
+**profile server** (**api.menagerie.love**). The server is where the encrypted
+profiles live — the app needs one configured to hatch or view anything.
+(Internally the codebase, env vars, and config file keep their original
+`moxy` names — see the main README's historical note.)
+
+## DNS at the registrar (Porkbun)
+
+| Type  | Host  | Answer                | Purpose |
+|-------|-------|-----------------------|---------|
+| ALIAS | (root)| `randolin.github.io`  | the app on GitHub Pages |
+| CNAME | `www` | `randolin.github.io`  | www → same |
+| A     | `api` | `<your server's IP>`  | the profile server (add when the box exists) |
+
+Then in the repo: **Settings → Pages → Custom domain: `menagerie.love`** →
+wait for the DNS check → tick **Enforce HTTPS**. GitHub provisions the
+certificate automatically; the QR/view links pick up the new origin with no
+code change.
 
 ## The app → GitHub Pages (automatic)
 
@@ -15,7 +30,7 @@ branch, stamping the profile-server URL into `moxy.config.json` from the
 One-time setup:
 1. Repo **Settings → Pages → Source: "GitHub Actions"**.
 2. **Settings → Secrets and variables → Actions → Variables** → add
-   `MOXY_SERVER_URL` = `https://moxy-sync.example.org` (your server, below).
+   `MOXY_SERVER_URL` = `https://api.menagerie.love` (your server, below).
 
 The next push to the default branch goes live at
 `https://<user>.github.io/<repo>/`.
@@ -63,7 +78,7 @@ and cap total profiles with `MOXY_MAX_PROFILES`.
 `deploy/Caddyfile` is a two-line Caddy config with automatic Let's Encrypt:
 
 ```
-sync.example.org {
+api.menagerie.love {
     reverse_proxy 127.0.0.1:8787
 }
 ```

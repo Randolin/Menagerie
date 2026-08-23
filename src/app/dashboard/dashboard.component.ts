@@ -88,10 +88,11 @@ import { CompareStore } from '../stores/compare.store';
     }
 
     <div class="card">
-      <h2>People</h2>
+      <h2>My menagerie</h2>
       <p class="sub">
-        Keep view phrases you’ve been given, and compare against your own profile.
-        Saved people are encrypted with your edit key — the server never sees them.
+        The creatures you’ve collected — keep view phrases you’ve been given and compare
+        them against your own profile. Your menagerie is encrypted with your edit key;
+        the server never sees who’s in it.
       </p>
       @for (c of session.connections(); track c.id) {
         <div class="grid-row" style="align-items:center">
@@ -252,7 +253,7 @@ export class DashboardComponent {
     event.preventDefault();
     const phrase = extractViewPhrase(phraseInput.value);
     if (!phrase) {
-      this.toast.show('That doesn’t look like a Moxy view phrase or link.', 'error');
+      this.toast.show('That doesn’t look like a Menagerie view phrase or link.', 'error');
       return;
     }
     try {

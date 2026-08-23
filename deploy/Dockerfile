@@ -1,4 +1,4 @@
-# Moxy sync server — zero dependencies, no build step, no npm install.
+# Menagerie profile server — zero dependencies, no build step, no npm install.
 # Build from the REPO ROOT:   docker build -f deploy/Dockerfile -t moxy-sync .
 # Run:                        docker run -d -p 8787:8787 -v moxy-sync-data:/data moxy-sync
 FROM node:24-slim

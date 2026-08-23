@@ -57,7 +57,7 @@ interface LoadedProfile {
           @if (v.persona; as persona) { <moxy-persona-chip [persona]="persona" /> }
         </h2>
         <p class="sub">
-          A Moxy profile — anonymous by design, stored only as ciphertext the server
+          A Menagerie profile — anonymous by design, stored only as ciphertext the server
           can’t read.
           @if (v.hasDesires) {
             It includes a private desires section that only unlocks against a profile
@@ -67,9 +67,9 @@ interface LoadedProfile {
         <div class="btn-row" style="margin-top:16px">
           <button class="btn btn-primary" (click)="compareWith(v)">🔍 Compare</button>
           @if (session.active()) {
-            <button class="btn" (click)="saveConnection(v)">💾 Save to my people</button>
+            <button class="btn" (click)="saveConnection(v)">💾 Add to my menagerie</button>
           } @else {
-            <a class="btn btn-ghost" routerLink="/">Hatch your own to compare</a>
+            <a class="btn btn-ghost" routerLink="/">Hatch your own creature to compare</a>
           }
         </div>
       </div>
@@ -123,7 +123,7 @@ export class ViewComponent {
         throw new Error('No profile server is configured, so nothing can be looked up.');
       }
       const phrase = extractViewPhrase(params.phrase);
-      if (!phrase) throw new Error('That’s not a valid Moxy view phrase.');
+      if (!phrase) throw new Error('That’s not a valid Menagerie view phrase.');
       const client = this.config.client();
       if (!client) throw new Error('No profile server is configured.');
       const { viewLocator, viewKey } = await deriveViewKeys(phrase);
@@ -172,7 +172,7 @@ export class ViewComponent {
   protected async saveConnection(v: LoadedProfile): Promise<void> {
     try {
       await this.session.addConnection(v.name, v.phrase);
-      this.toast.show(`Saved ${v.name} to your people`);
+      this.toast.show(`${v.name} joined your menagerie`);
     } catch (err) {
       this.toast.show(err instanceof Error ? err.message : String(err), 'error');
     }

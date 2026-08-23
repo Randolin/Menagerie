@@ -40,7 +40,7 @@ export class CompareStore {
   /** Extracts a phrase from pasted text/URL. Throws on junk. True if added. */
   addFromText(text: string): boolean {
     const phrase = extractViewPhrase(text);
-    if (!phrase) throw new Error('No Moxy view phrase found in that text.');
+    if (!phrase) throw new Error('No Menagerie view phrase found in that text.');
     return this.addPhrase(phrase);
   }
 
