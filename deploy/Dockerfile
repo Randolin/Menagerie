@@ -4,11 +4,15 @@
 FROM node:24-slim
 
 # Only the server and the shared wire-contract files, keeping the relative
-# layout the server's imports expect (../libs/core/src/hatch/…).
+# layout the server's imports expect (../libs/core/src/…). Every ../libs
+# import in server/ MUST have a COPY line here — server/deploy.spec.ts
+# fails the suite if the two drift apart.
 WORKDIR /app
 COPY server/ server/
 COPY libs/core/src/hatch/hatch-api.ts libs/core/src/hatch/hatch-api.ts
 COPY libs/core/src/hatch/constants.ts libs/core/src/hatch/constants.ts
+COPY libs/core/src/group/group-api.ts libs/core/src/group/group-api.ts
+COPY libs/core/src/metrics/metrics-api.ts libs/core/src/metrics/metrics-api.ts
 
 RUN mkdir /data && chown node:node /data
 USER node
