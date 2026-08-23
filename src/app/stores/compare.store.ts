@@ -5,26 +5,39 @@ import {
   extractViewPhrase,
   migrateToCurrent,
   personaFromViewPhrase,
+  type ProfilePayload,
 } from '@moxy/core';
 import { MAX_COMPARE } from '@moxy/ui';
 import { buildCompareModel, type CompareModel, type CompareSlot } from '../compare/compare-model';
 import { ServerConfigStore } from './server-config.store';
 
+/** A comparison source: a view phrase to fetch, or an already-decrypted
+ * payload (a group member's pseudonymous snapshot). */
+export type CompareEntry =
+  | { readonly kind: 'phrase'; readonly phrase: string }
+  | {
+      readonly kind: 'payload';
+      readonly payload: ProfilePayload;
+      readonly label: string;
+      readonly emoji: string | null;
+    };
+
 /**
- * View phrases queued for comparison (max MAX_COMPARE, deduped). Each is
- * fetched and decrypted client-side; the comparison itself never touches the
- * server. Deliberately transient — nothing about who compared whom persists.
+ * Sources queued for comparison (max MAX_COMPARE, deduped). Phrase entries
+ * are fetched and decrypted client-side; payload entries arrive decrypted
+ * (group snapshots). The comparison itself never touches the server, and
+ * nothing about who compared whom persists.
  */
 @Injectable({ providedIn: 'root' })
 export class CompareStore {
   private readonly config = inject(ServerConfigStore);
 
-  readonly phrases = signal<readonly string[]>([]);
+  readonly entries = signal<readonly CompareEntry[]>([]);
 
   private readonly modelResource = resource({
-    params: () => ({ phrases: this.phrases(), state: this.config.state() }),
+    params: () => ({ entries: this.entries(), state: this.config.state() }),
     loader: async ({ params }) => {
-      const slots = await Promise.all(params.phrases.map((p) => this.load(p)));
+      const slots = await Promise.all(params.entries.map((e) => this.load(e)));
       return buildCompareModel(slots);
     },
   });
@@ -34,7 +47,7 @@ export class CompareStore {
   readonly loading = this.modelResource.isLoading;
 
   get full(): boolean {
-    return this.phrases().length >= MAX_COMPARE;
+    return this.entries().length >= MAX_COMPARE;
   }
 
   /** Extracts a phrase from pasted text/URL. Throws on junk. True if added. */
@@ -46,17 +59,32 @@ export class CompareStore {
 
   addPhrase(rawPhrase: string): boolean {
     const phrase = extractViewPhrase(rawPhrase);
-    if (!phrase || this.full || this.phrases().includes(phrase)) return false;
-    this.phrases.update((list) => [...list, phrase]);
+    if (
+      !phrase ||
+      this.full ||
+      this.entries().some((e) => e.kind === 'phrase' && e.phrase === phrase)
+    ) {
+      return false;
+    }
+    this.entries.update((list) => [...list, { kind: 'phrase', phrase }]);
+    return true;
+  }
+
+  /** A pseudonymous snapshot from a group roster. True if added. */
+  addPayload(payload: ProfilePayload, label: string, emoji: string | null): boolean {
+    if (this.full || this.entries().some((e) => e.kind === 'payload' && e.label === label)) {
+      return false;
+    }
+    this.entries.update((list) => [...list, { kind: 'payload', payload, label, emoji }]);
     return true;
   }
 
   remove(index: number): void {
-    this.phrases.update((list) => list.filter((_, i) => i !== index));
+    this.entries.update((list) => list.filter((_, i) => i !== index));
   }
 
   clear(): void {
-    this.phrases.set([]);
+    this.entries.set([]);
   }
 
   /** Latest computed model, for callers outside templates. */
@@ -64,7 +92,17 @@ export class CompareStore {
     return this.model();
   }
 
-  private async load(phrase: string): Promise<CompareSlot> {
+  private async load(entry: CompareEntry): Promise<CompareSlot> {
+    if (entry.kind === 'payload') {
+      return {
+        ref: entry.label,
+        payload: entry.payload,
+        persona: null,
+        label: entry.label,
+        emoji: entry.emoji,
+      };
+    }
+    const phrase = entry.phrase;
     try {
       const client = this.config.client();
       if (!client) throw new Error('No profile server is configured.');

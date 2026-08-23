@@ -9,6 +9,8 @@
 //   MOXY_MAX_BLOB_BYTES  ciphertext blob cap (default 262144)
 //   MOXY_TRUST_PROXY     '1' to honor X-Forwarded-For for rate limiting
 //   MOXY_MAX_PROFILES    hatch circuit breaker (default 100000; 503 beyond)
+//   MOXY_MAX_GROUPS      group circuit breaker (default 10000; 503 beyond)
+//   MOXY_MAX_GROUP_MEMBERS  deposits per group cap (default 32)
 //   MOXY_GC_EMPTY_MS     never-populated profiles die after this (default 7d)
 //   MOXY_GC_IDLE_MS      populated ones after no edit+no view for (default 365d)
 //   MOXY_GC_SWEEP_MS     sweep interval (default 1h)
@@ -19,8 +21,10 @@
 // proxy in front of this.
 import { createServer } from 'node:http';
 import { HATCH_DEFAULT_MAX_BLOB_BYTES } from '../libs/core/src/hatch/hatch-api.ts';
+import { GROUP_MAX_MEMBERS } from '../libs/core/src/group/group-api.ts';
 import { GC_EMPTY_MS, GC_IDLE_MS } from '../libs/core/src/hatch/constants.ts';
 import { ProfilesDb } from './profiles-db.ts';
+import { GroupsDb } from './groups-db.ts';
 import { createApp } from './http.ts';
 import { startGc } from './gc.ts';
 
@@ -29,17 +33,22 @@ const dbPath = process.env['MOXY_DB_PATH'] ?? './moxy-sync.db';
 const maxBlobBytes = Number(process.env['MOXY_MAX_BLOB_BYTES'] ?? HATCH_DEFAULT_MAX_BLOB_BYTES);
 const trustProxy = process.env['MOXY_TRUST_PROXY'] === '1';
 const maxProfiles = Number(process.env['MOXY_MAX_PROFILES'] ?? 100_000);
+const maxGroups = Number(process.env['MOXY_MAX_GROUPS'] ?? 10_000);
+const maxGroupMembers = Number(process.env['MOXY_MAX_GROUP_MEMBERS'] ?? GROUP_MAX_MEMBERS);
 const gcEmptyMs = Number(process.env['MOXY_GC_EMPTY_MS'] ?? GC_EMPTY_MS);
 const gcIdleMs = Number(process.env['MOXY_GC_IDLE_MS'] ?? GC_IDLE_MS);
 const gcSweepMs = Number(process.env['MOXY_GC_SWEEP_MS'] ?? 3_600_000);
 
 const profiles = new ProfilesDb(dbPath);
-const stopGc = startGc(profiles, {
+const groups = new GroupsDb(dbPath, maxGroupMembers);
+const stopGc = startGc([profiles, groups], {
   emptyTtlMs: gcEmptyMs,
   idleTtlMs: gcIdleMs,
   sweepIntervalMs: gcSweepMs,
 });
-const server = createServer(createApp({ profiles, maxBlobBytes, trustProxy, maxProfiles }));
+const server = createServer(
+  createApp({ profiles, groups, maxBlobBytes, trustProxy, maxProfiles, maxGroups }),
+);
 
 server.listen(port, () => {
   const address = server.address();
@@ -51,6 +60,7 @@ function shutdown(): void {
   stopGc();
   server.close(() => {
     profiles.close();
+    groups.close();
     process.exit(0);
   });
 }

@@ -11,6 +11,18 @@ export function randomSalt(): string {
 }
 
 /**
+ * Random 128-bit locator/token in the same 22-char b64url shape as
+ * KDF-derived ones. Used where a credential is stored, not remembered —
+ * e.g. a group membership's deposit locator and write token, which live in
+ * the member's encrypted PrivData.
+ */
+export function randomLocator(): string {
+  return bytesToB64url(randomBytes(16)); // 22 chars
+}
+
+export const randomToken = randomLocator;
+
+/**
  * Uniform random index in [0, n) for any n ≤ 65536, via rejection sampling —
  * no modulo bias regardless of list size.
  */

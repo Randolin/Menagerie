@@ -17,6 +17,11 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./edit-login/edit-login.component').then((m) => m.EditLoginComponent),
   },
+  // Group invites deep-link like view QRs: anyone with the phrase can look.
+  {
+    path: 'group/:phrase',
+    loadComponent: () => import('./group/group.component').then((m) => m.GroupComponent),
+  },
   {
     path: 'me',
     canActivate: [hatchSessionGuard],

@@ -8,12 +8,18 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ProfilesDb } from './profiles-db.ts';
+import { GroupsDb } from './groups-db.ts';
 import { createApp } from './http.ts';
 import { startGc } from './gc.ts';
 import {
   EDIT_TOKEN_HEADER,
   NEW_EDIT_TOKEN_HEADER,
 } from '../libs/core/src/hatch/hatch-api.ts';
+import {
+  ADMIN_TOKEN_HEADER,
+  MEMBER_TOKEN_HEADER,
+  NEW_ADMIN_TOKEN_HEADER,
+} from '../libs/core/src/group/group-api.ts';
 
 const DAY = 86_400_000;
 
@@ -31,6 +37,7 @@ let dbPath: string;
 let server: Server;
 let base: string;
 let profiles: ProfilesDb;
+let groups: GroupsDb;
 /** Raw second connection for backdating rows in GC tests. */
 let raw: DatabaseSync;
 
@@ -75,11 +82,13 @@ beforeAll(async () => {
   dir = mkdtempSync(join(tmpdir(), 'moxy-profiles-'));
   dbPath = join(dir, 'test.db');
   profiles = new ProfilesDb(dbPath);
+  groups = new GroupsDb(dbPath, 3); // tiny member cap to test 'full'
   raw = new DatabaseSync(dbPath);
   // Every request here shares one client key; keep the limiter out of the way.
   server = createServer(
     createApp({
       profiles,
+      groups,
       maxBlobBytes: 1024,
       trustProxy: false,
       readsPerMinute: 10_000,
@@ -95,6 +104,7 @@ afterAll(async () => {
   await new Promise((resolve) => server.close(resolve));
   raw.close();
   profiles.close();
+  groups.close();
   rmSync(dir, { recursive: true, force: true });
 });
 
@@ -364,5 +374,135 @@ describe('v2 profiles: capacity circuit breaker', () => {
       await new Promise((resolve) => capServer.close(resolve));
       capDb.close();
     }
+  });
+});
+
+describe('v2 groups: rosters and deposits', () => {
+  const G = id('g');
+  const G2 = id('h');
+  const ADMIN = id('k');
+  const M1 = id('m');
+  const M1_TOKEN = id('n');
+  const M2 = id('o');
+  const M2_TOKEN = id('p');
+
+  const createGroup = (locator: string, admin = ADMIN) =>
+    fetch(`${base}/v2/groups`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', [ADMIN_TOKEN_HEADER]: admin },
+      body: JSON.stringify({ group_locator: locator, blob_meta: 'META0' }),
+    });
+
+  const join = (group: string, member: string, token: string, blob = 'DEP0') =>
+    fetch(`${base}/v2/groups/${group}/members`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', [MEMBER_TOKEN_HEADER]: token },
+      body: JSON.stringify({ member_locator: member, blob_member: blob }),
+    });
+
+  test('create → read roster → join → deposit appears', async () => {
+    expect((await createGroup(G)).status).toBe(201);
+    expect((await createGroup(G)).status).toBe(409); // locator taken
+
+    const empty = await (await fetch(`${base}/v2/groups/${G}`)).json();
+    expect(empty).toEqual({ blob_meta: 'META0', version: 1, members: [] });
+
+    expect((await join(G, M1, M1_TOKEN)).status).toBe(201);
+    const roster = await (await fetch(`${base}/v2/groups/${G}`)).json();
+    expect(roster.members).toEqual([
+      { member_locator: M1, blob_member: 'DEP0', version: 1 },
+    ]);
+
+    expect((await join(id('z'), M2, M2_TOKEN)).status).toBe(404); // no such group
+  });
+
+  test('member updates own deposit with CAS; wrong token refused', async () => {
+    const put = (token: string, ifVersion: number) =>
+      fetch(`${base}/v2/groups/${G}/members/${M1}`, {
+        method: 'PUT',
+        headers: {
+          'content-type': 'application/json',
+          [MEMBER_TOKEN_HEADER]: token,
+          'if-match': String(ifVersion),
+        },
+        body: JSON.stringify({ blob_member: 'DEP1' }),
+      });
+    expect((await put(M2_TOKEN, 1)).status).toBe(401);
+    expect((await put(M1_TOKEN, 9)).status).toBe(409);
+    const ok = await put(M1_TOKEN, 1);
+    expect(ok.status).toBe(200);
+    expect(await ok.json()).toEqual({ version: 2 });
+  });
+
+  test('kick needs the admin token; leave needs the member token', async () => {
+    expect((await join(G, M2, M2_TOKEN, 'DEP2')).status).toBe(201);
+    const kickWrong = await fetch(`${base}/v2/groups/${G}/members/${M2}`, {
+      method: 'DELETE',
+      headers: { [ADMIN_TOKEN_HEADER]: id('x') },
+    });
+    expect(kickWrong.status).toBe(401);
+    const kick = await fetch(`${base}/v2/groups/${G}/members/${M2}`, {
+      method: 'DELETE',
+      headers: { [ADMIN_TOKEN_HEADER]: ADMIN },
+    });
+    expect(kick.status).toBe(204);
+    const leave = await fetch(`${base}/v2/groups/${G}/members/${M1}`, {
+      method: 'DELETE',
+      headers: { [MEMBER_TOKEN_HEADER]: M1_TOKEN },
+    });
+    expect(leave.status).toBe(204);
+    const roster = await (await fetch(`${base}/v2/groups/${G}`)).json();
+    expect(roster.members).toEqual([]);
+  });
+
+  test('member cap answers at_capacity', async () => {
+    for (let i = 0; i < 3; i++) {
+      expect((await join(G, id(String(i)), id('q'))).status).toBe(201);
+    }
+    const fourth = await join(G, id('4'), id('r'));
+    expect(fourth.status).toBe(503);
+    expect((await fourth.json()).error).toBe('at_capacity');
+  });
+
+  test('re-mint moves the roster and its deposits to a new locator', async () => {
+    const newAdmin = id('s');
+    const rekey = await fetch(`${base}/v2/groups/${G}`, {
+      method: 'PUT',
+      headers: {
+        'content-type': 'application/json',
+        [ADMIN_TOKEN_HEADER]: ADMIN,
+        [NEW_ADMIN_TOKEN_HEADER]: newAdmin,
+        'if-match': '1',
+      },
+      body: JSON.stringify({ blob_meta: 'META1', new_group_locator: G2 }),
+    });
+    expect(rekey.status).toBe(200);
+    expect((await fetch(`${base}/v2/groups/${G}`)).status).toBe(404); // old phrase dead
+    const moved = await (await fetch(`${base}/v2/groups/${G2}`)).json();
+    expect(moved.blob_meta).toBe('META1');
+    expect(moved.members.length).toBe(3); // deposits followed
+
+    const del = await fetch(`${base}/v2/groups/${G2}`, {
+      method: 'DELETE',
+      headers: { [ADMIN_TOKEN_HEADER]: newAdmin }, // old admin token is dead too
+    });
+    expect(del.status).toBe(204);
+    expect((await fetch(`${base}/v2/groups/${G2}`)).status).toBe(404);
+  });
+
+  test('GC: memberless groups die on the empty TTL, active ones idle out', async () => {
+    expect((await createGroup(id('e'))).status).toBe(201);
+    expect((await createGroup(id('f'))).status).toBe(201);
+    expect((await join(id('f'), id('w'), id('v'))).status).toBe(201);
+    raw.prepare('UPDATE groups SET created_at = created_at - ?').run(10 * DAY);
+    groups.sweep(7 * DAY, 365 * DAY);
+    expect((await fetch(`${base}/v2/groups/${id('e')}`)).status).toBe(404);
+    expect((await fetch(`${base}/v2/groups/${id('f')}`)).status).toBe(200);
+    // Now age everything past the idle TTL with no views since.
+    raw.prepare('UPDATE groups SET updated_at = 0, last_viewed_at = NULL').run();
+    groups.sweep(7 * DAY, 365 * DAY);
+    expect((await fetch(`${base}/v2/groups/${id('f')}`)).status).toBe(404);
+    const orphans = raw.prepare('SELECT COUNT(*) AS n FROM group_members').get();
+    expect(orphans.n).toBe(0);
   });
 });

@@ -18,10 +18,13 @@ import {
 
 /** One fetched-and-decrypted comparison source (or its failure). */
 export interface CompareSlot {
-  /** The view phrase it was loaded from. */
+  /** The view phrase it was loaded from, or a snapshot's label. */
   readonly ref: string;
   readonly payload?: ProfilePayload;
   readonly persona?: Persona | null;
+  /** Group-snapshot identity when no persona exists (pseudonym + emoji). */
+  readonly label?: string;
+  readonly emoji?: string | null;
   readonly error?: string;
 }
 
@@ -59,6 +62,8 @@ export interface CompareModel {
   readonly names: readonly string[];
   /** Aligned with payloads/names; null when a slot carries no persona. */
   readonly personas: readonly (Persona | null)[];
+  /** Aligned with names: persona emoji, or a snapshot's pseudonym emoji. */
+  readonly emojis: readonly (string | null)[];
   readonly grid: readonly GridSection[];
   /** Pair scores when exactly two payloads decoded, else null. */
   readonly pair: PairScores | null;
@@ -98,10 +103,12 @@ export async function buildCompareModel(slots: readonly CompareSlot[]): Promise<
   const good = slots.filter((s) => s.payload);
   const payloads = good.map((s) => s.payload!);
   // The creature IS the name — profiles carry no nickname by design.
+  // Group snapshots identify by their pseudonym instead.
   const names = good.map(
-    (s, i) => s.persona?.name ?? `Creature ${'ABCD'[i] ?? i + 1}`,
+    (s, i) => s.persona?.name ?? s.label ?? `Creature ${'ABCD'[i] ?? i + 1}`,
   );
   const personas = good.map((s) => s.persona ?? null);
+  const emojis = good.map((s) => s.persona?.emoji ?? s.emoji ?? null);
   const grid = payloads.length >= 2 ? buildGrid(payloads) : [];
 
   const pair = payloads.length === 2 ? pairScores(payloads[0], payloads[1]) : null;
@@ -141,6 +148,7 @@ export async function buildCompareModel(slots: readonly CompareSlot[]): Promise<
     payloads,
     names,
     personas,
+    emojis,
     grid,
     pair,
     interlocks,

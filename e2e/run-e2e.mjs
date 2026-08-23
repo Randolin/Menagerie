@@ -392,6 +392,76 @@ try {
   if (compareBody.includes('Impact play')) fail('one-sided desire leaked in compare');
   await shot(page, '06-compare.png');
 
+  // --- groups: create, join both tiers, compare, kick, re-mint --------------
+  step = 'group-create';
+  await page.goto(`${BASE}#/me`);
+  await page.waitForSelector('.section-grid');
+  await page.click('text=🐣 Create a group');
+  await page.waitForSelector('text=Your group is hatched', { timeout: 60000 });
+  const groupAdminPhrase = (await page.textContent('.notice .passphrase-box')).trim();
+  if (groupAdminPhrase.split(' ').length !== 5) fail('group admin phrase not 5 words');
+  await page.locator('.grid-row a', { hasText: 'Open' }).first().click();
+  // Gate on something unique to a LOADED group page — the dashboard's groups
+  // blurb also contains the word "Members", so that alone can win a race
+  // against the SPA navigation and capture the wrong page's code-box.
+  await page.waitForSelector('text=📋 Copy invite link', { timeout: 45000 });
+  const groupPhrase = (await page.textContent('.code-box')).trim();
+  if (!/^[a-z]+(-[a-z]+){5}$/.test(groupPhrase)) fail(`group phrase malformed: "${groupPhrase}"`);
+
+  step = 'group-join-open';
+  await page.click('text=🦊 Join openly'); // A deposits with creature + view link
+  await page.waitForSelector('text=(you)', { timeout: 60000 });
+
+  step = 'group-join-pseudonym';
+  await pageB.goto(`${BASE}#/group/${groupPhrase}`);
+  await pageB.waitForSelector('text=📋 Copy invite link', { timeout: 45000 });
+  await pageB.click('text=🐾 Join with a pseudonym');
+  await pageB.waitForSelector('text=(you)', { timeout: 60000 });
+  if ((await pageB.textContent('body')).includes('Members (2)') === false) {
+    await pageB.waitForSelector('text=Members (2)', { timeout: 15000 });
+  }
+
+  step = 'group-roster';
+  await page.reload();
+  await page.waitForSelector('text=Members (2)', { timeout: 45000 });
+  const rosterA = await page.textContent('body');
+  if (rosterA.includes(personaNameB)) fail('pseudonymous deposit leaked the creature');
+  if (!rosterA.includes('% overall match with you')) fail('group match % missing');
+  if (!rosterA.includes('pseudonym')) fail('pseudonym badge missing');
+
+  // B opens up — the creature appears for everyone.
+  await pageB.click('text=Open up — share my creature');
+  await pageB.waitForSelector(`text=${personaNameB}`, { timeout: 60000 });
+  await page.reload();
+  await page.waitForSelector(`text=${personaNameB}`, { timeout: 45000 });
+
+  step = 'group-compare';
+  await page.locator('input[type="checkbox"][aria-label^="Select"]').first().check();
+  await page.click('button:has-text("Compare")');
+  await page.waitForSelector('text=Overall alignment', { timeout: 45000 });
+  if (!(await page.textContent('body')).includes(personaNameB)) {
+    fail('group compare missing the selected member');
+  }
+
+  step = 'group-kick';
+  await page.goto(`${BASE}#/group/${groupPhrase}`);
+  await page.waitForSelector('text=Members (2)', { timeout: 45000 });
+  await page.locator('button', { hasText: '✕ Kick' }).first().click(); // confirm auto-accepted
+  await page.waitForSelector('text=Members (1)', { timeout: 45000 });
+
+  step = 'group-remint';
+  await page.click('text=🎲 Re-mint group');
+  await page.waitForFunction(
+    (old) => document.querySelector('.code-box')?.textContent?.trim() !== old,
+    groupPhrase,
+    { timeout: 90000 },
+  );
+  const groupPhrase2 = (await page.textContent('.code-box')).trim();
+  await page.waitForSelector('text=Members (1)', { timeout: 45000 }); // A auto re-deposited
+  const deadGroup = await freshPage();
+  await deadGroup.goto(`${BASE}#/group/${groupPhrase}`);
+  await deadGroup.waitForSelector('text=Couldn’t open that group', { timeout: 30000 });
+
   // --- regenerate: new creature, old links and QRs die ----------------------
   step = 'regenerate';
   await page.goto(`${BASE}#/me`);
@@ -473,8 +543,9 @@ try {
   // Markers are chosen so base64url ciphertext can't contain them by chance:
   // multi-word phrases with spaces/hyphens, quoted JSON keys, dotted item ids.
   for (const marker of [
-    editPhrase, viewPhrase, viewPhrase2,
-    '"answers"', '"viewPhrase"', '"connections"', '"weights"', 'dp.rope', '"a":',
+    editPhrase, viewPhrase, viewPhrase2, groupPhrase, groupPhrase2, groupAdminPhrase,
+    '"answers"', '"viewPhrase"', '"connections"', '"weights"', '"pseudonym"',
+    '"snapshot"', 'dp.rope', '"a":',
   ]) {
     if (dbBytes.includes(marker)) fail(`plaintext ${JSON.stringify(marker)} at rest`);
   }
