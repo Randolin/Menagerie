@@ -1,0 +1,33 @@
+# Manual "Redeploy server" button — run it from the GitHub mobile app:
+# Actions → Redeploy server → Run workflow. It SSHes to the box with a
+# single-purpose deploy key whose authorized_keys entry carries a forced
+# command (deploy/update.sh --force), so this key can trigger a redeploy
+# and nothing else. Setup steps live in deploy/README.md.
+name: Redeploy server
+
+on:
+  workflow_dispatch:
+
+concurrency: redeploy-server
+
+jobs:
+  redeploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger the server's update script over SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          if [ -z "$DEPLOY_SSH_KEY" ] || [ -z "$DEPLOY_HOST" ]; then
+            echo "Set the DEPLOY_SSH_KEY and DEPLOY_HOST repository secrets first (see deploy/README.md)."
+            exit 1
+          fi
+          install -m 600 /dev/null deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > deploy_key
+          # The server ignores any command we send: the key's forced command
+          # (update.sh --force) runs instead, streaming its output here.
+          ssh -i deploy_key \
+              -o StrictHostKeyChecking=accept-new \
+              -o ConnectTimeout=15 \
+              "root@$DEPLOY_HOST" redeploy

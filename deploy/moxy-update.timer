@@ -1,0 +1,12 @@
+# Follow origin/main: check every 10 minutes, deploy only on new commits.
+# Merging a PR is deploying — CI already gates the default branch.
+[Unit]
+Description=Menagerie profile-server update timer
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
