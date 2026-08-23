@@ -6,8 +6,10 @@
 // decrypt, never recover a phrase, and never forge a write.
 import { derivePhraseKeys } from '../crypto/phrase-kdf';
 
-const VIEW_DOMAIN = 'moxy.hatch.view.v1';
-const EDIT_DOMAIN = 'moxy.hatch.edit.v1';
+// v2: Argon2id derivation (see crypto/phrase-kdf.ts) — bumped together with
+// the KDF so v1 (PBKDF2) credentials can never collide with v2 namespaces.
+const VIEW_DOMAIN = 'moxy.hatch.view.v2';
+const EDIT_DOMAIN = 'moxy.hatch.edit.v2';
 
 export interface ViewKeys {
   readonly viewLocator: string;

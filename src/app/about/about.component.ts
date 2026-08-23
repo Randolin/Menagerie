@@ -21,9 +21,10 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
         your creature’s name plus three more) is what you share: as text, a link, or a QR
         code. The <strong>edit phrase</strong> (five words, ~65 bits of entropy) is yours
         alone and is the only way to change or delete the profile. Each phrase is run
-        through PBKDF2 (300,000 rounds of SHA-512) to derive an address on the server and
-        an AES-256-GCM encryption key — the server sees only the addresses and ciphertext,
-        never a phrase, never a key, never an answer.
+        through Argon2id — a memory-hard key derivation that forces every guess to chew
+        through 64&nbsp;MiB of RAM — to derive an address on the server and an AES-256-GCM
+        encryption key. The server sees only the addresses and ciphertext, never a phrase,
+        never a key, never an answer.
       </p>
       <ul>
         <li>Keep the edit phrase → you can log in from any device and edit or delete.</li>
@@ -44,11 +45,14 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
       </p>
       <p class="sub">
         The flip side, honestly: those three words are public-by-design, so the secret
-        part of a view phrase is really the last three words (~39 bits). That prices a
-        targeted brute-force at roughly a GPU-year — a real curtain, not a vault door.
-        Your edit control never rests on it. “New creature” re-mints the whole view
-        phrase: every old link, QR code, and desire fingerprint dies instantly, and
-        that is the unlink lever.
+        part of a view phrase is really the poetic tail — the last three words, drawn
+        from curated lists of 2,048 each (33 bits). Argon2id’s memory cost prices a
+        targeted brute-force of that tail in GPU-months to a GPU-year — a real curtain,
+        not a vault door. The creature’s accent color is computed from the public three
+        words alone, so nothing shown on screen hints at the tail. Your edit control
+        never rests on any of this. “New creature” re-mints the whole view phrase: every
+        old link, QR code, and desire fingerprint dies instantly, and that is the
+        unlink lever.
       </p>
     </div>
 

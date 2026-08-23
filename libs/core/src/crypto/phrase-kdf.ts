@@ -1,19 +1,24 @@
 // The one passphrase KDF: phrase → { locator, AES-GCM key, bearer token }.
 //
-// A single PBKDF2-SHA-512 derivation (300k iterations) yields all three, so
-// no output is cheaper to brute-force than another. The salt is a fixed
-// domain constant because the record must be findable from the phrase alone —
-// the phrase's own entropy is what carries the security. Distinct domain
-// salts (hatch view vs. edit) guarantee the same phrase used in different
-// roles can never collide across namespaces.
+// Argon2id (memory-hard: 64 MiB × 3 passes) — chosen over PBKDF2 because the
+// view phrase's secret tail is 33 bits of curated-list words, and memory
+// hardness is what makes each attacker guess expensive on GPUs. One
+// derivation yields all three outputs from disjoint slices, so none is
+// cheaper to brute-force than another. The salt is a fixed domain constant
+// because the record must be findable from the phrase alone — the phrase's
+// entropy carries the security. Distinct domain salts (hatch view vs. edit)
+// guarantee the same phrase used in different roles can never collide.
 //
 // This is real cryptography (unlike the match-token curtain): AES-256-GCM
 // with no server-side recovery. Losing the phrase loses the data.
+import { argon2id } from 'hash-wasm';
 import { bytesToB64url } from '../codec/base64url';
 
-const subtle = globalThis.crypto.subtle;
-
-export const PHRASE_KDF_ITERATIONS = 300_000;
+export const PHRASE_KDF_PARAMS = {
+  memorySizeKiB: 65536,
+  iterations: 3,
+  parallelism: 1,
+} as const;
 
 export interface PhraseKeys {
   /** b64url of KDF bytes 0..16 — names the storage slot. 22 chars. */
@@ -32,25 +37,16 @@ export async function derivePhraseKeys(
   passphrase: string,
   domainSalt: string,
 ): Promise<PhraseKeys> {
-  const material = await subtle.importKey(
-    'raw',
-    new TextEncoder().encode(normalizePassphrase(passphrase)),
-    'PBKDF2',
-    false,
-    ['deriveBits'],
-  );
-  const bits = await subtle.deriveBits(
-    {
-      name: 'PBKDF2',
-      hash: 'SHA-512',
-      salt: new TextEncoder().encode(domainSalt),
-      iterations: PHRASE_KDF_ITERATIONS,
-    },
-    material,
-    512,
-  );
-  const bytes = new Uint8Array(bits);
-  const key = await subtle.importKey(
+  const bytes = await argon2id({
+    password: normalizePassphrase(passphrase),
+    salt: new TextEncoder().encode(domainSalt),
+    memorySize: PHRASE_KDF_PARAMS.memorySizeKiB,
+    iterations: PHRASE_KDF_PARAMS.iterations,
+    parallelism: PHRASE_KDF_PARAMS.parallelism,
+    hashLength: 64,
+    outputType: 'binary',
+  });
+  const key = await globalThis.crypto.subtle.importKey(
     'raw',
     bytes.slice(16, 48),
     { name: 'AES-GCM' },

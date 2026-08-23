@@ -1,16 +1,19 @@
 // Phrase minting and recognition.
 //
-// View phrase (6 words, fixed grammar): adjA-adjB-animal + three random EFF
-// words. The first three words ARE the profile's creature name by
-// construction (18 bits, public by design — anyone who sees the persona chip
-// learns them), so the secret budget is the 3-word tail (~39 bits). At the
-// 300k-iteration KDF that prices a persona-aware targeted attack at roughly
-// a GPU-year — a deliberate curtain, documented in-app. Edit phrase: 5 EFF
-// words (~65 bits) — the strong credential.
+// View phrase (6 words, fixed grammar): adjA-adjB-animal + a poetic secret
+// tail of adjC-adjD-place from the 2,048-entry compound lists —
+// `animated-pink-dartfrog-mistwoven-emberlit-fernhollow`. The first three
+// words ARE the profile's creature name by construction (18 bits, public by
+// design — anyone who sees the persona chip learns them), so the secret
+// budget is the tail: exactly 33 bits, priced by the memory-hard Argon2id
+// KDF — a deliberate curtain, documented in-app. The tail is handled as a
+// secret: never displayed, never themed. Edit phrase: 5 EFF words
+// (~65 bits) — the strong credential.
 import { normalizePassphrase } from '../crypto/phrase-kdf';
 import { generatePassphrase } from '../crypto/passphrase';
-import { randomBytes } from '../crypto/random';
+import { randomBytes, randomIndex } from '../crypto/random';
 import { ADJECTIVES_A, ADJECTIVES_B, ANIMALS } from '../persona/wordlists';
+import { TAIL_ADJECTIVES, TAIL_PLACES } from '../persona/tail-wordlists';
 
 export const VIEW_PHRASE_WORDS = 6;
 export const EDIT_PHRASE_WORDS = 5;
@@ -21,13 +24,14 @@ function pick64(list: readonly unknown[]): number {
 }
 
 export async function mintViewPhrase(): Promise<string> {
-  const head = [
+  return [
     ADJECTIVES_A[pick64(ADJECTIVES_A)],
     ADJECTIVES_B[pick64(ADJECTIVES_B)],
     ANIMALS[pick64(ANIMALS)].name,
-  ];
-  const tail = await generatePassphrase(3);
-  return [...head, ...tail.split(' ')].join('-');
+    TAIL_ADJECTIVES[randomIndex(TAIL_ADJECTIVES.length)],
+    TAIL_ADJECTIVES[randomIndex(TAIL_ADJECTIVES.length)],
+    TAIL_PLACES[randomIndex(TAIL_PLACES.length)],
+  ].join('-');
 }
 
 export async function mintEditPhrase(): Promise<string> {
@@ -39,10 +43,14 @@ export function canonicalViewPhrase(text: string): string {
   return normalizePassphrase(text).split(' ').join('-');
 }
 
+const TAIL_ADJ_SET = new Set<string>(TAIL_ADJECTIVES);
+const TAIL_PLACE_SET = new Set<string>(TAIL_PLACES);
+
 /**
  * Grammar check: word 1 ∈ adjectives-A, word 2 ∈ adjectives-B, word 3 ∈
- * animals, then exactly three more words. Gives instant client-side
- * validation and makes view phrases visually distinct from edit phrases.
+ * animals, words 4–5 ∈ tail adjectives, word 6 ∈ tail places. Gives instant
+ * client-side validation and makes view phrases visually distinct from edit
+ * phrases.
  */
 export function isViewPhraseShaped(text: string): boolean {
   const words = canonicalViewPhrase(text).split('-');
@@ -51,7 +59,9 @@ export function isViewPhraseShaped(text: string): boolean {
     ADJECTIVES_A.includes(words[0]) &&
     ADJECTIVES_B.includes(words[1]) &&
     ANIMALS.some((a) => a.name === words[2]) &&
-    words.slice(3).every((w) => /^[a-z]+$/.test(w))
+    TAIL_ADJ_SET.has(words[3]) &&
+    TAIL_ADJ_SET.has(words[4]) &&
+    TAIL_PLACE_SET.has(words[5])
   );
 }
 

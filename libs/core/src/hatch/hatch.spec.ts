@@ -12,40 +12,43 @@ import { encryptBlob, decryptBlob } from './blob';
 import { emptyPrivData, migratePrivData } from './priv-data';
 import { personaFromViewPhrase } from '../persona/persona';
 import { ADJECTIVES_A, ADJECTIVES_B, ANIMALS } from '../persona/wordlists';
+import { TAIL_ADJECTIVES, TAIL_PLACES } from '../persona/tail-wordlists';
 import { derivePhraseKeys } from '../crypto/phrase-kdf';
 
-const FROZEN_VIEW_PHRASE = 'amber-azure-fox-canal-stove-plume';
+const FROZEN_VIEW_PHRASE = 'amber-azure-fox-mistwoven-emberlit-fernhollow';
 const FROZEN_EDIT_PHRASE = 'correct horse battery staple luck';
 
-describe('hatch key derivation (frozen vectors)', () => {
+describe('hatch key derivation (frozen vectors, KDF v2)', () => {
   // Captured from the shipped implementation. If these fail, every hatched
   // profile's locators/tokens silently change. Fix the regression, never the
   // values.
   test('view keys', async () => {
     const keys = await deriveViewKeys(FROZEN_VIEW_PHRASE);
-    expect(keys.viewLocator).toBe('Fa63esdIBN1zBlK1yIhCuQ');
+    expect(keys.viewLocator).toBe('SauNSo4rWzJu_7HMdiy2-g');
     // Hyphens and spaces normalize identically.
-    const spaced = await deriveViewKeys('amber azure fox canal stove plume');
+    const spaced = await deriveViewKeys('amber azure fox mistwoven emberlit fernhollow');
     expect(spaced.viewLocator).toBe(keys.viewLocator);
-  });
+  }, 30000);
 
   test('edit keys', async () => {
     const keys = await deriveEditKeys(FROZEN_EDIT_PHRASE);
-    expect(keys.editLocator).toBe('BcMN9qp5Bhn0QxaQ4KXFig');
-    expect(keys.editToken).toBe('uPACZV93COs-4KPtsdb1xg');
-  });
+    expect(keys.editLocator).toBe('LAviT3zFamXacDtKx8cC2A');
+    expect(keys.editToken).toBe('H-fY9ATfWdKgnXHN_TSCUw');
+  }, 30000);
 
   test('domains are disjoint: same phrase, different roles, different keys', async () => {
     const view = await deriveViewKeys(FROZEN_EDIT_PHRASE);
     const edit = await deriveEditKeys(FROZEN_EDIT_PHRASE);
-    const legacy = await derivePhraseKeys(FROZEN_EDIT_PHRASE, 'moxy.vault.v1');
-    const locators = [view.viewLocator, edit.editLocator, legacy.locator];
+    const other = await derivePhraseKeys(FROZEN_EDIT_PHRASE, 'moxy.kdf.freeze.test');
+    const locators = [view.viewLocator, edit.editLocator, other.locator];
     expect(new Set(locators).size).toBe(3);
-  });
+  }, 30000);
 });
 
 describe('phrase minting and shape', () => {
-  test('view phrase: 6 words with the fixed grammar; head words are the persona', async () => {
+  test('view phrase: creature head + poetic tail, per grammar', async () => {
+    const tailAdj = new Set(TAIL_ADJECTIVES);
+    const tailPlaces = new Set(TAIL_PLACES);
     for (let i = 0; i < 10; i++) {
       const phrase = await mintViewPhrase();
       const words = phrase.split('-');
@@ -53,6 +56,9 @@ describe('phrase minting and shape', () => {
       expect(ADJECTIVES_A).toContain(words[0]);
       expect(ADJECTIVES_B).toContain(words[1]);
       expect(ANIMALS.some((a) => a.name === words[2])).toBe(true);
+      expect(tailAdj.has(words[3])).toBe(true);
+      expect(tailAdj.has(words[4])).toBe(true);
+      expect(tailPlaces.has(words[5])).toBe(true);
       expect(isViewPhraseShaped(phrase)).toBe(true);
 
       const persona = await personaFromViewPhrase(phrase);
@@ -66,8 +72,15 @@ describe('phrase minting and shape', () => {
     expect(isViewPhraseShaped(phrase)).toBe(false);
   });
 
+  test('tail words outside the lists are rejected', () => {
+    expect(isViewPhraseShaped('amber-azure-fox-random-junk-words')).toBe(false);
+    expect(isViewPhraseShaped('amber-azure-fox-mistwoven-emberlit-notaplace')).toBe(false);
+  });
+
   test('extraction from phrase text and from view URLs', () => {
-    expect(extractViewPhrase('  Amber Azure Fox canal stove plume ')).toBe(FROZEN_VIEW_PHRASE);
+    expect(extractViewPhrase('  Amber Azure Fox mistwoven emberlit fernhollow ')).toBe(
+      FROZEN_VIEW_PHRASE,
+    );
     expect(extractViewPhrase(`https://host/app/#/view/${FROZEN_VIEW_PHRASE}`)).toBe(
       FROZEN_VIEW_PHRASE,
     );
@@ -83,19 +96,20 @@ describe('phrase minting and shape', () => {
   });
 });
 
-describe('persona v2', () => {
+describe('persona v3', () => {
   test('frozen color vector; identity is the literal head words', async () => {
     const persona = await personaFromViewPhrase(FROZEN_VIEW_PHRASE);
     expect(persona?.name).toBe('amber-azure-fox');
     expect(persona?.emoji).toBe('🦊');
-    expect(persona?.colorIndex).toBe(3);
+    expect(persona?.colorIndex).toBe(11);
+    expect(persona?.color).toBe('#0b5e8a');
   });
 
-  test('color depends on the secret tail; identity does not', async () => {
-    const other = await personaFromViewPhrase('amber-azure-fox-other-tail-words');
+  test('color derives from the HEAD only — the chip leaks nothing about the tail', async () => {
+    const other = await personaFromViewPhrase('amber-azure-fox-starworn-dewkissed-moonvale');
     expect(other?.name).toBe('amber-azure-fox');
-    // (colors may coincide 1/16 of the time; assert only derivability)
-    expect(other?.color).toMatch(/^#[0-9a-f]{6}$/);
+    expect(other?.colorIndex).toBe(11);
+    expect(other?.color).toBe('#0b5e8a');
   });
 
   test('non-list words yield null', async () => {
@@ -113,14 +127,14 @@ describe('blob envelope', () => {
 
     const { editKey } = await deriveEditKeys(FROZEN_EDIT_PHRASE);
     await expect(decryptBlob(blob, editKey)).rejects.toThrow();
-  });
+  }, 30000);
 
   test('fresh IV per encryption: same plaintext, different ciphertext', async () => {
     const { viewKey } = await deriveViewKeys(FROZEN_VIEW_PHRASE);
     const a = await encryptBlob({ x: 1 }, viewKey);
     const b = await encryptBlob({ x: 1 }, viewKey);
     expect(a).not.toBe(b);
-  });
+  }, 30000);
 });
 
 describe('priv data', () => {

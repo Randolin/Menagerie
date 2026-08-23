@@ -1,25 +1,27 @@
-// Frozen KDF fixture: these exact outputs were captured from the original
-// shipped implementation (domain 'moxy.vault.v1' is the historical anchor —
-// the hatch domains run through the very same function). If any assertion
-// fails, the derivation drifted and every existing profile's locators,
-// tokens, and keys would silently break. Do not "fix" the expected values —
-// fix the regression.
+// Frozen KDF fixture (v2, Argon2id): these exact outputs were captured from
+// the shipped implementation. If any assertion fails, the derivation drifted
+// and every existing profile's locators, tokens, and keys would silently
+// break. Do not "fix" the expected values — fix the regression.
 import { describe, expect, test } from 'vitest';
-import { b64urlToBytes } from '../codec/base64url';
-import { derivePhraseKeys, normalizePassphrase } from './phrase-kdf';
+import { b64urlToBytes, bytesToB64url } from '../codec/base64url';
+import { derivePhraseKeys, normalizePassphrase, PHRASE_KDF_PARAMS } from './phrase-kdf';
 
 const FROZEN = {
   passphrase: 'correct horse battery staple luck',
-  domain: 'moxy.vault.v1',
-  locator: 'Der1f4kqFOPzL2mAoHI-NQ',
-  token: 'ue0aXQIEANCW_sNhgDKL8g',
-  // AES-GCM of {"v":1,"profiles":[],"connections":[]} under the derived key
-  // (fixture uses a zero IV for determinism; production IVs are random).
-  blob: 'AAAAAAAAAAAAAAAAN9vCX338NYCBc2jZ-aV2rLbHGJD3ZJl8U7B-wZDiEbOb5AncSzMDyEmd8M6Sru4WAxhEJ08f',
+  domain: 'moxy.kdf.freeze.test',
+  locator: 'K06pmyHZARRA_oR5vRkI0A',
+  token: 'AgNLxjieG53jgtKBQZYClQ',
+  // AES-GCM of 'menagerie-kdf-pin' under the derived key (fixture uses a
+  // zero IV for determinism; production IVs are random). Pins the key slice.
+  pin: 'CovErbS8h1Me1JPup74MYnYZ366u9nbCmwlwMOAurpDy',
 };
 
-describe('phrase KDF freeze', () => {
-  test('locator, token, and key are exactly what they were at v1', async () => {
+describe('phrase KDF v2 freeze (Argon2id)', () => {
+  test('parameters are the frozen cost profile', () => {
+    expect(PHRASE_KDF_PARAMS).toEqual({ memorySizeKiB: 65536, iterations: 3, parallelism: 1 });
+  });
+
+  test('locator, token, and key are exactly what they were at v2', async () => {
     const keys = await derivePhraseKeys(FROZEN.passphrase, FROZEN.domain);
     expect(keys.locator).toBe(FROZEN.locator);
     expect(keys.token).toBe(FROZEN.token);
@@ -27,16 +29,16 @@ describe('phrase KDF freeze', () => {
     expect(keys.token).toHaveLength(22);
     expect(keys.locator).not.toBe(keys.token);
 
-    // The key slice is pinned by decrypting a blob frozen under it.
-    const bytes = b64urlToBytes(FROZEN.blob);
-    const plain = await globalThis.crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: bytes.slice(0, 12) as BufferSource },
-      keys.key,
-      bytes.slice(12) as BufferSource,
+    const iv = new Uint8Array(12);
+    const ct = new Uint8Array(
+      await globalThis.crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv },
+        keys.key,
+        new TextEncoder().encode('menagerie-kdf-pin'),
+      ),
     );
-    const parsed = JSON.parse(new TextDecoder().decode(plain)) as { v: number };
-    expect(parsed.v).toBe(1);
-  });
+    expect(bytesToB64url(ct)).toBe(FROZEN.pin);
+  }, 30000);
 
   test('locator and token bytes come from disjoint KDF regions', () => {
     expect(b64urlToBytes(FROZEN.locator)).toHaveLength(16);
@@ -47,5 +49,5 @@ describe('phrase KDF freeze', () => {
     expect(normalizePassphrase('  Correct-Horse battery  STAPLE luck ')).toBe(FROZEN.passphrase);
     const derived = await derivePhraseKeys('Correct-Horse-Battery-Staple-Luck', FROZEN.domain);
     expect(derived.locator).toBe(FROZEN.locator);
-  });
+  }, 30000);
 });
