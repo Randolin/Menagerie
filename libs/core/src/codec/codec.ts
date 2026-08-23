@@ -40,8 +40,9 @@ export function buildSharePayload(
     const rawWeight = weights[item.id];
     if (rawWeight !== 1 && rawWeight !== 2 && rawWeight !== 3) continue;
     let weight: ImportanceWeight = rawWeight;
-    if (item.type === 'scale' && weight === 3) weight = 2;
-    if (weight === 3) {
+    if (item.type === 'scale') {
+      if (weight === 3) weight = 2;
+    } else if (weight === 3) {
       const max = item.type === 'interest' ? 4 : item.options.length;
       const ok = (acceptable[item.id] ?? []).filter(
         (i) => Number.isInteger(i) && i >= 0 && i < max,

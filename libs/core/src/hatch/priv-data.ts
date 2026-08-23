@@ -4,7 +4,7 @@
 // key, persona, QR) from one credential — and the FULL answer set: match-only
 // desires exist in blob_view only as salted hashes, so this is the sole
 // place they survive for re-editing.
-import type { Answers } from '../schema/types';
+import type { Acceptable, Answers, Weights } from '../schema/types';
 
 export interface SavedConnection {
   id: string;
@@ -28,6 +28,10 @@ export interface PrivData {
   desiresSalt: string | null;
   connections: SavedConnection[];
   notes?: string;
+  /** Per-item importance weighting (absent on blobs written before v2 schema). */
+  weights?: Weights;
+  /** Acceptable option sets for dealbreaker-weighted items. */
+  acceptable?: Acceptable;
 }
 
 export function emptyPrivData(viewPhrase: string): PrivData {

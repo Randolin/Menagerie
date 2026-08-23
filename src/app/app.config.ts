@@ -5,6 +5,7 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideRouter, withHashLocation } from '@angular/router';
+import { getSection } from '@moxy/core';
 import { routes } from './app.routes';
 import { provideComparePanel } from './compare/compare-panels.token';
 import { ServerConfigStore } from './stores/server-config.store';
@@ -25,6 +26,24 @@ export const appConfig: ApplicationConfig = {
       id: 'headline',
       order: 10,
       loadComponent: () => import('./compare/panels/headline.panel').then((m) => m.HeadlinePanel),
+    }),
+    provideComparePanel({
+      id: 'fingerprint',
+      order: 15,
+      loadComponent: () =>
+        import('./compare/panels/fingerprint.panel').then((m) => m.FingerprintPanel),
+      // Needs at least three values scales everyone answered to draw shapes.
+      visible: (model) => {
+        const values = getSection('values');
+        if (!values || model.payloads.length < 2) return false;
+        return (
+          values.items.filter(
+            (item) =>
+              item.type === 'scale' &&
+              model.payloads.every((p) => typeof p.a[item.id] === 'number'),
+          ).length >= 3
+        );
+      },
     }),
     provideComparePanel({
       id: 'values-strips',

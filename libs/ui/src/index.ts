@@ -9,6 +9,8 @@ export { StatTileComponent } from './charts/stat-tile.component';
 export { SimDotComponent } from './charts/sim-dot.component';
 export { AnswerTextComponent } from './charts/answer-text.component';
 export { PairMatrixComponent } from './charts/pair-matrix.component';
+export { RingComponent } from './charts/ring.component';
+export { RadarComponent, type RadarSeries } from './charts/radar.component';
 
 export { ToastService, type ToastKind } from './widgets/toast.service';
 export { ToastComponent } from './widgets/toast.component';
