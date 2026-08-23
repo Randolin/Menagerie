@@ -15,21 +15,32 @@ import {
   MEMBER_TOKEN_HEADER,
   NEW_ADMIN_TOKEN_HEADER,
 } from '../libs/core/src/group/group-api.ts';
+import {
+  METRICS_BUCKET_RE,
+  METRICS_DEFAULT_K,
+  METRICS_EPOCH_RE,
+  METRICS_MAX_BUCKETS,
+} from '../libs/core/src/metrics/metrics-api.ts';
 import type { ProfilesDb } from './profiles-db.ts';
 import type { GroupsDb } from './groups-db.ts';
+import type { MetricsDb } from './metrics-db.ts';
 import { RateLimiter } from './rate-limit.ts';
 
 export interface AppOptions {
   profiles: ProfilesDb;
   groups: GroupsDb;
+  metrics: MetricsDb;
   maxBlobBytes: number;
   trustProxy: boolean;
   readsPerMinute?: number;
   writesPerMinute?: number;
+  metricsPerMinute?: number;
   /** Circuit breaker: POST /v2/profiles answers 503 at_capacity beyond this. */
   maxProfiles?: number;
   /** Circuit breaker: POST /v2/groups answers 503 at_capacity beyond this. */
   maxGroups?: number;
+  /** k-floor: aggregate buckets under this count are never served. */
+  metricsK?: number;
 }
 
 const CORS_HEADERS = {
@@ -80,10 +91,17 @@ async function readBody(req: IncomingMessage, cap: number): Promise<string | nul
   return Buffer.concat(chunks).toString('utf8');
 }
 
+/** UTC year-month, e.g. "2026-08" — the current metrics epoch. */
+function serverEpoch(): string {
+  const d = new Date();
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
 export function createApp(opts: AppOptions) {
   const profiles = opts.profiles;
   const readLimiter = new RateLimiter(opts.readsPerMinute ?? 120);
   const writeLimiter = new RateLimiter(opts.writesPerMinute ?? 30);
+  const metricsLimiter = new RateLimiter(opts.metricsPerMinute ?? 5);
   // HTTP body cap: two blobs plus JSON framing.
   const bodyCap = opts.maxBlobBytes * 3;
 
@@ -135,10 +153,63 @@ export function createApp(opts: AppOptions) {
       }
 
       const key = clientKey(req, opts.trustProxy);
+
+      // POST /v2/metrics — opt-in anonymous counters, on its own (tight)
+      // rate bucket so submissions never contend with profile saves.
+      if (pathname === '/v2/metrics' && method === 'POST') {
+        if (!metricsLimiter.take(key)) {
+          res.setHeader('retry-after', '60');
+          sendError(res, 429, 'rate_limited');
+          return;
+        }
+        const body = await readJson(req, res);
+        if (!body) return;
+        const epoch = body['epoch'];
+        const token = body['token'];
+        const buckets = body['buckets'];
+        if (typeof epoch !== 'string' || epoch !== serverEpoch()) {
+          sendError(res, 400, 'bad_request', { message: 'epoch must be the current UTC month' });
+          return;
+        }
+        if (typeof token !== 'string' || !HATCH_LOCATOR_RE.test(token)) {
+          sendError(res, 400, 'bad_request', { message: 'malformed token' });
+          return;
+        }
+        if (
+          !Array.isArray(buckets) ||
+          buckets.length === 0 ||
+          buckets.length > METRICS_MAX_BUCKETS ||
+          !buckets.every((b) => typeof b === 'string' && METRICS_BUCKET_RE.test(b))
+        ) {
+          sendError(res, 400, 'bad_request', { message: 'malformed buckets' });
+          return;
+        }
+        const tokenHash = createHash('sha256').update(token, 'utf8').digest('hex');
+        const outcome = opts.metrics.submit(epoch, tokenHash, buckets as string[]);
+        if (outcome === 'ok') send(res, 201, { ok: true });
+        else sendError(res, 409, 'version_conflict', { message: 'already submitted this epoch' });
+        return;
+      }
+
       const limiter = method === 'GET' ? readLimiter : writeLimiter;
       if (!limiter.take(key)) {
         res.setHeader('retry-after', '60');
         sendError(res, 429, 'rate_limited');
+        return;
+      }
+
+      // GET /v2/metrics/:epoch — the k-floored public aggregate.
+      const metricsMatch = pathname.match(/^\/v2\/metrics\/([^/]+)$/);
+      if (metricsMatch && method === 'GET') {
+        if (!METRICS_EPOCH_RE.test(metricsMatch[1])) {
+          sendError(res, 400, 'bad_request', { message: 'malformed epoch' });
+          return;
+        }
+        res.setHeader('cache-control', 'public, max-age=300');
+        send(res, 200, {
+          epoch: metricsMatch[1],
+          buckets: opts.metrics.get(metricsMatch[1], opts.metricsK ?? METRICS_DEFAULT_K),
+        });
         return;
       }
 

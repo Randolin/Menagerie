@@ -196,6 +196,23 @@ import { CompareStore } from '../stores/compare.store';
     </div>
 
     <div class="card">
+      <h2>Contribute anonymously</h2>
+      <p class="sub">
+        Once a month, opted-in profiles add coarse counts to a public,
+        <a routerLink="/community">community-wide picture</a> — age band plus
+        bucketed answers, never your name, creature, phrases, or anything the server
+        could tie back to this profile. Desire counts are submitted with random noise,
+        so even the server can’t know any single answer was real. Buckets with fewer
+        than ten contributors are never shown.
+      </p>
+      <label class="fine" style="display:flex;gap:8px;align-items:center">
+        <input type="checkbox" [checked]="session.metricsOptIn()"
+               (change)="toggleMetrics($event)">
+        Count my answers in the anonymous community stats
+      </label>
+    </div>
+
+    <div class="card">
       <h2>Keys &amp; housekeeping</h2>
       <label class="fine" style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
         <input type="checkbox" [checked]="session.remembered()"
@@ -365,6 +382,23 @@ export class DashboardComponent {
   protected async removeConnection(id: string): Promise<void> {
     try {
       await this.session.removeConnection(id);
+    } catch (err) {
+      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+    }
+  }
+
+  constructor() {
+    // Recurring monthly counter submission, decoupled from any save.
+    this.session.maybeSubmitMetrics();
+  }
+
+  protected async toggleMetrics(event: Event): Promise<void> {
+    const on = (event.target as HTMLInputElement).checked;
+    try {
+      await this.session.setMetricsOptIn(on);
+      this.toast.show(
+        on ? 'Counted — thank you. You can opt out any time.' : 'Opted out — no further submissions.',
+      );
     } catch (err) {
       this.toast.show(err instanceof Error ? err.message : String(err), 'error');
     }

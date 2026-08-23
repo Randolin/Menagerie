@@ -14,6 +14,9 @@ const EDIT_DOMAIN = 'moxy.hatch.edit.v2';
 // group phrase's derivations unlinkable to any profile namespace.
 const GROUP_READ_DOMAIN = 'moxy.group.read.v1';
 const GROUP_ADMIN_DOMAIN = 'moxy.group.admin.v1';
+// Metrics dedup token: same phrase, separate domain — the server can store
+// it without being able to link it to the view or edit locator.
+const METRICS_DOMAIN = 'moxy.metrics.v1';
 
 export interface ViewKeys {
   readonly viewLocator: string;
@@ -50,5 +53,11 @@ export async function deriveGroupReadKeys(groupPhrase: string): Promise<GroupRea
 /** Admin phrase (creator only) → the manage/kick/re-mint/delete token. */
 export async function deriveGroupAdminToken(adminPhrase: string): Promise<string> {
   const { token } = await derivePhraseKeys(adminPhrase, GROUP_ADMIN_DOMAIN);
+  return token;
+}
+
+/** View phrase → once-per-epoch metrics dedup token (unlinkable by domain). */
+export async function deriveMetricsToken(viewPhrase: string): Promise<string> {
+  const { token } = await derivePhraseKeys(viewPhrase, METRICS_DOMAIN);
   return token;
 }

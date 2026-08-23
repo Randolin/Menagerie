@@ -17,7 +17,9 @@ partnership.
 No accounts. No email. No names. No analytics. There isn't even a free-text
 field: every answer is a selection from fixed options, so nothing you can
 type into a profile can identify you — and every answer is comparable and
-plottable. The server stores only ciphertext it can never read.
+plottable. The server stores only ciphertext it can never read — plus, for
+profiles that explicitly opt in, coarse anonymous monthly counters (the one
+deliberately readable table; see the metrics bullet below).
 
 Built as an Angular 22 + TypeScript workspace with a framework-free domain
 core; the app ships as a static site, the server is one dependency-free
@@ -67,6 +69,13 @@ Node file.
   re-mints (the unlink lever — old links, QRs, and deposits all die), and
   deletes. Honest limits, also stated in-app: kicking removes data but not
   group-phrase access, and the server sees roster sizes and join timing.
+- **Anonymous counters (opt-in, off by default).** Once per monthly epoch an
+  opted-in profile submits coarse buckets — age band, plus answers
+  joint-counted against it — under a dedup token derived in its own KDF
+  domain, unlinkable to any locator. Desire bits ride randomized response
+  (25% flip probability), so single submissions are deniable even to the
+  operator; aggregates debias client-side. Served k-floored (buckets under
+  10 hidden) on the in-app community page; epochs replace, never accumulate.
 - **Compare 2–4 profiles.** A values-fingerprint radar overlay, value
   alignment on dot strips, a mutual-interest matrix of connection types,
   directional fit scores with dealbreaker alerts and coverage counts,
@@ -187,6 +196,7 @@ node server/moxy-sync-server.ts     # Node >= 24; no npm install needed
 | `MOXY_MAX_PROFILES` | `100000` | circuit breaker: creates answer 503 beyond |
 | `MOXY_MAX_GROUPS` | `10000` | group circuit breaker |
 | `MOXY_MAX_GROUP_MEMBERS` | `32` | deposits per group |
+| `MOXY_METRICS_K` | `10` | k-floor: aggregate buckets under this stay hidden |
 | `MOXY_GC_EMPTY_MS` | 7 days | never-populated profiles die after this |
 | `MOXY_GC_IDLE_MS` | 365 days | populated ones, after no edit *and* no view |
 | `MOXY_GC_SWEEP_MS` | 1 hour | GC sweep interval |
@@ -205,10 +215,14 @@ groups: `POST /v2/groups` (`X-Moxy-Admin-Token`) ·
 `PUT`/`DELETE /v2/groups/:locator` (admin; PUT re-keys via
 `new_group_locator` + `X-Moxy-New-Admin-Token`) ·
 `POST /v2/groups/:g/members` (`X-Moxy-Member-Token`) ·
-`PUT`/`DELETE /v2/groups/:g/members/:m` (member token; admin may DELETE).
-Three tables: profiles (two locators, a token hash, two ciphertext blobs, a
-version, hour-coarse timestamps), groups, and group deposits — all ciphertext
-and token hashes. IPs live only in the in-memory rate limiter.
+`PUT`/`DELETE /v2/groups/:g/members/:m` (member token; admin may DELETE) ·
+metrics: `POST /v2/metrics` (epoch + dedup token + buckets) ·
+`GET /v2/metrics/:epoch` (k-floored aggregate).
+Tables: profiles (two locators, a token hash, two ciphertext blobs, a
+version, hour-coarse timestamps), groups and group deposits (ciphertext and
+token hashes), and the metrics counters — the one deliberately readable
+table, holding opt-in coarse aggregates and hashed dedup tokens only. IPs
+live only in the in-memory rate limiter.
 
 Threat model in one paragraph: the server can't read profiles (AES-256-GCM,
 keys never leave the client), can't reverse a locator into a phrase (one-way

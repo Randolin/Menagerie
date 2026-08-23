@@ -51,6 +51,11 @@ export interface PrivData {
   acceptable?: Acceptable;
   /** Groups created or joined (absent on blobs written before groups). */
   groups?: SavedGroupMembership[];
+  /** Opt-in to the anonymous epoch counters (absent = off). */
+  metricsOptIn?: boolean;
+  /** Last epoch this profile submitted counters for (best-effort dedup;
+   *  the server's token set is the real gate). */
+  metricsLastEpoch?: string;
 }
 
 export function emptyPrivData(viewPhrase: string): PrivData {

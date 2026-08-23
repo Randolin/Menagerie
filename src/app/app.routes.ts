@@ -44,6 +44,11 @@ export const routes: Routes = [
     loadComponent: () => import('./compare/compare.component').then((m) => m.CompareComponent),
   },
   {
+    path: 'community',
+    loadComponent: () =>
+      import('./community/community.component').then((m) => m.CommunityComponent),
+  },
+  {
     path: 'about',
     loadComponent: () => import('./about/about.component').then((m) => m.AboutComponent),
   },

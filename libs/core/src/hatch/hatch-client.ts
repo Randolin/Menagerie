@@ -19,6 +19,7 @@ import {
   type JoinGroupRequest,
   type PutGroupRequest,
 } from '../group/group-api';
+import type { MetricsRecord, SubmitMetricsRequest } from '../metrics/metrics-api';
 
 export type HatchFailure =
   | { kind: 'network'; cause: unknown }
@@ -220,6 +221,26 @@ export class HatchClient {
     });
     if (res.status === 404 || res.ok) return;
     throw await this.toError(res);
+  }
+
+  // ---- metrics ------------------------------------------------------------
+
+  /** Once-per-epoch counter submission. A 409 means "already counted". */
+  async submitMetrics(request: SubmitMetricsRequest): Promise<void> {
+    const res = await this.request('/v2/metrics', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+    if (!res.ok) throw await this.toError(res);
+  }
+
+  /** The k-floored public aggregate for one epoch. */
+  async getMetrics(epoch: string): Promise<MetricsRecord | null> {
+    const res = await this.request(`/v2/metrics/${epoch}`, { method: 'GET' });
+    if (res.status === 404) return null;
+    if (!res.ok) throw await this.toError(res);
+    return (await res.json()) as MetricsRecord;
   }
 
   async health(): Promise<boolean> {

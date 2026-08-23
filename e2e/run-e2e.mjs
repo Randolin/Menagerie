@@ -85,6 +85,14 @@ const gc = await spawnMoxyServer({
   MOXY_GC_IDLE_MS: String(365 * 24 * 3600 * 1000),
   MOXY_GC_SWEEP_MS: '1000',
 });
+// Metrics server with k=1 so a single contributor clears the floor. Its own
+// instance also keeps the MAIN db's at-rest scan strict: aggregate counters
+// are plaintext BY DESIGN, and only exist where someone opted in.
+const metricsDbPath = join(tmpdir(), `moxy-e2e-metrics-${process.pid}.db`);
+const metricsSrv = await spawnMoxyServer({
+  MOXY_DB_PATH: metricsDbPath,
+  MOXY_METRICS_K: '1',
+});
 
 const browser = await chromium.launch({ executablePath: CHROMIUM });
 const errors = [];
@@ -519,6 +527,43 @@ try {
   await gcViewer.goto(`${BASE}#/view/${gcAlivePhrase}`);
   await gcViewer.waitForSelector(`text=${gcAlivePersona}’s profile`, { timeout: 30000 });
 
+  // --- anonymous metrics: opt-in submit, k-floor, community page ------------
+  step = 'metrics';
+  const mPage = await freshPage(metricsSrv.url);
+  await mPage.click('text=Hatch a profile');
+  await mPage.waitForSelector('.passphrase-box', { timeout: 30000 });
+  await editSection(mPage, 'About me', async () => {
+    await mPage.locator('.item-block', { hasText: 'Age range' })
+      .locator('.opt', { hasText: '25–34' }).click();
+  });
+  await editSection(mPage, 'Connections I’m open to', async () => {
+    await mPage.locator('.item-block', { hasText: 'Friendship' }).first()
+      .locator('.opt', { hasText: 'Into it' }).click();
+  });
+  await mPage.locator('label:has-text("Count my answers") input').check();
+  await mPage.waitForSelector('text=Counted — thank you', { timeout: 60000 });
+
+  const epochNow = new Date().toISOString().slice(0, 7);
+  const agg = await (await fetch(`${metricsSrv.url}/v2/metrics/${epochNow}`)).json();
+  if ((agg.buckets['age|1'] ?? 0) < 1) fail('age bucket missing from aggregate');
+  if ((agg.buckets['1|sk.friend|1'] ?? 0) < 1) fail('joint bucket missing');
+  if (!agg.buckets['1|sk.friend|_n']) fail('denominator bucket missing');
+  for (const bucket of Object.keys(agg.buckets)) {
+    if (!/^[a-z0-9._|-]{1,80}$/.test(bucket)) fail(`malformed bucket served: ${bucket}`);
+  }
+
+  // Opting out stops submissions; opting back in duplicates harmlessly (409).
+  await mPage.locator('label:has-text("Count my answers") input').uncheck();
+  await mPage.waitForSelector('text=Opted out', { timeout: 45000 });
+  await mPage.locator('label:has-text("Count my answers") input').check();
+  await mPage.waitForSelector('text=Counted — thank you', { timeout: 60000 });
+
+  await mPage.goto(`${BASE}#/community`);
+  await mPage.waitForSelector('text=Age bands', { timeout: 30000 });
+  if (!(await mPage.textContent('body')).includes('25–34')) {
+    fail('community page missing the age band');
+  }
+
   // --- dark + mobile ---------------------------------------------------------
   step = 'dark';
   const dark = await freshPage(main.url, { colorScheme: 'dark' });
@@ -567,8 +612,10 @@ try {
   server.close();
   if (!main.proc.killed) main.proc.kill('SIGKILL');
   gc.proc.kill('SIGKILL');
+  metricsSrv.proc.kill('SIGKILL');
   for (const suffix of ['', '-wal', '-shm']) {
     rmSync(dbPath + suffix, { force: true });
     rmSync(gcDbPath + suffix, { force: true });
+    rmSync(metricsDbPath + suffix, { force: true });
   }
 }
