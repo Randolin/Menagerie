@@ -15,7 +15,7 @@ describe('App shell', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelector('.brand')?.textContent).toContain('Moxy');
+    expect(el.querySelector('.brand')?.textContent).toContain('Menagerie');
     const nav = [...el.querySelectorAll('.nav a')].map((a) => a.textContent?.trim());
     expect(nav).toEqual(['My profile', 'Compare', 'How it works']);
   });

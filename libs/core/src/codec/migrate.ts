@@ -19,7 +19,7 @@ export function migrateToCurrent(raw: unknown): ProfilePayload {
   }
   if (v > PROFILE_VERSION) {
     throw new Error(
-      `This profile uses a newer Moxy version (v${v}) than this page understands.`,
+      `This profile uses a newer Menagerie version (v${v}) than this page understands.`,
     );
   }
   for (let from = v; from < PROFILE_VERSION; from++) {

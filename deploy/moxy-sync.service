@@ -8,7 +8,7 @@
 # The database lands in /var/lib/moxy-sync/ (StateDirectory). Requires
 # Node >= 24 at /usr/bin/node.
 [Unit]
-Description=Moxy zero-knowledge profile server
+Description=Menagerie zero-knowledge profile server
 After=network-online.target
 Wants=network-online.target
 

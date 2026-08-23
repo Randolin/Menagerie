@@ -1,8 +1,8 @@
-# Moxy
+# Menagerie
 
 **Anonymous compatibility profiles for every kind of connection.**
 
-Moxy is a compatibility survey with no identity attached. **Hatch** a profile
+Menagerie is a compatibility survey with no identity attached. **Hatch** a profile
 and it exists instantly — a creature name, a QR code, and two phrases — before
 you've answered a single question. Fill in sections at your own pace, share
 your **view phrase** (or its link/QR), and lay profiles side by side to see
@@ -94,6 +94,13 @@ e2e         Playwright suite run against the production build via a dumb
             GC, and a zero-knowledge-at-rest scan of the raw database.
 ```
 
+> **Historical note:** the codebase keeps its original internal name, `moxy`.
+> Path aliases (`@moxy/core`), storage keys (`moxy.*`), env vars (`MOXY_*`),
+> API headers (`x-moxy-*`), the config filename, and the server entrypoint are
+> stable identifiers deliberately untouched by the rename to Menagerie —
+> changing them would churn frozen crypto vectors and stored browser state
+> for zero user benefit.
+
 ### Extending it
 
 - **New survey question:** append an item to a section in
@@ -131,7 +138,7 @@ via `.github/workflows/deploy.yml`, stamping the production server URL into
 
 ```sh
 npx ng build --base-href ./
-echo '{"serverUrl":"https://moxy-sync.example.org"}' > dist/moxy/browser/moxy.config.json
+echo '{"serverUrl":"https://api.menagerie.love"}' > dist/moxy/browser/moxy.config.json
 # copy dist/moxy/browser/* to any static host
 ```
 

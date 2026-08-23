@@ -23,7 +23,7 @@ import { ServerConfigStore } from '../stores/server-config.store';
     @if (config.state() === 'unconfigured') {
       <div class="card">
         <div class="notice">
-          <strong>No profile server is configured.</strong> This copy of Moxy doesn’t know
+          <strong>No profile server is configured.</strong> This copy of Menagerie doesn’t know
           where profiles live, so hatching and viewing are disabled. If you run your own
           server, set its URL:
         </div>
@@ -117,7 +117,7 @@ export class LandingComponent {
     event.preventDefault();
     const phrase = extractViewPhrase(input.value);
     if (!phrase) {
-      this.toast.show('That doesn’t look like a Moxy view phrase or link.', 'error');
+      this.toast.show('That doesn’t look like a Menagerie view phrase or link.', 'error');
       return;
     }
     void this.router.navigate(['/view', phrase]);
