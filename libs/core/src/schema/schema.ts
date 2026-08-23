@@ -32,6 +32,11 @@ export function matchItems(): ItemRef[] {
   return allItems().filter(({ section }) => section.privacy === 'match');
 }
 
+/** The short first pass — the minimum answer set for a meaningful compare. */
+export function coreItems(): ItemRef[] {
+  return allItems().filter(({ item }) => item.tier === 'core');
+}
+
 export function interestLabel(level: number): string {
   return INTEREST_LEVELS.find((l) => l.value === level)?.label ?? String(level);
 }

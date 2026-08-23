@@ -2,8 +2,9 @@
 // (no-angular.spec.ts enforces that claim.)
 
 export * from './schema/types';
-export { SECTIONS } from './schema/sections';
+export { SECTIONS, RETIRED_ITEM_IDS, RETIRED_SECTION_IDS } from './schema/sections';
 export * from './schema/schema';
+export * from './schema/packs';
 
 export { bytesToB64url, b64urlToBytes } from './codec/base64url';
 export { deflate, inflate } from './codec/compress';
@@ -17,6 +18,7 @@ export { generatePassphrase } from './crypto/passphrase';
 
 export { itemSimilarity } from './match/similarity';
 export * from './match/scores';
+export * from './match/complement';
 export * from './match/reveal';
 
 export * from './persona/persona';

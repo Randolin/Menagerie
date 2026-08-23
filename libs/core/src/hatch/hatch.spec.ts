@@ -120,7 +120,7 @@ describe('persona v3', () => {
 describe('blob envelope', () => {
   test('round-trips through deflate + AES-GCM; wrong key fails', async () => {
     const { viewKey } = await deriveViewKeys(FROZEN_VIEW_PHRASE);
-    const payload = { v: 1, a: { 'ab.name': 'River' }, s: 'saltsaltsalt' };
+    const payload = { v: 2, a: { 'ab.age': 1, 'ls.pets': [0, 4] }, s: 'saltsaltsalt' };
     const blob = await encryptBlob(payload, viewKey);
     expect(blob).toMatch(/^[A-Za-z0-9_-]+$/);
     expect(await decryptBlob(blob, viewKey)).toEqual(payload);

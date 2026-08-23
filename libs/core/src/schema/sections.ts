@@ -1,7 +1,8 @@
-// The survey definition — every section and item, ported verbatim from the
-// legacy JS app (generated mechanically from legacy/js/schema.js to guarantee
-// identity; hand-edits are fine AFTER the freeze test exists, following the
-// append-only rule in types.ts).
+// The survey definition — every section and item. Originally ported verbatim
+// from the legacy JS app; since schema v2 it is fully structured (no free
+// text) and hand-edited under the append-only rule in types.ts: options only
+// grow, ids never change meaning, and RETIRED_IDS (bottom of this file) are
+// never reused.
 import type { Section } from './types';
 
 export const SECTIONS: readonly Section[] = [
@@ -9,21 +10,14 @@ export const SECTIONS: readonly Section[] = [
     id: "about",
     title: "About me",
     privacy: "open",
-    blurb: "Everything is optional. Use a nickname — this app never asks for anything that identifies you.",
+    blurb: "Everything is optional, and nothing here can identify you — your creature is your name.",
     items: [
       {
-        id: "ab.name",
-        type: "text",
-        label: "Name or nickname",
-        hint: "A pseudonym is perfect.",
-        short: true
-      },
-      {
-        id: "ab.pronouns",
-        type: "text",
+        id: "ab.pn",
+        type: "multi",
+        tier: "core",
         label: "Pronouns",
-        short: true,
-        suggest: [
+        options: [
           "she/her",
           "he/him",
           "they/them",
@@ -37,6 +31,7 @@ export const SECTIONS: readonly Section[] = [
         id: "ab.age",
         type: "choice",
         ordinal: true,
+        tier: "core",
         label: "Age range",
         options: [
           "18–24",
@@ -50,6 +45,7 @@ export const SECTIONS: readonly Section[] = [
       {
         id: "ab.gender",
         type: "multi",
+        tier: "core",
         label: "Gender",
         options: [
           "Woman",
@@ -67,6 +63,7 @@ export const SECTIONS: readonly Section[] = [
       {
         id: "ab.orient",
         type: "multi",
+        tier: "core",
         label: "Orientation",
         options: [
           "Straight",
@@ -81,12 +78,6 @@ export const SECTIONS: readonly Section[] = [
           "Questioning",
           "Another way I’d describe myself"
         ]
-      },
-      {
-        id: "ab.intro",
-        type: "text",
-        label: "A few lines about you",
-        hint: "What would you want a good match to know first?"
       }
     ]
   },
@@ -99,6 +90,7 @@ export const SECTIONS: readonly Section[] = [
       {
         id: "sk.friend",
         type: "interest",
+        tier: "core",
         label: "Friendship"
       },
       {
@@ -109,16 +101,19 @@ export const SECTIONS: readonly Section[] = [
       {
         id: "sk.activity",
         type: "interest",
+        tier: "core",
         label: "Activity or hobby partners"
       },
       {
         id: "sk.casual",
         type: "interest",
+        tier: "core",
         label: "Casual dating"
       },
       {
         id: "sk.longterm",
         type: "interest",
+        tier: "core",
         label: "Long-term partnership"
       },
       {
@@ -129,11 +124,13 @@ export const SECTIONS: readonly Section[] = [
       {
         id: "sk.mono",
         type: "interest",
+        tier: "core",
         label: "Monogamous relationship"
       },
       {
         id: "sk.poly",
         type: "interest",
+        tier: "core",
         label: "Polyamory / ethical non-monogamy"
       },
       {
@@ -154,6 +151,7 @@ export const SECTIONS: readonly Section[] = [
       {
         id: "sk.hookup",
         type: "interest",
+        tier: "core",
         label: "Hookups / casual intimacy"
       },
       {
@@ -187,18 +185,21 @@ export const SECTIONS: readonly Section[] = [
       {
         id: "va.together",
         type: "scale",
+        tier: "core",
         left: "Independence",
         right: "Togetherness"
       },
       {
         id: "va.novelty",
         type: "scale",
+        tier: "core",
         left: "Routine & stability",
         right: "Novelty & adventure"
       },
       {
         id: "va.heart",
         type: "scale",
+        tier: "core",
         left: "Head decides",
         right: "Heart decides"
       },
@@ -211,6 +212,7 @@ export const SECTIONS: readonly Section[] = [
       {
         id: "va.express",
         type: "scale",
+        tier: "core",
         left: "Private & reserved",
         right: "Openly expressive"
       },
@@ -235,12 +237,14 @@ export const SECTIONS: readonly Section[] = [
       {
         id: "va.social",
         type: "scale",
+        tier: "core",
         left: "Recharge alone",
         right: "Recharge with people"
       },
       {
         id: "va.plan",
         type: "scale",
+        tier: "core",
         left: "Plan everything",
         right: "Wing it"
       }
@@ -256,6 +260,7 @@ export const SECTIONS: readonly Section[] = [
         id: "ls.alcohol",
         type: "choice",
         ordinal: true,
+        tier: "core",
         label: "Alcohol",
         options: [
           "Never",
@@ -268,6 +273,7 @@ export const SECTIONS: readonly Section[] = [
         id: "ls.smoke",
         type: "choice",
         ordinal: true,
+        tier: "core",
         label: "Smoking / vaping",
         options: [
           "No",
@@ -313,6 +319,7 @@ export const SECTIONS: readonly Section[] = [
       {
         id: "ls.kids",
         type: "choice",
+        tier: "core",
         label: "Kids",
         options: [
           "Have kids, done",
@@ -380,6 +387,44 @@ export const SECTIONS: readonly Section[] = [
           "Frequent traveler",
           "Live to travel"
         ]
+      },
+      {
+        id: "ls.tuesday",
+        type: "multi",
+        label: "A great Tuesday evening includes…",
+        options: [
+          "Cooking something new",
+          "Takeout & a series",
+          "A workout or a run",
+          "A long walk",
+          "Board or video games",
+          "Reading side by side",
+          "A project or hobby bench",
+          "Friends dropping by",
+          "A bath & an early night",
+          "Live music or an event",
+          "Puttering in the garden",
+          "Honestly, doomscrolling"
+        ]
+      },
+      {
+        id: "ls.weekend",
+        type: "multi",
+        label: "A perfect weekend needs…",
+        options: [
+          "Sleeping in",
+          "A hike or fresh air",
+          "A market or thrift crawl",
+          "Making something by hand",
+          "A party or a night out",
+          "Total solitude",
+          "A spontaneous road trip",
+          "Time with chosen family",
+          "Sports — playing or watching",
+          "A museum, show, or bookstore",
+          "Community or volunteer stuff",
+          "Absolutely no plans"
+        ]
       }
     ]
   },
@@ -390,9 +435,23 @@ export const SECTIONS: readonly Section[] = [
     blurb: "How you communicate, fight, and show care.",
     items: [
       {
-        id: "cn.affection",
+        id: "cn.give",
         type: "multi",
+        tier: "core",
         label: "How I naturally show care",
+        options: [
+          "Words & affirmation",
+          "Quality time",
+          "Physical touch",
+          "Acts of service",
+          "Gifts & tokens"
+        ]
+      },
+      {
+        id: "cn.receive",
+        type: "multi",
+        tier: "core",
+        label: "How care lands best for me",
         options: [
           "Words & affirmation",
           "Quality time",
@@ -416,6 +475,7 @@ export const SECTIONS: readonly Section[] = [
         id: "cn.tempo",
         type: "choice",
         ordinal: true,
+        tier: "core",
         label: "Messaging tempo",
         options: [
           "When there’s something to say",
@@ -445,6 +505,24 @@ export const SECTIONS: readonly Section[] = [
           "One-on-one",
           "Mostly online"
         ]
+      },
+      {
+        id: "cn.repair",
+        type: "scale",
+        left: "I need space before repair",
+        right: "I want to repair right away"
+      },
+      {
+        id: "cn.direct",
+        type: "scale",
+        left: "I hint and soften",
+        right: "I say it plainly"
+      },
+      {
+        id: "cn.close",
+        type: "scale",
+        left: "Closeness can feel crowding",
+        right: "Closeness feels like home"
       }
     ]
   },
@@ -516,6 +594,68 @@ export const SECTIONS: readonly Section[] = [
           "Fluid bonded with established partner(s) only",
           "Prefer to discuss in person",
           "Not applicable to me"
+        ]
+      },
+      {
+        id: "st.compersion",
+        type: "scale",
+        left: "Compersion is a stretch",
+        right: "Compersion comes naturally"
+      },
+      {
+        id: "st.jealousy",
+        type: "scale",
+        left: "Jealousy visits often",
+        right: "Jealousy is rare for me"
+      },
+      {
+        id: "st.autonomy",
+        type: "scale",
+        left: "Coordinate calendars closely",
+        right: "Fully autonomous scheduling"
+      }
+    ]
+  },
+  {
+    id: "plans",
+    title: "Plans & horizons",
+    privacy: "open",
+    blurb: "Where life might head — useful for anything long-term, skippable for anything light.",
+    items: [
+      {
+        id: "pl.move",
+        type: "choice",
+        ordinal: true,
+        label: "Would I relocate for a relationship?",
+        options: [
+          "No — I’m rooted here",
+          "Maybe, within my region",
+          "Maybe, anywhere",
+          "Gladly — home is people"
+        ]
+      },
+      {
+        id: "pl.money",
+        type: "choice",
+        ordinal: true,
+        label: "Financial entanglement I’d welcome",
+        options: [
+          "Fully separate",
+          "Shared expenses only",
+          "Partly merged",
+          "Fully merged"
+        ]
+      },
+      {
+        id: "pl.cohabit",
+        type: "choice",
+        ordinal: true,
+        label: "Living together",
+        options: [
+          "Prefer separate homes",
+          "Not for years",
+          "Open to it in time",
+          "Actively want it"
         ]
       }
     ]
@@ -653,31 +793,26 @@ export const SECTIONS: readonly Section[] = [
         label: "Mostly vanilla, occasional spice"
       }
     ]
-  },
-  {
-    id: "notes",
-    title: "In my own words",
-    privacy: "open",
-    blurb: "The things a form can’t capture.",
-    items: [
-      {
-        id: "nt.musthave",
-        type: "text",
-        label: "Must-haves",
-        hint: "What do you need in any connection?"
-      },
-      {
-        id: "nt.dealbreak",
-        type: "text",
-        label: "Dealbreakers",
-        hint: "Hard no’s, stated kindly."
-      },
-      {
-        id: "nt.joy",
-        type: "text",
-        label: "A perfect ordinary day",
-        hint: "Not a fantasy vacation — a really good Tuesday."
-      }
-    ]
   }
 ] as const;
+
+/**
+ * Ids (items and sections) that once existed and were removed in schema v2.
+ * They are NEVER reused — the freeze spec enforces this — and the v1→v2
+ * payload migration drops or remaps their answers:
+ *   ab.name / ab.intro / nt.*  → dropped (free text is gone; the creature is
+ *                                the name, weighting replaced must-haves)
+ *   ab.pronouns (text)         → mapped to ab.pn (multi) where possible
+ *   cn.affection               → copied to cn.give (identical options)
+ */
+export const RETIRED_ITEM_IDS: readonly string[] = [
+  'ab.name',
+  'ab.pronouns',
+  'ab.intro',
+  'cn.affection',
+  'nt.musthave',
+  'nt.dealbreak',
+  'nt.joy',
+];
+
+export const RETIRED_SECTION_IDS: readonly string[] = ['notes'];

@@ -36,6 +36,9 @@ describe('pair scores and grid', () => {
     const pb = buildSharePayload(sampleAnswers(), [], null);
     const scores = pairScores(pa, pb);
     expect(scores.overall).toBeGreaterThan(0.99);
+    expect(scores.coverage).toBeGreaterThanOrEqual(15);
+    expect(scores.fitA.alerts).toEqual([]);
+    expect(scores.fitB.alerts).toEqual([]);
 
     const grid = buildGrid([pa, pb]);
     expect(grid.length).toBeGreaterThanOrEqual(5);
@@ -43,6 +46,65 @@ describe('pair scores and grid', () => {
     const friend = seeking.rows.find((r) => r.item.id === 'sk.friend')!;
     expect(friend.answers).toEqual([3, 3]);
     expect(friend.sim).toBe(1);
+  });
+
+  test('directional fit: weights are asymmetric, dealbreakers zero and alert', () => {
+    // A never drinks and marks alcohol a dealbreaker (only "Never"/"Rarely"
+    // acceptable); B drinks socially. Ordinal closeness would call that a
+    // near-miss — the dealbreaker gate zeroes it for A, and only for A.
+    const a = buildSharePayload(
+      { 'ls.alcohol': 0, 'va.together': 3 },
+      [],
+      null,
+      { 'ls.alcohol': 3 },
+      { 'ls.alcohol': [0, 1] },
+    );
+    const b = buildSharePayload({ 'ls.alcohol': 2, 'va.together': 3 }, [], null);
+
+    const scores = pairScores(a, b);
+    expect(scores.fitA.alerts).toEqual(['ls.alcohol']);
+    expect(scores.fitB.alerts).toEqual([]);
+    expect(scores.fitA.overall!).toBeLessThan(scores.fitB.overall!);
+    // The symmetric display score is unweighted and alert-free.
+    expect(scores.sections['values'].score).toBe(1);
+  });
+
+  test('weight emphasis moves the owner’s score, not the other side’s', () => {
+    // Same disagreement on va.novelty; A says it matters a lot, B doesn’t.
+    const mk = (w?: 2) =>
+      buildSharePayload(
+        { 'va.novelty': 0, 'va.together': 3, 'ls.diet': 1 },
+        [],
+        null,
+        w ? { 'va.novelty': w } : {},
+      );
+    const other = buildSharePayload(
+      { 'va.novelty': 6, 'va.together': 3, 'ls.diet': 1 },
+      [],
+      null,
+    );
+    const unweighted = pairScores(mk(), other);
+    const weighted = pairScores(mk(2), other);
+    expect(weighted.fitA.overall!).toBeLessThan(unweighted.fitA.overall!);
+    expect(weighted.fitB.overall!).toBeCloseTo(unweighted.fitB.overall!, 9);
+  });
+
+  test('give/receive scores as an interlock, not similarity', () => {
+    // A gives touch+time, needs words. B gives words, needs acts.
+    // B covers A's needs fully (words ∈ B.give); A covers none of B's.
+    const a = buildSharePayload(
+      { 'cn.give': [1, 2], 'cn.receive': [0] },
+      [],
+      null,
+    );
+    const b = buildSharePayload(
+      { 'cn.give': [0], 'cn.receive': [3] },
+      [],
+      null,
+    );
+    const scores = pairScores(a, b);
+    expect(scores.fitA.sections['connection'].score).toBe(1);
+    expect(scores.fitB.sections['connection'].score).toBe(0);
   });
 });
 

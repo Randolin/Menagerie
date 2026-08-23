@@ -3,11 +3,16 @@
 // Compatibility contract: answers are stored as option INDEXES keyed by item
 // id, and shared links encode those indexes. To keep old links readable,
 // options may be appended or relabeled, but never reordered or removed, and
-// item ids never change meaning. Breaking changes bump PROFILE_VERSION.
+// item ids never change meaning. Retired ids are never reused. Breaking
+// changes bump PROFILE_VERSION and ship an upgrader in codec/migrate.ts.
 // The append-only rule is enforced by schema.spec.ts against the checked-in
-// schema-v1.freeze.json golden fixture.
+// schema-v2.freeze.json golden fixture.
+//
+// v2 (structured-only): free-text items were removed entirely — every answer
+// is an option index, a set of indexes, or a slider position, so everything
+// is comparable, plottable, and impossible to accidentally deanonymize with.
 
-export const PROFILE_VERSION = 1;
+export const PROFILE_VERSION = 2;
 
 export type ItemId = string;
 
@@ -26,17 +31,32 @@ export const INTEREST_LEVELS: readonly InterestLevelDef[] = [
   { value: 3, label: 'Into it' },
 ];
 
-interface ItemBase {
-  readonly id: ItemId;
+/**
+ * How much an item matters to its owner when scoring someone ELSE against
+ * them. Absent = normal. 3 (dealbreaker) additionally carries the owner's
+ * acceptable option/level indexes in the payload's `d` map and is only
+ * meaningful for choice/multi/interest items; scales cap at 2.
+ */
+export type ImportanceWeight = 1 | 2 | 3;
+
+export interface ImportanceWeightDef {
+  readonly value: ImportanceWeight;
+  readonly label: string;
 }
 
-/** Free text, display only, never scored. */
-export interface TextItem extends ItemBase {
-  readonly type: 'text';
-  readonly label: string;
-  readonly hint?: string;
-  readonly short?: true;
-  readonly suggest?: readonly string[];
+export const IMPORTANCE_WEIGHTS: readonly ImportanceWeightDef[] = [
+  { value: 1, label: 'Matters to me' },
+  { value: 2, label: 'Matters a lot' },
+  { value: 3, label: 'Dealbreaker' },
+];
+
+interface ItemBase {
+  readonly id: ItemId;
+  /**
+   * 'core' items form the short first pass — the minimum for a meaningful
+   * compare. Everything else is depth, delivered through packs.
+   */
+  readonly tier?: 'core';
 }
 
 /** Single select; `ordinal` means adjacent options are "close" for scoring. */
@@ -67,11 +87,16 @@ export interface InterestItem extends ItemBase {
   readonly label: string;
 }
 
-export type Item = TextItem | ChoiceItem | MultiItem | ScaleItem | InterestItem;
+export type Item = ChoiceItem | MultiItem | ScaleItem | InterestItem;
 export type ItemType = Item['type'];
 
-export type AnswerValue = string | number | readonly number[];
+export type AnswerValue = number | readonly number[];
 export type Answers = Record<ItemId, AnswerValue>;
+
+/** Per-item importance set by the profile owner (absent = normal). */
+export type Weights = Record<ItemId, ImportanceWeight>;
+/** For dealbreaker items: the owner's acceptable option/level indexes. */
+export type Acceptable = Record<ItemId, readonly number[]>;
 
 export type SectionPrivacy = 'open' | 'match';
 
@@ -85,17 +110,31 @@ export interface Section {
 }
 
 /**
- * The shareable payload, format version 1 — the JSON inside a profile's
- * view blob. `a` carries open answers; `s` (salt) + `m` (match tokens)
- * carry the hashed, mutual-reveal-only desires — present only when desires
- * were answered positively.
+ * Historical v1 payload shape (free-text answers were strings). Kept only so
+ * the v1→v2 migration and its spec have an honest type to talk about.
  */
 export interface ProfilePayloadV1 {
   v: 1;
-  a: Record<ItemId, AnswerValue>;
+  a: Record<ItemId, number | readonly number[] | string>;
   s?: string;
   m?: string[];
 }
 
-/** Widens to a union when a v2 payload lands; migrate.ts upgrades old shapes. */
-export type ProfilePayload = ProfilePayloadV1;
+/**
+ * The shareable payload, format version 2 — the JSON inside a profile's
+ * view blob. `a` carries open answers; `s` (salt) + `m` (match tokens)
+ * carry the hashed, mutual-reveal-only desires; `w` (importance) + `d`
+ * (acceptable sets for dealbreakers) carry the owner's weighting, present
+ * only where set. All optional fields are omitted when empty.
+ */
+export interface ProfilePayloadV2 {
+  v: 2;
+  a: Record<ItemId, AnswerValue>;
+  s?: string;
+  m?: string[];
+  w?: Weights;
+  d?: Acceptable;
+}
+
+/** Widens to a union when a v3 payload lands; migrate.ts upgrades old shapes. */
+export type ProfilePayload = ProfilePayloadV2;

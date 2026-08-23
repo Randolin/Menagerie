@@ -1,5 +1,5 @@
 // Per-item-type similarity in [0, 1], or null when not comparable
-// (unanswered on either side, or a display-only type).
+// (unanswered on either side).
 //
 // Adding a new item TYPE requires an entry here — the exhaustive switch makes
 // forgetting it a compile error.
@@ -35,8 +35,6 @@ export function itemSimilarity(
       const union = A.size + B.size - inter;
       return union === 0 ? null : inter / union;
     }
-    case 'text':
-      return null;
     default: {
       const exhaustive: never = item;
       return exhaustive;
