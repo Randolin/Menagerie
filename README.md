@@ -23,19 +23,22 @@ Node file.
 ## How it works
 
 - **Two phrases are the whole identity.** Hatching mints a 6-word **view
-  phrase** (`mellow-verdant-lobster-…` — share it as text, link, or QR) and a
-  5-word **edit phrase** (yours alone, ~65 bits, EFF wordlist). Each runs
-  through PBKDF2-SHA-512 (300k rounds) to derive an opaque 128-bit locator and
-  an AES-256-GCM key. The server sees locators and ciphertext — never a
-  phrase, a key, or an answer. Lose the edit phrase and the profile can never
-  be edited again; that's the design.
+  phrase** (`mellow-verdant-lobster-mistwoven-emberlit-fernhollow` — share it
+  as text, link, or QR) and a 5-word **edit phrase** (yours alone, ~65 bits,
+  EFF wordlist). Each runs through Argon2id (memory-hard: 64 MiB × 3 passes)
+  to derive an opaque 128-bit locator and an AES-256-GCM key. The server sees
+  locators and ciphertext — never a phrase, a key, or an answer. Lose the
+  edit phrase and the profile can never be edited again; that's the design.
 - **Your creature is your view phrase.** The first three words are the
   profile's persona — name, emoji, and QR styling — so everyone you share with
   recognizes the same creature. Honest arithmetic: those words are public by
-  design, so a view phrase's secret is its 3-word tail (~39 bits ≈ a GPU-year
-  to brute-force at this KDF cost) — a curtain for casual reading, while edit
-  control rests on the full-strength edit phrase. "New creature" re-mints the
-  view phrase; every old link, QR, and desire fingerprint dies with it.
+  design, so a view phrase's secret is its poetic 3-word tail, drawn from
+  curated 2,048-entry lists (exactly 33 bits ≈ GPU-months-to-a-year to
+  brute-force at Argon2id's memory cost) — a curtain for casual reading,
+  while edit control rests on the full-strength edit phrase. The persona's
+  accent color derives from the public head words only, so nothing displayed
+  leaks tail bits. "New creature" re-mints the view phrase; every old link,
+  QR, and desire fingerprint dies with it.
 - **Mutual-only desires.** Desires never travel as readable data. Positive
   answers become salted hash fingerprints, padded and shuffled; comparing
   reveals a desire only when both profiles carry a fingerprint for it. "Not
@@ -176,7 +179,7 @@ hour-coarse timestamps. IPs live only in the in-memory rate limiter.
 
 Threat model in one paragraph: the server can't read profiles (AES-256-GCM,
 keys never leave the client), can't reverse a locator into a phrase (one-way
-300k-round KDF), and can't be enumerated (128-bit locators). What it *can* do
+memory-hard Argon2id KDF), and can't be enumerated (128-bit locators). What it *can* do
 — and the app's About page states this plainly — is observe timing, sizes,
 and view/edit correlation, and deny availability by withholding or deleting
 rows; it can never read or forge data, and clients detect tampering as a

@@ -156,7 +156,7 @@ async function editSection(page, sectionTitle, edit) {
   await edit();
   await page.click('text=💾 Save');
   // Generous: the sandbox CPU is shared with two spawned servers, and other
-  // contexts may be mid-PBKDF2 (300k rounds) at the same time.
+  // contexts may be mid-Argon2id (64 MiB × 3 passes) at the same time.
   await page.waitForSelector('.section-grid', { timeout: 45000 });
 }
 

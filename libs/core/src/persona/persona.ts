@@ -1,8 +1,10 @@
 // Profile personas. The creature IS the view phrase's first three words —
 // adjA-adjB-animal, straight off the frozen wordlists — so identity needs no
-// derivation at all. Only the accent color is derived, from a hash of the
-// FULL phrase: it rotates with the secret tail and is visible only to
-// phrase-holders.
+// derivation at all. The accent color derives from the HEAD words only
+// (v3): the chip is displayed in places the secret tail must never leak
+// into, and a full-phrase-derived color was a 4-bit oracle that let anyone
+// who'd seen the chip filter tail candidates. Head-only means the color is
+// part of the stable creature identity and leaks nothing.
 //
 // Recognizability is the point: the same phrase shows the same creature to
 // everyone. Regenerating the view phrase is the unlink lever — new creature,
@@ -29,7 +31,7 @@ export async function personaFromViewPhrase(viewPhrase: string): Promise<Persona
   const digest = new Uint8Array(
     await globalThis.crypto.subtle.digest(
       'SHA-256',
-      new TextEncoder().encode(`moxy.persona.v2|${words.join('-')}`),
+      new TextEncoder().encode(`moxy.persona.v3|${adjA}-${adjB}-${animal.name}`),
     ),
   );
   // 16 divides 256 exactly — single-byte masking is uniform.
