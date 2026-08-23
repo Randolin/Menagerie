@@ -185,5 +185,12 @@ trust.
 
 ## License
 
-MIT. Dependencies of note: [qrcode-generator](https://www.npmjs.com/package/qrcode-generator)
-(MIT, Kazuhiko Arase); EFF large wordlist (CC-BY 3.0), embedded as a lazy chunk.
+**GNU AGPL-3.0-only.** Use it, study it, self-host it, fork it — and if you
+run a modified version as a service, share your modifications under the same
+license, so improvements stay in the commons that produced them. See
+[LICENSE](LICENSE) and [CONTRIBUTING.md](CONTRIBUTING.md) (contributions are
+inbound = outbound plus a maintainer relicensing grant).
+
+Bundled dependencies of note: [qrcode-generator](https://www.npmjs.com/package/qrcode-generator)
+(MIT, Kazuhiko Arase); EFF large wordlist (CC-BY 3.0), embedded as a lazy
+chunk. Their notices remain intact and their licenses are AGPL-compatible.

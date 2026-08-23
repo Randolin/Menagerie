@@ -114,10 +114,15 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
     <div class="card">
       <h2>🛠️ Verify or self-host it</h2>
       <p>
-        Menagerie is open source (MIT). The app is a static bundle (GitHub Pages works); the
-        server is a single Node file with zero dependencies. Point any copy of the app at
-        any server via its config file — your phrases work wherever that same server is
-        reachable.
+        Menagerie is open source under the
+        <a href="https://github.com/Randolin/Menagerie/blob/main/LICENSE" rel="noreferrer">AGPL-3.0</a>
+        — anyone may use, study, and self-host it, and anyone who runs a modified version
+        as a service must share their modifications under the same license. The full
+        source lives at
+        <a href="https://github.com/Randolin/Menagerie" rel="noreferrer">github.com/Randolin/Menagerie</a>.
+        The app is a static bundle (GitHub Pages works); the server is a single Node file
+        with zero dependencies. Point any copy of the app at any server via its config
+        file — your phrases work wherever that same server is reachable.
       </p>
       <p class="sub">
         Threat-model fine print: Menagerie can’t protect you from what you choose to share,
