@@ -46,6 +46,14 @@ export const appConfig: ApplicationConfig = {
       },
     }),
     provideComparePanel({
+      id: 'interlock',
+      order: 18,
+      loadComponent: () =>
+        import('./compare/panels/interlock.panel').then((m) => m.InterlockPanel),
+      visible: (model) =>
+        model.interlocks.some((row) => row.detailA || row.detailB),
+    }),
+    provideComparePanel({
       id: 'values-strips',
       order: 20,
       loadComponent: () =>
@@ -70,6 +78,15 @@ export const appConfig: ApplicationConfig = {
       order: 40,
       loadComponent: () => import('./compare/panels/desires.panel').then((m) => m.DesiresPanel),
       visible: (model) => model.withTokensCount >= 1,
+    }),
+    provideComparePanel({
+      id: 'agreement',
+      order: 45,
+      loadComponent: () =>
+        import('./compare/panels/agreement.panel').then((m) => m.AgreementPanel),
+      visible: (model) =>
+        model.payloads.length === 2 &&
+        model.grid.some((g) => g.rows.some((r) => r.sim !== null && r.answeredCount === 2)),
     }),
     provideComparePanel({
       id: 'answer-grid',
