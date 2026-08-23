@@ -76,8 +76,10 @@ jobs:
 
   deploy:
     # main is the release branch: feature branches get the full test job on
-    # every push and PR, but only pushes to main publish to Pages.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # every push and PR, but only main publishes to Pages — via its pushes,
+    # or a manual workflow_dispatch (e.g. to re-stamp moxy.config.json after
+    # the MOXY_SERVER_URL variable changes without any code change).
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     needs: test
     runs-on: ubuntu-latest
     permissions:
