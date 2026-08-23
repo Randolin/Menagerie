@@ -401,7 +401,10 @@ try {
   const groupAdminPhrase = (await page.textContent('.notice .passphrase-box')).trim();
   if (groupAdminPhrase.split(' ').length !== 5) fail('group admin phrase not 5 words');
   await page.locator('.grid-row a', { hasText: 'Open' }).first().click();
-  await page.waitForSelector('text=Members', { timeout: 45000 });
+  // Gate on something unique to a LOADED group page — the dashboard's groups
+  // blurb also contains the word "Members", so that alone can win a race
+  // against the SPA navigation and capture the wrong page's code-box.
+  await page.waitForSelector('text=📋 Copy invite link', { timeout: 45000 });
   const groupPhrase = (await page.textContent('.code-box')).trim();
   if (!/^[a-z]+(-[a-z]+){5}$/.test(groupPhrase)) fail(`group phrase malformed: "${groupPhrase}"`);
 
@@ -411,7 +414,7 @@ try {
 
   step = 'group-join-pseudonym';
   await pageB.goto(`${BASE}#/group/${groupPhrase}`);
-  await pageB.waitForSelector('text=Members', { timeout: 45000 });
+  await pageB.waitForSelector('text=📋 Copy invite link', { timeout: 45000 });
   await pageB.click('text=🐾 Join with a pseudonym');
   await pageB.waitForSelector('text=(you)', { timeout: 60000 });
   if ((await pageB.textContent('body')).includes('Members (2)') === false) {
