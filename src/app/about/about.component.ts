@@ -10,7 +10,9 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
       <p class="lede">
         Menagerie is a static page plus one small open-source server that stores only
         ciphertext it can never read. No accounts, no email, no names, no analytics,
-        no cookies. Everything below is verifiable in the source.
+        no cookies — and no free-text fields at all: every answer is a pick from fixed
+        options, so nothing you can type into a profile can identify you. Everything
+        below is verifiable in the source.
       </p>
     </div>
 
@@ -53,6 +55,17 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
         never rests on any of this. “New creature” re-mints the whole view phrase: every
         old link, QR code, and desire fingerprint dies instantly, and that is the
         unlink lever.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>⚖️ Importance marks travel with your answers</h2>
+      <p>
+        You can mark any answered question <em>matters</em>, <em>matters a lot</em>, or
+        <em>dealbreaker</em> (with the answers you could live with). These marks are part
+        of your profile: anyone you share your view phrase with sees them alongside your
+        answers, and comparisons weigh each side's score by what that person said matters
+        — so “fit for you” and “fit for them” are honestly different numbers.
       </p>
     </div>
 

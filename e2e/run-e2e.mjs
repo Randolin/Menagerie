@@ -98,6 +98,14 @@ async function freshPage(serverUrl = main.url, options = {}) {
   contexts.push(ctx);
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(`${step}: ${String(e)}`));
+  // Zoneless Angular routes unhandled async errors to console.error, which
+  // pageerror never sees — capture them too. Plain HTTP-status noise is
+  // exempt: dead-link 404s are asserted app behavior, not defects.
+  page.on('console', (m) => {
+    if (m.type() === 'error' && !m.text().startsWith('Failed to load resource')) {
+      errors.push(`${step} console: ${m.text()}`);
+    }
+  });
   page.on('dialog', (d) => d.accept());
   await page.goto(BASE);
   if (serverUrl) {
@@ -149,14 +157,40 @@ async function decodeQr(page, expected) {
   return null;
 }
 
-/** Open a section from the dashboard, run `edit`, save, wait for return. */
+/** Section review cards live behind the dashboard's details toggle. */
+async function openSectionList(page) {
+  const details = page.locator('details:has-text("Review all answers")');
+  if ((await details.getAttribute('open')) === null) {
+    await details.locator('summary').click();
+  }
+}
+
+/** Open a section review form from the dashboard, run `edit`, save, return. */
 async function editSection(page, sectionTitle, edit) {
-  await page.locator('.section-card', { hasText: sectionTitle }).click();
+  await openSectionList(page);
+  await page.locator('details .section-card', { hasText: sectionTitle }).click();
   await page.waitForSelector('.item-block, .optin-gate');
   await edit();
   await page.click('text=💾 Save');
   // Generous: the sandbox CPU is shared with two spawned servers, and other
   // contexts may be mid-Argon2id (64 MiB × 3 passes) at the same time.
+  await page.waitForSelector('.section-grid', { timeout: 45000 });
+}
+
+/**
+ * Run the first three cards of the "Inner compass" pack (values scales, tick
+ * 3/6 each) through the one-card-at-a-time stream, then save. Single-tap
+ * answers auto-advance, so each next card is awaited by its right anchor.
+ */
+async function runCompassPack(page) {
+  await page.locator('.section-card', { hasText: 'Inner compass' }).click();
+  await page.waitForSelector('.pack-stage .item-block', { timeout: 15000 });
+  for (const anchor of ['Togetherness', 'Novelty & adventure', 'Heart decides']) {
+    await page.waitForSelector(`.pack-stage:has-text("${anchor}")`);
+    await page.locator('.pack-stage .scale-tick', { hasText: '3' }).click();
+  }
+  await page.waitForSelector('.pack-stage:has-text("Spender")', { timeout: 5000 });
+  await page.click('text=💾 Save & exit');
   await page.waitForSelector('.section-grid', { timeout: 45000 });
 }
 
@@ -209,7 +243,10 @@ try {
   // --- hub-and-spoke section editing with explicit saves --------------------
   step = 'sections';
   await editSection(page, 'About me', async () => {
-    await page.fill('.item-block input[type="text"]', 'River');
+    await page.locator('.item-block', { hasText: 'Pronouns' })
+      .locator('.opt', { hasText: 'they/them' }).click();
+    await page.locator('.item-block', { hasText: 'Age range' })
+      .locator('.opt', { hasText: '25–34' }).click();
   });
   await editSection(page, 'Connections I’m open to', async () => {
     await page.locator('.item-block', { hasText: 'Friendship' }).first()
@@ -217,16 +254,29 @@ try {
     await page.locator('.item-block', { hasText: 'Polyamory' })
       .locator('.opt', { hasText: 'Curious' }).click();
   });
+  // A dealbreaker: only "Never"/"Rarely" drinkers need apply.
+  await editSection(page, 'Everyday life', async () => {
+    const alcohol = page.locator('.item-block', { hasText: 'Alcohol' });
+    await alcohol.locator('.opt-grid .opt', { hasText: 'Never' }).click();
+    await alcohol.locator('button', { hasText: 'Dealbreaker' }).click();
+    await alcohol.locator('.weight-accept .opt', { hasText: 'Never' }).click();
+    await alcohol.locator('.weight-accept .opt', { hasText: 'Rarely' }).click();
+  });
   await editSection(page, 'Desires & play', async () => {
     await page.click('text=Open this section');
     await page.waitForSelector('text=Rope');
     await page.locator('.item-block', { hasText: 'Rope' }).first()
       .locator('.opt', { hasText: 'Into it' }).click();
     await page.locator('.item-block', { hasText: 'Impact play' })
-      .locator('.opt', { hasText: 'Into it' }).click(); // one-sided vs Sam
+      .locator('.opt', { hasText: 'Into it' }).click(); // one-sided vs B
   });
-  const aboutCard = await page.textContent('.section-card:has-text("About me")');
-  if (!aboutCard.includes('1 of')) fail('section completion count not updated: ' + aboutCard);
+  await openSectionList(page);
+  const aboutCard = await page.textContent('details .section-card:has-text("About me")');
+  if (!aboutCard.includes('2 of')) fail('section completion count not updated: ' + aboutCard);
+
+  // --- the card stream: three values answered one card at a time ------------
+  step = 'pack-runner';
+  await runCompassPack(page);
   await shot(page, '04-dashboard-filled.png');
 
   // --- a second profile to compare against ----------------------------------
@@ -235,12 +285,16 @@ try {
   await pageB.click('text=Hatch a profile');
   await pageB.waitForSelector('.passphrase-box', { timeout: 30000 });
   const viewPhraseB = (await pageB.textContent('.code-box')).trim();
-  await editSection(pageB, 'About me', async () => {
-    await pageB.fill('.item-block input[type="text"]', 'Sam');
-  });
+  const personaNameB = (await pageB.textContent('.persona-name')).trim();
   await editSection(pageB, 'Connections I’m open to', async () => {
     await pageB.locator('.item-block', { hasText: 'Friendship' }).first()
       .locator('.opt', { hasText: 'Into it' }).click();
+  });
+  // B drinks socially — a near-miss by ordinal distance, but outside A's
+  // dealbreaker set, so only A's directional fit takes the hit.
+  await editSection(pageB, 'Everyday life', async () => {
+    await pageB.locator('.item-block', { hasText: 'Alcohol' })
+      .locator('.opt-grid .opt', { hasText: 'Socially' }).click();
   });
   await editSection(pageB, 'Desires & play', async () => {
     await pageB.click('text=Open this section');
@@ -248,17 +302,19 @@ try {
     await pageB.locator('.item-block', { hasText: 'Rope' }).first()
       .locator('.opt', { hasText: 'Curious' }).click();
   });
+  await runCompassPack(pageB);
 
   // --- the QR bypass: a fresh device opens the view URL directly ------------
   step = 'view-fresh-context';
   const viewer = await freshPage();
   await viewer.goto(viewUrl);
-  await viewer.waitForSelector('text=River’s profile', { timeout: 30000 });
+  // The creature IS the display name — no nickname exists anywhere.
+  await viewer.waitForSelector(`text=${personaName}’s profile`, { timeout: 30000 });
   const viewerBody = await viewer.textContent('body');
-  if (!viewerBody.includes(personaName)) fail('persona chip missing on the view page');
   if (viewerBody.includes('Rope') || viewerBody.includes('Impact play')) {
     fail('desires leaked into the public view page');
   }
+  if (!viewerBody.includes('they/them')) fail('open answers missing on the view page');
   await shot(viewer, '05-view.png');
 
   // --- edit login from a clean device recovers everything -------------------
@@ -275,14 +331,29 @@ try {
   if ((await editor.textContent('.code-box')).trim() !== viewPhrase) {
     fail('view phrase not recovered from blob_priv');
   }
-  await editor.locator('.section-card', { hasText: 'About me' }).click();
+  await openSectionList(editor);
+  await editor.locator('details .section-card', { hasText: 'About me' }).click();
   await editor.waitForSelector('.item-block');
-  if ((await editor.inputValue('.item-block input[type="text"]')) !== 'River') {
-    fail('open answers not restored on login');
+  const restored = await editor.locator('.item-block', { hasText: 'Pronouns' })
+    .locator('.opt[aria-pressed="true"]').allTextContents();
+  if (!restored.some((t) => t.includes('they/them'))) {
+    fail('open answers not restored on login: ' + restored.join(','));
   }
   await editor.goto(`${BASE}#/me`);
   await editor.waitForSelector('.section-grid');
-  const desiresCard = await editor.textContent('.section-card:has-text("Desires")');
+  // Weights round-trip through blob_priv too — the dealbreaker survives
+  // login. Look, don't save: a save here would bump the CAS version under
+  // profile A's original tab.
+  await openSectionList(editor);
+  await editor.locator('details .section-card', { hasText: 'Everyday life' }).click();
+  await editor.waitForSelector('.item-block');
+  const marked = await editor.locator('.item-block', { hasText: 'Alcohol' })
+    .locator('.weight-on', { hasText: 'Dealbreaker' }).count();
+  if (!marked) fail('dealbreaker weight not restored on login');
+  await editor.goto(`${BASE}#/me`);
+  await editor.waitForSelector('.section-grid');
+  await openSectionList(editor);
+  const desiresCard = await editor.textContent('details .section-card:has-text("Desires")');
   if (!desiresCard.includes('2 of')) fail('desires answers not restored on login: ' + desiresCard);
 
   // --- compare by phrases: mutual desires reveal, one-sided stay hidden -----
@@ -294,7 +365,11 @@ try {
   await page.click('form button:has-text("Add")');
   await page.waitForSelector('text=Overall alignment', { timeout: 30000 });
   const compareBody = await page.textContent('body');
-  for (const needle of ['River', 'Sam', 'Friendship', 'Desires — mutual only', 'Rope']) {
+  for (const needle of [
+    personaName, personaNameB, 'Friendship', 'Desires — mutual only', 'Rope',
+    'shared answers', 'Values fingerprint', `Fit for ${personaName}`,
+    'marked it a dealbreaker', // A's alcohol dealbreaker vs B's "Often"
+  ]) {
     if (!compareBody.includes(needle)) fail('compare missing: ' + needle);
   }
   if (compareBody.includes('Impact play')) fail('one-sided desire leaked in compare');
@@ -324,7 +399,7 @@ try {
   await deadViewer.waitForSelector('text=Couldn’t open that profile', { timeout: 30000 });
   const newViewer = await freshPage();
   await newViewer.goto(`${BASE}#/view/${viewPhrase2}`);
-  await newViewer.waitForSelector('text=River’s profile', { timeout: 30000 });
+  await newViewer.waitForSelector(`text=${personaName2}’s profile`, { timeout: 30000 });
 
   // --- garbage collection: empty profiles die, populated ones live ----------
   step = 'gc';
@@ -336,8 +411,10 @@ try {
   await gcAlive.click('text=Hatch a profile');
   await gcAlive.waitForSelector('.passphrase-box', { timeout: 30000 });
   const gcAlivePhrase = (await gcAlive.textContent('.code-box')).trim();
+  const gcAlivePersona = (await gcAlive.textContent('.persona-name')).trim();
   await editSection(gcAlive, 'About me', async () => {
-    await gcAlive.fill('.item-block input[type="text"]', 'Kai');
+    await gcAlive.locator('.item-block', { hasText: 'Age range' })
+      .locator('.opt', { hasText: '35–44' }).click();
   });
   // Age both profiles by two hours (past the 3s TTL + 1h coarseness slack).
   // The empty one becomes GC-eligible; the populated one is immune to the
@@ -353,13 +430,13 @@ try {
   await gcViewer.goto(`${BASE}#/view/${gcEmptyPhrase}`);
   await gcViewer.waitForSelector('text=Couldn’t open that profile', { timeout: 30000 });
   await gcViewer.goto(`${BASE}#/view/${gcAlivePhrase}`);
-  await gcViewer.waitForSelector('text=Kai’s profile', { timeout: 30000 });
+  await gcViewer.waitForSelector(`text=${gcAlivePersona}’s profile`, { timeout: 30000 });
 
   // --- dark + mobile ---------------------------------------------------------
   step = 'dark';
   const dark = await freshPage(main.url, { colorScheme: 'dark' });
   await dark.goto(`${BASE}#/view/${viewPhrase2}`);
-  await dark.waitForSelector('text=River’s profile', { timeout: 30000 });
+  await dark.waitForSelector(`text=${personaName2}’s profile`, { timeout: 30000 });
   await shot(dark, '07-view-dark.png');
 
   step = 'mobile';
@@ -377,10 +454,10 @@ try {
     if (existsSync(f)) dbBytes += readFileSync(f, 'latin1');
   }
   // Markers are chosen so base64url ciphertext can't contain them by chance:
-  // multi-word strings with spaces/hyphens, quoted JSON keys, dotted item ids.
+  // multi-word phrases with spaces/hyphens, quoted JSON keys, dotted item ids.
   for (const marker of [
-    'River', 'Sam', editPhrase, viewPhrase, viewPhrase2,
-    '"answers"', '"viewPhrase"', '"connections"', 'dp.rope', '"a":',
+    editPhrase, viewPhrase, viewPhrase2,
+    '"answers"', '"viewPhrase"', '"connections"', '"weights"', 'dp.rope', '"a":',
   ]) {
     if (dbBytes.includes(marker)) fail(`plaintext ${JSON.stringify(marker)} at rest`);
   }
@@ -389,9 +466,10 @@ try {
   console.log('E2E PASS');
 } catch (err) {
   console.error(`E2E FAIL: [${step}]`, err.message);
+  if (errors.length) console.error('page errors so far:', errors.join(' | '));
   for (const ctx of contexts) {
     for (const p of ctx.pages()) {
-      const text = await p.evaluate(() => document.body.innerText.slice(0, 600)).catch(() => '?');
+      const text = await p.evaluate(() => document.body.innerText.slice(0, 3000)).catch(() => '?');
       console.error(`--- open page ${p.url()}\n${text}`);
     }
   }
