@@ -35,7 +35,7 @@ export interface RadarSeries {
                  [attr.fill]="color(si)" fill-opacity="0.12" />
         @for (v of s.values; track $index; let ai = $index) {
           <circle [attr.cx]="pt(ai, v)[0]" [attr.cy]="pt(ai, v)[1]" r="3"
-                  [attr.fill]="color(si)" stroke="var(--bg)" stroke-width="2" />
+                  [attr.fill]="color(si)" stroke="var(--surface)" stroke-width="2" />
         }
       }
     </svg>

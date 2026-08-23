@@ -254,6 +254,14 @@ try {
     await page.locator('.item-block', { hasText: 'Polyamory' })
       .locator('.opt', { hasText: 'Curious' }).click();
   });
+  // Care given vs received — feeds the interlock flow diagram.
+  await editSection(page, 'How I connect', async () => {
+    const give = page.locator('.item-block', { hasText: 'How I naturally show care' });
+    await give.locator('.opt', { hasText: 'Physical touch' }).click();
+    await give.locator('.opt', { hasText: 'Quality time' }).click();
+    await page.locator('.item-block', { hasText: 'How care lands best for me' })
+      .locator('.opt', { hasText: 'Words & affirmation' }).click();
+  });
   // A dealbreaker: only "Never"/"Rarely" drinkers need apply.
   await editSection(page, 'Everyday life', async () => {
     const alcohol = page.locator('.item-block', { hasText: 'Alcohol' });
@@ -289,6 +297,13 @@ try {
   await editSection(pageB, 'Connections I’m open to', async () => {
     await pageB.locator('.item-block', { hasText: 'Friendship' }).first()
       .locator('.opt', { hasText: 'Into it' }).click();
+  });
+  // B gives words (covers A's need); B needs acts (A leaves it unmet).
+  await editSection(pageB, 'How I connect', async () => {
+    await pageB.locator('.item-block', { hasText: 'How I naturally show care' })
+      .locator('.opt', { hasText: 'Words & affirmation' }).click();
+    await pageB.locator('.item-block', { hasText: 'How care lands best for me' })
+      .locator('.opt', { hasText: 'Acts of service' }).click();
   });
   // B drinks socially — a near-miss by ordinal distance, but outside A's
   // dealbreaker set, so only A's directional fit takes the hit.
@@ -368,7 +383,9 @@ try {
   for (const needle of [
     personaName, personaNameB, 'Friendship', 'Desires — mutual only', 'Rope',
     'shared answers', 'Values fingerprint', `Fit for ${personaName}`,
-    'marked it a dealbreaker', // A's alcohol dealbreaker vs B's "Often"
+    'marked it a dealbreaker', // A's alcohol dealbreaker vs B's "Socially"
+    'Care interlock', 'unmet', // flow diagram: A leaves B's "Acts" need dangling
+    'Agreement, item by item', 'Fit, each way',
   ]) {
     if (!compareBody.includes(needle)) fail('compare missing: ' + needle);
   }

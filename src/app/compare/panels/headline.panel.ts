@@ -1,13 +1,19 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { getItem, SECTIONS } from '@moxy/core';
-import { MeterComponent, PairMatrixComponent, PersonKeyComponent, StatTileComponent } from '@moxy/ui';
+import {
+  DumbbellComponent,
+  MeterComponent,
+  PairMatrixComponent,
+  PersonKeyComponent,
+  StatTileComponent,
+} from '@moxy/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
 
 @Component({
   selector: 'moxy-headline-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MeterComponent, PairMatrixComponent, PersonKeyComponent, StatTileComponent],
+  imports: [DumbbellComponent, MeterComponent, PairMatrixComponent, PersonKeyComponent, StatTileComponent],
   template: `
     <div class="card">
       <h2>The headline</h2>
@@ -20,10 +26,6 @@ import type { ComparePanelComponent } from '../compare-panels.token';
           <moxy-stat-tile label="Overall alignment" [value]="pct + '%'"
                           [sub]="'from ' + coverage() + ' shared answers'" />
         }
-        @for (fit of fits(); track fit.label) {
-          <moxy-stat-tile [label]="fit.label" [value]="fit.pct + '%'"
-                          sub="weighted by what matters to them" />
-        }
         <moxy-stat-tile label="Mutual connection types"
                         [value]="'' + model().mutualSeekingCount"
                         sub="both “Curious” or “Into it”" />
@@ -32,15 +34,15 @@ import type { ComparePanelComponent } from '../compare-panels.token';
                           sub="revealed because both said yes" />
         }
       </div>
-      @if (model().interlocks.length) {
+      @if (fits(); as f) {
         <div style="margin-top:14px">
-          <h3 style="margin-bottom:6px">Care interlock</h3>
+          <h3 style="margin-bottom:6px">Fit, each way</h3>
           <p class="fine" style="margin-top:0">
-            Not similarity — coverage: how much of what one needs the other naturally gives.
+            Weighted by what each of you said matters — honestly different numbers.
           </p>
-          @for (row of interlockMeters(); track row.label) {
-            <moxy-meter [score]="row.score" [label]="row.label" />
-          }
+          <moxy-dumbbell [scoreA]="f.a" [scoreB]="f.b"
+                         [labelA]="'Fit for ' + model().names[0]"
+                         [labelB]="'Fit for ' + model().names[1]" />
         </div>
       }
       @if (model().pair) {
@@ -72,18 +74,14 @@ export class HeadlinePanel implements ComparePanelComponent {
 
   protected readonly coverage = computed(() => this.model().pair?.coverage ?? 0);
 
-  /** "Fit for <name>" tiles — shown when the two directions actually differ. */
+  /** Directional fits — shown when the two directions actually differ. */
   protected readonly fits = computed(() => {
-    const m = this.model();
-    const pair = m.pair;
-    if (!pair || pair.fitA.overall == null || pair.fitB.overall == null) return [];
+    const pair = this.model().pair;
+    if (!pair || pair.fitA.overall == null || pair.fitB.overall == null) return null;
     const a = Math.round(pair.fitA.overall * 100);
     const b = Math.round(pair.fitB.overall * 100);
-    if (a === b && a === this.overallPct()) return [];
-    return [
-      { label: `Fit for ${m.names[0]}`, pct: a },
-      { label: `Fit for ${m.names[1]}`, pct: b },
-    ];
+    if (a === b && a === this.overallPct()) return null;
+    return { a: pair.fitA.overall, b: pair.fitB.overall };
   });
 
   /** Human sentences for violated dealbreakers, each named to its holder. */
@@ -101,18 +99,6 @@ export class HeadlinePanel implements ComparePanelComponent {
       ...describe(m.names[0], m.names[1], pair.fitA.alerts),
       ...describe(m.names[1], m.names[0], pair.fitB.alerts),
     ];
-  });
-
-  protected readonly interlockMeters = computed(() => {
-    const m = this.model();
-    return m.interlocks.flatMap((row) => [
-      ...(row.forA !== null
-        ? [{ label: `${m.names[1]} → ${m.names[0]}'s needs`, score: row.forA }]
-        : []),
-      ...(row.forB !== null
-        ? [{ label: `${m.names[0]} → ${m.names[1]}'s needs`, score: row.forB }]
-        : []),
-    ]);
   });
 
   protected readonly scoredSections = computed(() => {

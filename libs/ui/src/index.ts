@@ -11,6 +11,9 @@ export { AnswerTextComponent } from './charts/answer-text.component';
 export { PairMatrixComponent } from './charts/pair-matrix.component';
 export { RingComponent } from './charts/ring.component';
 export { RadarComponent, type RadarSeries } from './charts/radar.component';
+export { FlowComponent } from './charts/flow.component';
+export { DumbbellComponent } from './charts/dumbbell.component';
+export { AgreementStripComponent, type AgreementRow } from './charts/agreement-strip.component';
 
 export { ToastService, type ToastKind } from './widgets/toast.service';
 export { ToastComponent } from './widgets/toast.component';
