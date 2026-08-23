@@ -59,6 +59,14 @@ Node file.
   **7 days**; populated profiles untouched *and* unviewed for **12 months**
   are collected too. Any save or view resets the clock. The policy constants
   live in one module shared by the server and the in-app warning copy.
+- **Groups.** A shared, encrypted roster with its own creature and invite QR.
+  Members deposit a snapshot of their open answers — pseudonymously (a random
+  two-word alias, no view link) or openly (creature + view link) — and anyone
+  holding the group phrase compares across the roster client-side. Desires
+  never enter a group in any form. The creator's separate admin phrase kicks,
+  re-mints (the unlink lever — old links, QRs, and deposits all die), and
+  deletes. Honest limits, also stated in-app: kicking removes data but not
+  group-phrase access, and the server sees roster sizes and join timing.
 - **Compare 2–4 profiles.** A values-fingerprint radar overlay, value
   alignment on dot strips, a mutual-interest matrix of connection types,
   directional fit scores with dealbreaker alerts and coverage counts,
@@ -177,6 +185,8 @@ node server/moxy-sync-server.ts     # Node >= 24; no npm install needed
 | `MOXY_MAX_BLOB_BYTES` | `262144` | per-blob ciphertext size cap |
 | `MOXY_TRUST_PROXY` | unset | `1` to honor `X-Forwarded-For` for rate limits |
 | `MOXY_MAX_PROFILES` | `100000` | circuit breaker: creates answer 503 beyond |
+| `MOXY_MAX_GROUPS` | `10000` | group circuit breaker |
+| `MOXY_MAX_GROUP_MEMBERS` | `32` | deposits per group |
 | `MOXY_GC_EMPTY_MS` | 7 days | never-populated profiles die after this |
 | `MOXY_GC_IDLE_MS` | 365 days | populated ones, after no edit *and* no view |
 | `MOXY_GC_SWEEP_MS` | 1 hour | GC sweep interval |
@@ -189,9 +199,16 @@ Run it behind a TLS reverse proxy. The API:
 `PUT /v2/profiles/edit/:locator` (`X-Moxy-Edit-Token` + `If-Match: <version>`;
 optional atomic re-key via `new_view_locator` / `new_edit_locator` +
 `X-Moxy-New-Edit-Token`; `409` carries the current blobs for client merge) ·
-`DELETE /v2/profiles/edit/:locator`.
-One table: two locators, a token hash, two ciphertext blobs, a version, and
-hour-coarse timestamps. IPs live only in the in-memory rate limiter.
+`DELETE /v2/profiles/edit/:locator` ·
+groups: `POST /v2/groups` (`X-Moxy-Admin-Token`) ·
+`GET /v2/groups/:locator` (roster; bumps last-viewed) ·
+`PUT`/`DELETE /v2/groups/:locator` (admin; PUT re-keys via
+`new_group_locator` + `X-Moxy-New-Admin-Token`) ·
+`POST /v2/groups/:g/members` (`X-Moxy-Member-Token`) ·
+`PUT`/`DELETE /v2/groups/:g/members/:m` (member token; admin may DELETE).
+Three tables: profiles (two locators, a token hash, two ciphertext blobs, a
+version, hour-coarse timestamps), groups, and group deposits — all ciphertext
+and token hashes. IPs live only in the in-memory rate limiter.
 
 Threat model in one paragraph: the server can't read profiles (AES-256-GCM,
 keys never leave the client), can't reverse a locator into a phrase (one-way

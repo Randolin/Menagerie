@@ -81,3 +81,20 @@ export function viewUrlFor(viewPhrase: string, baseUrl?: string): string {
   const base = baseUrl ?? `${location.origin}${location.pathname}`;
   return `${base}#/view/${canonicalViewPhrase(viewPhrase)}`;
 }
+
+/**
+ * Group phrases share the view-phrase grammar (the group gets a creature
+ * too); only the URL path differs. Accepts a bare phrase or …#/group/<phrase>.
+ */
+export function extractGroupPhrase(text: string): string | null {
+  let candidate = text.trim();
+  const urlMatch = candidate.match(/#\/group\/([A-Za-z-]+)/);
+  if (urlMatch) candidate = urlMatch[1];
+  const canonical = canonicalViewPhrase(candidate);
+  return isViewPhraseShaped(canonical) ? canonical : null;
+}
+
+export function groupUrlFor(groupPhrase: string, baseUrl?: string): string {
+  const base = baseUrl ?? `${location.origin}${location.pathname}`;
+  return `${base}#/group/${canonicalViewPhrase(groupPhrase)}`;
+}

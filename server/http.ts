@@ -10,23 +10,34 @@ import {
   type HatchApiError,
   type HatchErrorCode,
 } from '../libs/core/src/hatch/hatch-api.ts';
+import {
+  ADMIN_TOKEN_HEADER,
+  MEMBER_TOKEN_HEADER,
+  NEW_ADMIN_TOKEN_HEADER,
+} from '../libs/core/src/group/group-api.ts';
 import type { ProfilesDb } from './profiles-db.ts';
+import type { GroupsDb } from './groups-db.ts';
 import { RateLimiter } from './rate-limit.ts';
 
 export interface AppOptions {
   profiles: ProfilesDb;
+  groups: GroupsDb;
   maxBlobBytes: number;
   trustProxy: boolean;
   readsPerMinute?: number;
   writesPerMinute?: number;
   /** Circuit breaker: POST /v2/profiles answers 503 at_capacity beyond this. */
   maxProfiles?: number;
+  /** Circuit breaker: POST /v2/groups answers 503 at_capacity beyond this. */
+  maxGroups?: number;
 }
 
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'access-control-allow-headers': `content-type, if-match, ${EDIT_TOKEN_HEADER}, ${NEW_EDIT_TOKEN_HEADER}`,
+  'access-control-allow-headers':
+    `content-type, if-match, ${EDIT_TOKEN_HEADER}, ${NEW_EDIT_TOKEN_HEADER}, ` +
+    `${ADMIN_TOKEN_HEADER}, ${MEMBER_TOKEN_HEADER}, ${NEW_ADMIN_TOKEN_HEADER}`,
   'access-control-max-age': '86400',
 } as const;
 
@@ -86,6 +97,26 @@ export function createApp(opts: AppOptions) {
     const token = req.headers[header];
     if (typeof token !== 'string' || !HATCH_LOCATOR_RE.test(token)) return null;
     return createHash('sha256').update(token, 'utf8').digest('hex');
+  };
+
+  /** Capped JSON body, or null after answering 413/400 itself. */
+  const readJson = async (
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<Record<string, unknown> | null> => {
+    const raw = await readBody(req, bodyCap);
+    if (raw === null) {
+      sendError(res, 413, 'too_large');
+      return null;
+    }
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (parsed === null || typeof parsed !== 'object') throw new Error('not an object');
+      return parsed as Record<string, unknown>;
+    } catch {
+      sendError(res, 400, 'bad_request', { message: 'body must be a JSON object' });
+      return null;
+    }
   };
 
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
@@ -174,6 +205,204 @@ export function createApp(opts: AppOptions) {
         const record = profiles.getView(viewMatch[1]);
         if (!record) sendError(res, 404, 'not_found');
         else send(res, 200, record);
+        return;
+      }
+
+      // POST /v2/groups — create a roster. Locator is client-derived from
+      // the group phrase; the admin token comes from the creator's separate
+      // admin phrase.
+      if (pathname === '/v2/groups' && method === 'POST') {
+        if (opts.maxGroups !== undefined && opts.groups.count() >= opts.maxGroups) {
+          sendError(res, 503, 'at_capacity');
+          return;
+        }
+        const adminHash = tokenHashFrom(req, ADMIN_TOKEN_HEADER);
+        if (!adminHash) {
+          sendError(res, 400, 'bad_request', { message: 'missing or malformed admin token' });
+          return;
+        }
+        const body = await readJson(req, res);
+        if (!body) return;
+        const groupLocator = body['group_locator'];
+        if (typeof groupLocator !== 'string' || !HATCH_LOCATOR_RE.test(groupLocator)) {
+          sendError(res, 400, 'bad_request', { message: 'malformed group locator' });
+          return;
+        }
+        if (!validBlob(body['blob_meta'])) {
+          sendError(res, 400, 'bad_request', { message: 'blob_meta must be base64url' });
+          return;
+        }
+        const outcome = opts.groups.create(groupLocator, adminHash, body['blob_meta']);
+        if (outcome === 'created') send(res, 201, { version: 1 });
+        else sendError(res, 409, 'locator_taken');
+        return;
+      }
+
+      // POST /v2/groups/:g/members — join: deposit a member blob under a
+      // random member locator; its token (hashed here) is the member's own
+      // update/leave capability.
+      const joinMatch = pathname.match(/^\/v2\/groups\/([^/]+)\/members$/);
+      if (joinMatch && method === 'POST') {
+        if (!HATCH_LOCATOR_RE.test(joinMatch[1])) {
+          sendError(res, 400, 'bad_request', { message: 'malformed locator' });
+          return;
+        }
+        const memberHash = tokenHashFrom(req, MEMBER_TOKEN_HEADER);
+        if (!memberHash) {
+          sendError(res, 400, 'bad_request', { message: 'missing or malformed member token' });
+          return;
+        }
+        const body = await readJson(req, res);
+        if (!body) return;
+        const memberLocator = body['member_locator'];
+        if (typeof memberLocator !== 'string' || !HATCH_LOCATOR_RE.test(memberLocator)) {
+          sendError(res, 400, 'bad_request', { message: 'malformed member locator' });
+          return;
+        }
+        if (!validBlob(body['blob_member'])) {
+          sendError(res, 400, 'bad_request', { message: 'blob_member must be base64url' });
+          return;
+        }
+        const outcome = opts.groups.join(joinMatch[1], memberLocator, memberHash, body['blob_member']);
+        if (outcome === 'joined') send(res, 201, { version: 1 });
+        else if (outcome === 'group_not_found') sendError(res, 404, 'not_found');
+        else if (outcome === 'full') sendError(res, 503, 'at_capacity');
+        else sendError(res, 409, 'locator_taken');
+        return;
+      }
+
+      // /v2/groups/:g/members/:m — a member updates or removes their own
+      // deposit (member token); an admin token may also remove it (kick).
+      const memberMatch = pathname.match(/^\/v2\/groups\/([^/]+)\/members\/([^/]+)$/);
+      if (memberMatch) {
+        const memberLocator = memberMatch[2];
+        if (!HATCH_LOCATOR_RE.test(memberMatch[1]) || !HATCH_LOCATOR_RE.test(memberLocator)) {
+          sendError(res, 400, 'bad_request', { message: 'malformed locator' });
+          return;
+        }
+        if (method === 'DELETE') {
+          const hash =
+            tokenHashFrom(req, MEMBER_TOKEN_HEADER) ?? tokenHashFrom(req, ADMIN_TOKEN_HEADER);
+          if (!hash) {
+            sendError(res, 400, 'bad_request', { message: 'missing member or admin token' });
+            return;
+          }
+          const outcome = opts.groups.deleteMember(memberLocator, hash);
+          if (outcome === 'deleted') send(res, 204);
+          else if (outcome === 'bad_token') sendError(res, 401, 'bad_token');
+          else sendError(res, 404, 'not_found');
+          return;
+        }
+        if (method === 'PUT') {
+          const memberHash = tokenHashFrom(req, MEMBER_TOKEN_HEADER);
+          if (!memberHash) {
+            sendError(res, 400, 'bad_request', { message: 'missing or malformed member token' });
+            return;
+          }
+          const ifVersion = Number(req.headers['if-match']);
+          if (!Number.isInteger(ifVersion) || ifVersion < 1) {
+            sendError(res, 400, 'bad_request', { message: 'If-Match must be a positive integer' });
+            return;
+          }
+          const body = await readJson(req, res);
+          if (!body) return;
+          if (!validBlob(body['blob_member'])) {
+            sendError(res, 400, 'bad_request', { message: 'blob_member must be base64url' });
+            return;
+          }
+          const outcome = opts.groups.putMember(memberLocator, memberHash, ifVersion, body['blob_member']);
+          if (outcome === 'updated') send(res, 200, { version: ifVersion + 1 });
+          else if (outcome === 'bad_token') sendError(res, 401, 'bad_token');
+          else if (outcome === 'conflict') sendError(res, 409, 'version_conflict');
+          else sendError(res, 404, 'not_found');
+          return;
+        }
+        sendError(res, 400, 'bad_request', { message: `unsupported method ${method}` });
+        return;
+      }
+
+      // /v2/groups/:g — read the roster (the locator is the capability),
+      // or admin-update / admin-delete it.
+      const groupMatch = pathname.match(/^\/v2\/groups\/([^/]+)$/);
+      if (groupMatch) {
+        const groupLocator = groupMatch[1];
+        if (!HATCH_LOCATOR_RE.test(groupLocator)) {
+          sendError(res, 400, 'bad_request', { message: 'malformed locator' });
+          return;
+        }
+        if (method === 'GET') {
+          const record = opts.groups.get(groupLocator);
+          if (!record) sendError(res, 404, 'not_found');
+          else send(res, 200, record);
+          return;
+        }
+        const adminHash = tokenHashFrom(req, ADMIN_TOKEN_HEADER);
+        if (!adminHash) {
+          sendError(res, 400, 'bad_request', { message: 'missing or malformed admin token' });
+          return;
+        }
+        if (method === 'DELETE') {
+          const outcome = opts.groups.delete(groupLocator, adminHash);
+          if (outcome === 'deleted') send(res, 204);
+          else if (outcome === 'bad_token') sendError(res, 401, 'bad_token');
+          else sendError(res, 404, 'not_found');
+          return;
+        }
+        if (method === 'PUT') {
+          const ifVersion = Number(req.headers['if-match']);
+          if (!Number.isInteger(ifVersion) || ifVersion < 1) {
+            sendError(res, 400, 'bad_request', { message: 'If-Match must be a positive integer' });
+            return;
+          }
+          const body = await readJson(req, res);
+          if (!body) return;
+          if (!validBlob(body['blob_meta'])) {
+            sendError(res, 400, 'bad_request', { message: 'blob_meta must be base64url' });
+            return;
+          }
+          const newGroupLocator = body['new_group_locator'];
+          let newAdminTokenHash: string | undefined;
+          if (newGroupLocator !== undefined) {
+            if (typeof newGroupLocator !== 'string' || !HATCH_LOCATOR_RE.test(newGroupLocator)) {
+              sendError(res, 400, 'bad_request', { message: 'malformed new_group_locator' });
+              return;
+            }
+            const hash = tokenHashFrom(req, NEW_ADMIN_TOKEN_HEADER);
+            if (!hash) {
+              sendError(res, 400, 'bad_request', {
+                message: `new_group_locator requires ${NEW_ADMIN_TOKEN_HEADER}`,
+              });
+              return;
+            }
+            newAdminTokenHash = hash;
+          }
+          const outcome = opts.groups.put(groupLocator, adminHash, ifVersion, {
+            blob_meta: body['blob_meta'],
+            newGroupLocator: newGroupLocator as string | undefined,
+            newAdminTokenHash,
+          });
+          switch (outcome.status) {
+            case 'updated':
+              send(res, 200, { version: outcome.version });
+              return;
+            case 'conflict':
+              sendError(res, 409, 'version_conflict', {
+                version: outcome.version,
+                blob_view: outcome.blob_meta,
+              });
+              return;
+            case 'bad_token':
+              sendError(res, 401, 'bad_token');
+              return;
+            case 'not_found':
+              sendError(res, 404, 'not_found');
+              return;
+            case 'locator_taken':
+              sendError(res, 409, 'locator_taken');
+              return;
+          }
+        }
+        sendError(res, 400, 'bad_request', { message: `unsupported method ${method}` });
         return;
       }
 

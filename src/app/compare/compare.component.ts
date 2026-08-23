@@ -64,7 +64,7 @@ interface ResolvedPanel {
             </button>
           }
         }
-        @if (store.phrases().length >= 1) {
+        @if (store.entries().length >= 1) {
           <button class="btn btn-ghost btn-small" (click)="store.clear()">Clear all</button>
         }
       </div>
@@ -108,7 +108,11 @@ export class CompareComponent {
 
   protected readonly canAddMine = computed(() => {
     const mine = this.session.viewPhrase();
-    return Boolean(mine) && !this.store.full && !this.store.phrases().includes(mine!);
+    return (
+      Boolean(mine) &&
+      !this.store.full &&
+      !this.store.entries().some((e) => e.kind === 'phrase' && e.phrase === mine)
+    );
   });
 
   constructor() {
@@ -134,7 +138,7 @@ export class CompareComponent {
   protected slotEmoji(slotIndex: number): string | null {
     const m = this.store.model();
     if (!m || !m.slots[slotIndex]?.payload) return null;
-    return m.personas[this.goodIndexBefore(slotIndex)]?.emoji ?? null;
+    return m.emojis[this.goodIndexBefore(slotIndex)] ?? null;
   }
 
   /** Index of this slot among the successfully loaded ones (drives its color). */

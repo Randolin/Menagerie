@@ -5,13 +5,15 @@ export * from './schema/types';
 export { SECTIONS, RETIRED_ITEM_IDS, RETIRED_SECTION_IDS } from './schema/sections';
 export * from './schema/schema';
 export * from './schema/packs';
+export * from './group/group-api';
+export * from './group/group-data';
 
 export { bytesToB64url, b64urlToBytes } from './codec/base64url';
 export { deflate, inflate } from './codec/compress';
 export { buildSharePayload } from './codec/codec';
 export { migrateToCurrent } from './codec/migrate';
 
-export { randomBytes, randomSalt } from './crypto/random';
+export { randomBytes, randomIndex, randomLocator, randomSalt, randomToken } from './crypto/random';
 export * from './crypto/match-tokens';
 export * from './crypto/phrase-kdf';
 export { generatePassphrase } from './crypto/passphrase';

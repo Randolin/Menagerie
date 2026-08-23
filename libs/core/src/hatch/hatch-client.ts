@@ -10,6 +10,15 @@ import {
   type PutProfileResponse,
   type ViewRecord,
 } from './hatch-api';
+import {
+  ADMIN_TOKEN_HEADER,
+  MEMBER_TOKEN_HEADER,
+  NEW_ADMIN_TOKEN_HEADER,
+  type CreateGroupRequest,
+  type GroupRecord,
+  type JoinGroupRequest,
+  type PutGroupRequest,
+} from '../group/group-api';
 
 export type HatchFailure =
   | { kind: 'network'; cause: unknown }
@@ -105,6 +114,109 @@ export class HatchClient {
     const res = await this.request(`/v2/profiles/edit/${editLocator}`, {
       method: 'DELETE',
       headers: { [EDIT_TOKEN_HEADER]: editToken },
+    });
+    if (res.status === 404 || res.ok) return;
+    throw await this.toError(res);
+  }
+
+  // ---- groups -------------------------------------------------------------
+
+  /** Register a freshly minted group roster. locator_taken → remint. */
+  async createGroup(request: CreateGroupRequest, adminToken: string): Promise<void> {
+    const res = await this.request('/v2/groups', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', [ADMIN_TOKEN_HEADER]: adminToken },
+      body: JSON.stringify(request),
+    });
+    if (!res.ok) throw await this.toError(res);
+  }
+
+  /** Roster read (the locator is the capability); null when unknown. */
+  async getGroup(groupLocator: string): Promise<GroupRecord | null> {
+    const res = await this.request(`/v2/groups/${groupLocator}`, { method: 'GET' });
+    if (res.status === 404) return null;
+    if (!res.ok) throw await this.toError(res);
+    return (await res.json()) as GroupRecord;
+  }
+
+  /** Admin CAS update; re-minting sends the new admin token alongside. */
+  async putGroup(
+    groupLocator: string,
+    adminToken: string,
+    ifVersion: number,
+    request: PutGroupRequest,
+    newAdminToken?: string,
+  ): Promise<number> {
+    const res = await this.request(`/v2/groups/${groupLocator}`, {
+      method: 'PUT',
+      headers: {
+        'content-type': 'application/json',
+        [ADMIN_TOKEN_HEADER]: adminToken,
+        'if-match': String(ifVersion),
+        ...(newAdminToken !== undefined ? { [NEW_ADMIN_TOKEN_HEADER]: newAdminToken } : {}),
+      },
+      body: JSON.stringify(request),
+    });
+    if (!res.ok) throw await this.toError(res);
+    return ((await res.json()) as PutProfileResponse).version;
+  }
+
+  /** Idempotent admin delete (cascades deposits). */
+  async removeGroup(groupLocator: string, adminToken: string): Promise<void> {
+    const res = await this.request(`/v2/groups/${groupLocator}`, {
+      method: 'DELETE',
+      headers: { [ADMIN_TOKEN_HEADER]: adminToken },
+    });
+    if (res.status === 404 || res.ok) return;
+    throw await this.toError(res);
+  }
+
+  /** Deposit a member blob; the token is the member's own capability. */
+  async joinGroup(
+    groupLocator: string,
+    memberToken: string,
+    request: JoinGroupRequest,
+  ): Promise<void> {
+    const res = await this.request(`/v2/groups/${groupLocator}/members`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', [MEMBER_TOKEN_HEADER]: memberToken },
+      body: JSON.stringify(request),
+    });
+    if (!res.ok) throw await this.toError(res);
+  }
+
+  /** Member CAS update of their own deposit. */
+  async putMember(
+    groupLocator: string,
+    memberLocator: string,
+    memberToken: string,
+    ifVersion: number,
+    blobMember: string,
+  ): Promise<number> {
+    const res = await this.request(`/v2/groups/${groupLocator}/members/${memberLocator}`, {
+      method: 'PUT',
+      headers: {
+        'content-type': 'application/json',
+        [MEMBER_TOKEN_HEADER]: memberToken,
+        'if-match': String(ifVersion),
+      },
+      body: JSON.stringify({ blob_member: blobMember }),
+    });
+    if (!res.ok) throw await this.toError(res);
+    return ((await res.json()) as PutProfileResponse).version;
+  }
+
+  /** Leave (member token) or kick (admin token). Idempotent on 404. */
+  async removeMember(
+    groupLocator: string,
+    memberLocator: string,
+    token: string,
+    as: 'member' | 'admin',
+  ): Promise<void> {
+    const header = as === 'member' ? MEMBER_TOKEN_HEADER : ADMIN_TOKEN_HEADER;
+    const res = await this.request(`/v2/groups/${groupLocator}/members/${memberLocator}`, {
+      method: 'DELETE',
+      headers: { [header]: token },
     });
     if (res.status === 404 || res.ok) return;
     throw await this.toError(res);

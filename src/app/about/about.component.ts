@@ -70,6 +70,28 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
     </div>
 
     <div class="card">
+      <h2>🕸️ Groups: shared rosters, honestly explained</h2>
+      <p>
+        A group is one more encrypted record: a roster the server can’t read, addressed
+        and unlocked by a shared <strong>group phrase</strong> (the group gets its own
+        creature and invite QR). Joining deposits a snapshot of your <em>open</em> answers
+        — desires never travel into a group in any form. Deposit pseudonymously and the
+        roster shows a random two-word alias; deposit openly and it shows your creature
+        and view link. The creator holds a separate admin phrase for kicks, re-mints,
+        and deletion.
+      </p>
+      <div class="notice-warn notice">
+        <strong>The honest ledger: </strong>
+        everyone who ever holds the group phrase can read the roster — kicking removes a
+        deposit but not that access; only re-minting does, and it asks everyone to rejoin.
+        Deposits are snapshots, not live profiles — refresh yours after big changes. And
+        the server, while unable to read anything, does see how many deposits each group
+        holds and could notice which profiles are active around the same moments a group
+        is — a traffic pattern, not content.
+      </div>
+    </div>
+
+    <div class="card">
       <h2>🎭 The desires section: mutual reveal, honestly explained</h2>
       <p>
         Desires never travel as readable answers. Each positive answer (anything warmer

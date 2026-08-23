@@ -28,9 +28,7 @@ import type { ComparePanelComponent } from '../compare-panels.token';
 export class FingerprintPanel implements ComparePanelComponent {
   readonly model = input.required<CompareModel>();
 
-  protected readonly personaEmojis = computed(() =>
-    this.model().personas.map((p) => p?.emoji ?? null),
-  );
+  protected readonly personaEmojis = computed(() => this.model().emojis);
 
   /** Values scales answered by every loaded profile. */
   private readonly sharedScales = computed<ScaleItem[]>(() => {

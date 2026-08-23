@@ -15,6 +15,23 @@ export interface SavedConnection {
   updatedAt: number;
 }
 
+/**
+ * A group this profile knows: created (adminPhrase present) and/or joined
+ * (deposit credentials present). The member locator/token are random — not
+ * derived — so this encrypted record is their only home.
+ */
+export interface SavedGroupMembership {
+  id: string;
+  groupPhrase: string;
+  adminPhrase?: string;
+  memberLocator?: string;
+  memberToken?: string;
+  pseudonym?: string;
+  emoji?: string;
+  tier?: 1 | 2;
+  addedAt: number;
+}
+
 export interface PrivData {
   v: 1;
   viewPhrase: string;
@@ -32,6 +49,8 @@ export interface PrivData {
   weights?: Weights;
   /** Acceptable option sets for dealbreaker-weighted items. */
   acceptable?: Acceptable;
+  /** Groups created or joined (absent on blobs written before groups). */
+  groups?: SavedGroupMembership[];
 }
 
 export function emptyPrivData(viewPhrase: string): PrivData {

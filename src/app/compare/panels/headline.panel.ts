@@ -63,9 +63,7 @@ import type { ComparePanelComponent } from '../compare-panels.token';
 export class HeadlinePanel implements ComparePanelComponent {
   readonly model = input.required<CompareModel>();
 
-  protected readonly personaEmojis = computed(() =>
-    this.model().personas.map((p) => p?.emoji ?? null),
-  );
+  protected readonly personaEmojis = computed(() => this.model().emojis);
 
   protected readonly overallPct = computed(() => {
     const overall = this.model().pair?.overall;
