@@ -7,6 +7,8 @@ export * from './schema/schema';
 export * from './schema/packs';
 export * from './group/group-api';
 export * from './group/group-data';
+export * from './metrics/metrics-api';
+export * from './metrics/buckets';
 
 export { bytesToB64url, b64urlToBytes } from './codec/base64url';
 export { deflate, inflate } from './codec/compress';

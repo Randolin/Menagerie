@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
 
 @Component({
   selector: 'moxy-about',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [RouterLink],
   template: `
     <div class="hero">
       <h1>How Menagerie works — and exactly what it does and doesn’t protect</h1>
@@ -67,6 +69,29 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
         answers, and comparisons weigh each side's score by what that person said matters
         — so “fit for you” and “fit for them” are honestly different numbers.
       </p>
+    </div>
+
+    <div class="card">
+      <h2>📊 Anonymous counters: the one thing the server can read — because you chose it</h2>
+      <p>
+        Off by default. Opting in submits, once a month, a list of coarse counts:
+        your age band, and bucketed answers joint-counted against it (open to
+        friendship: yes; alcohol: never; …). No name, no creature, no phrases — the
+        submission carries only a token derived so the server cannot link it to your
+        profile, used once per month to prevent double-counting.
+      </p>
+      <ul>
+        <li>Desire counts are submitted through <strong>randomized response</strong>:
+          each bit is flipped with 25% probability before it leaves your device, so
+          even the server can never know whether any single answer was real — only
+          the crowd's rate can be estimated.</li>
+        <li>Buckets with fewer than ten contributors are never served.</li>
+        <li>Each month replaces the last; nothing accumulates per person, and
+          opting out simply stops future submissions.</li>
+        <li>The result is the <a routerLink="/community">community page</a> — and yes,
+          these counters are the one deliberately readable thing in the database.
+          That is the entire, opt-in trade.</li>
+      </ul>
     </div>
 
     <div class="card">

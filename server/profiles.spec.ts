@@ -9,6 +9,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ProfilesDb } from './profiles-db.ts';
 import { GroupsDb } from './groups-db.ts';
+import { MetricsDb } from './metrics-db.ts';
 import { createApp } from './http.ts';
 import { startGc } from './gc.ts';
 import {
@@ -38,6 +39,7 @@ let server: Server;
 let base: string;
 let profiles: ProfilesDb;
 let groups: GroupsDb;
+let metrics: MetricsDb;
 /** Raw second connection for backdating rows in GC tests. */
 let raw: DatabaseSync;
 
@@ -83,16 +85,20 @@ beforeAll(async () => {
   dbPath = join(dir, 'test.db');
   profiles = new ProfilesDb(dbPath);
   groups = new GroupsDb(dbPath, 3); // tiny member cap to test 'full'
+  metrics = new MetricsDb(dbPath);
   raw = new DatabaseSync(dbPath);
   // Every request here shares one client key; keep the limiter out of the way.
   server = createServer(
     createApp({
       profiles,
       groups,
+      metrics,
       maxBlobBytes: 1024,
       trustProxy: false,
       readsPerMinute: 10_000,
       writesPerMinute: 10_000,
+      metricsPerMinute: 10_000,
+      metricsK: 2, // small k so the floor is testable
     }),
   );
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -105,6 +111,7 @@ afterAll(async () => {
   raw.close();
   profiles.close();
   groups.close();
+  metrics.close();
   rmSync(dir, { recursive: true, force: true });
 });
 
@@ -504,5 +511,52 @@ describe('v2 groups: rosters and deposits', () => {
     expect((await fetch(`${base}/v2/groups/${id('f')}`)).status).toBe(404);
     const orphans = raw.prepare('SELECT COUNT(*) AS n FROM group_members').get();
     expect(orphans.n).toBe(0);
+  });
+});
+
+describe('v2 metrics: epoch counters', () => {
+  const epoch = (() => {
+    const d = new Date();
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+  })();
+
+  const submit = (token: string, buckets: string[], ep = epoch) =>
+    fetch(`${base}/v2/metrics`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ epoch: ep, token, buckets }),
+    });
+
+  test('submissions count once per token; k-floor hides thin buckets', async () => {
+    expect((await submit(id('1'), ['age|1', '1|sk.friend|1'])).status).toBe(201);
+    // Same token again → benign duplicate, counters untouched.
+    expect((await submit(id('1'), ['age|1'])).status).toBe(409);
+    // A second contributor lifts age|1 to k=2; the joint bucket stays under.
+    expect((await submit(id('2'), ['age|1'])).status).toBe(201);
+
+    const res = await fetch(`${base}/v2/metrics/${epoch}`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('cache-control')).toContain('max-age');
+    const body = await res.json();
+    expect(body.buckets['age|1']).toBe(2);
+    expect(body.buckets['1|sk.friend|1']).toBeUndefined(); // n=1 < k=2
+  });
+
+  test('validation: wrong epoch, malformed token/buckets', async () => {
+    expect((await submit(id('3'), ['age|1'], '1999-01')).status).toBe(400);
+    expect((await submit('short', ['age|1'])).status).toBe(400);
+    expect((await submit(id('3'), [])).status).toBe(400);
+    expect((await submit(id('3'), ['BAD BUCKET!'])).status).toBe(400);
+    expect((await fetch(`${base}/v2/metrics/not-an-epoch`)).status).toBe(400);
+  });
+
+  test('old epochs are dropped, newest three kept', () => {
+    metrics.submit('2020-01', 'h1', ['age|0']);
+    metrics.submit('2020-02', 'h2', ['age|0']);
+    metrics.submit('2020-03', 'h3', ['age|0']);
+    metrics.dropOldEpochs(3);
+    // Current epoch + 2020-03 + 2020-02 are the newest three present.
+    expect(metrics.get('2020-01', 1)).toEqual({});
+    expect(metrics.get('2020-02', 1)).toEqual({ 'age|0': 1 });
   });
 });
