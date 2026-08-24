@@ -203,6 +203,9 @@ export class BoopComposerComponent {
       const reply = this.replyTo();
       if (reply) {
         await this.session.replyToBoop(reply, [...this.chosen()], attachments);
+        // Success removes the boop's row — and this composer with it — so
+        // the confirmation must outlive us as a toast.
+        this.toast.show('Reply sent — this exchange is complete.');
       } else {
         const target = this.target();
         if (!target || !this.stagedId) throw new Error('Nothing to send to.');

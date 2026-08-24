@@ -69,6 +69,20 @@ Node file.
   re-mints (the unlink lever — old links, QRs, and deposits all die), and
   deletes. Honest limits, also stated in-app: kicking removes data but not
   group-phrase access, and the server sees roster sizes and join timing.
+- **Boops: anonymous first contact.** A boop is a sealed "I'm interested,"
+  not a message: intents from a fixed list (no free text anywhere), sealed to
+  the recipient's public key (ephemeral-static ECDH P-256 → HKDF → AES-GCM)
+  and padded to one fixed size, so the server, other viewers, and a stolen
+  database alike can neither read a boop nor tell what it carries. Escalation
+  is structural — optionally attach your view phrase, or a contact card
+  (platform from a fixed list + a short handle) behind an explicit
+  de-anonymization advisory. The recipient replies at most once through a
+  one-shot reply box minted by the sender, or deletes silently. A sealed boop
+  authenticates nothing about its sender (the UI says "says it's from");
+  regenerating your creature rotates the boop address and is the block lever.
+  Honest limits, also stated in-app: the server sees that an inbox received
+  sealed notes, when (hour-coarse) and how many; inboxes cap at 16 pending
+  with a 4-per-hour arrival throttle, and unread boops expire after 30 days.
 - **Anonymous counters (opt-in, off by default).** Once per monthly epoch an
   opted-in profile submits coarse buckets — age band, plus answers
   joint-counted against it — under a dedup token derived in its own KDF
@@ -196,6 +210,7 @@ node server/moxy-sync-server.ts     # Node >= 24; no npm install needed
 | `MOXY_MAX_PROFILES` | `100000` | circuit breaker: creates answer 503 beyond |
 | `MOXY_MAX_GROUPS` | `10000` | group circuit breaker |
 | `MOXY_MAX_GROUP_MEMBERS` | `32` | deposits per group |
+| `MOXY_MAX_BOOP_INBOXES` | `200000` | boop inbox circuit breaker |
 | `MOXY_METRICS_K` | `10` | k-floor: aggregate buckets under this stay hidden |
 | `MOXY_GC_EMPTY_MS` | 7 days | never-populated profiles die after this |
 | `MOXY_GC_IDLE_MS` | 365 days | populated ones, after no edit *and* no view |
@@ -216,13 +231,20 @@ groups: `POST /v2/groups` (`X-Moxy-Admin-Token`) ·
 `new_group_locator` + `X-Moxy-New-Admin-Token`) ·
 `POST /v2/groups/:g/members` (`X-Moxy-Member-Token`) ·
 `PUT`/`DELETE /v2/groups/:g/members/:m` (member token; admin may DELETE) ·
+boops: `POST /v2/boops` (register a random inbox; locator + token in body) ·
+`POST /v2/boops/:locator/knocks` (anonymous sealed drop, ≤ 4 KiB, own tight
+rate bucket + per-inbox throttle; `503` when the 16-slot inbox is full) ·
+`GET /v2/boops/:locator` (`X-Moxy-Boop-Token`; bumps the idle clock) ·
+`DELETE /v2/boops/:locator[/knocks/:id]` (owner token) ·
 metrics: `POST /v2/metrics` (epoch + dedup token + buckets) ·
 `GET /v2/metrics/:epoch` (k-floored aggregate).
 Tables: profiles (two locators, a token hash, two ciphertext blobs, a
 version, hour-coarse timestamps), groups and group deposits (ciphertext and
-token hashes), and the metrics counters — the one deliberately readable
-table, holding opt-in coarse aggregates and hashed dedup tokens only. IPs
-live only in the in-memory rate limiter.
+token hashes), boop inboxes and their sealed knocks (random ids; unread
+knocks swept after 30 days, unpolled inboxes after 12 months), and the
+metrics counters — the one deliberately readable table, holding opt-in
+coarse aggregates and hashed dedup tokens only. IPs live only in the
+in-memory rate limiter.
 
 Threat model in one paragraph: the server can't read profiles (AES-256-GCM,
 keys never leave the client), can't reverse a locator into a phrase (one-way
