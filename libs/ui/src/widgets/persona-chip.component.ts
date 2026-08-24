@@ -1,13 +1,15 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import type { Persona } from '@moxy/core';
+import { CreatureIconComponent } from './creature-icon.component';
 
-/** The profile's pet identity: creature emoji + "adj-adj-animal" name. */
+/** The profile's pet identity: pixel creature + "adj-adj-animal" name. */
 @Component({
   selector: 'moxy-persona-chip',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CreatureIconComponent],
   template: `
     <span class="persona-chip" [style.--persona-color]="persona().color">
-      <span class="persona-emoji" aria-hidden="true">{{ persona().emoji }}</span>
+      <moxy-creature-icon [emoji]="persona().emoji" [size]="16" />
       <span class="persona-name">{{ persona().name }}</span>
     </span>
   `,
@@ -26,7 +28,6 @@ import type { Persona } from '@moxy/core';
       color: var(--ink);
       white-space: nowrap;
     }
-    .persona-emoji { font-size: 16px; }
   `,
 })
 export class PersonaChipComponent {

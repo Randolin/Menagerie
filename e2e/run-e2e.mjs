@@ -150,17 +150,17 @@ async function decodeQr(page, expected) {
       const toast = document.getElementById('toast');
       if (toast) toast.style.display = 'none';
     });
-    await page.locator('.qr-svg svg').evaluate((el) => {
+    await page.locator('.qr-svg > svg').evaluate((el) => {
       el.style.width = '640px';
       el.style.height = '640px';
     });
-    const png = PNG.sync.read(await page.locator('.qr-svg svg').screenshot());
+    const png = PNG.sync.read(await page.locator('.qr-svg > svg').screenshot());
     const hit = jsQR(
       new Uint8ClampedArray(png.data.buffer, png.data.byteOffset, png.data.length),
       png.width,
       png.height,
     );
-    await page.locator('.qr-svg svg').evaluate((el) => {
+    await page.locator('.qr-svg > svg').evaluate((el) => {
       el.style.width = '';
       el.style.height = '';
     }).catch(() => {});

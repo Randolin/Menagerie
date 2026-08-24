@@ -12,7 +12,7 @@ import {
   visiblePacks,
   type Pack,
 } from '@moxy/core';
-import { PersonaChipComponent, QrCodeComponent, RingComponent, ToastService, copyText } from '@moxy/ui';
+import { CreatureIconComponent, PersonaChipComponent, QrCodeComponent, RingComponent, ToastService, copyText } from '@moxy/ui';
 import { APP_STORAGE } from '../stores/storage.token';
 import { DraftStore } from '../stores/draft.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
@@ -22,7 +22,7 @@ import { BoopComposerComponent } from '../boop/boop-composer.component';
 @Component({
   selector: 'moxy-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, BoopComposerComponent, PersonaChipComponent, QrCodeComponent, RingComponent],
+  imports: [RouterLink, BoopComposerComponent, CreatureIconComponent, PersonaChipComponent, QrCodeComponent, RingComponent],
   template: `
     @if (!noticeDismissed()) {
       <div class="card" style="border-color:var(--accent)">
@@ -208,7 +208,7 @@ import { BoopComposerComponent } from '../boop/boop-composer.component';
       @for (boop of session.incomingBoops(); track boop.id) {
         <div class="grid-row" style="align-items:flex-start">
           <div class="grid-item-label">
-            says it’s from {{ boop.content.from.emoji }} {{ boop.content.from.label }}
+            says it’s from <moxy-creature-icon [emoji]="boop.content.from.emoji" [size]="18" /> {{ boop.content.from.label }}
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
               @for (i of boop.content.intents; track i) {
                 <span class="fine">· {{ intentLabel(i) }}</span>
@@ -250,7 +250,7 @@ import { BoopComposerComponent } from '../boop/boop-composer.component';
         @for (sent of session.sentBoops(); track sent.id) {
           <div class="grid-row" style="align-items:flex-start">
             <div class="grid-item-label">
-              {{ sent.emoji }} {{ sent.label }}
+              <moxy-creature-icon [emoji]="sent.emoji" [size]="18" /> {{ sent.label }}
               <span class="fine">
                 {{ sent.status === 'answered' ? '↩️ replied' :
                    sent.status === 'sent' ? 'sent — no reply yet' : 'not sent' }}

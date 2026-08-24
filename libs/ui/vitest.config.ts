@@ -8,6 +8,11 @@ import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
   root: dirname(fileURLToPath(import.meta.url)),
+  resolve: {
+    alias: {
+      '@moxy/core': fileURLToPath(new URL('../core/src/index.ts', import.meta.url)),
+    },
+  },
   test: {
     environment: 'node',
     globals: true,

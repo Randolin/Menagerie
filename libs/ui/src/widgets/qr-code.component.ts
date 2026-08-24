@@ -10,6 +10,7 @@ import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
 import type { Persona } from '@moxy/core';
 import qrcode from 'qrcode-generator';
 import { blobPath } from './qr-path';
+import { creatureSpriteRects } from '../creatures/pixel-art';
 
 let gradientSeq = 0;
 
@@ -49,7 +50,7 @@ let gradientSeq = 0;
   // encapsulation attributes would never reach it.
   encapsulation: ViewEncapsulation.None,
   styles: `
-    moxy-qr-code .qr-svg svg { width: 208px; height: 208px; display: block; }
+    moxy-qr-code .qr-svg > svg { width: 208px; height: 208px; display: block; }
   `,
 })
 export class QrCodeComponent {
@@ -133,12 +134,27 @@ export class QrCodeComponent {
       // Occludes ~3.8% of the symbol — far inside H's 30% correction.
       const cx = size / 2;
       const radius = (n * 0.22) / 2;
-      const emoji = persona.emoji.replace(/[<>&"']/g, '');
       parts.push(
         `<circle cx="${cx}" cy="${cx}" r="${radius}" fill="#ffffff" stroke="${color}" stroke-width="0.35"/>`,
-        `<text x="${cx}" y="${cx}" font-size="${(n * 0.16).toFixed(2)}" ` +
-          `text-anchor="middle" dominant-baseline="central">${emoji}</text>`,
       );
+      // The pixel creature when we have one (words[2] is the animal name);
+      // the emoji glyph otherwise. An inscribed square keeps the sprite
+      // inside the badge circle.
+      const rects = creatureSpriteRects(persona.words[2]);
+      if (rects) {
+        const side = radius * 1.35;
+        parts.push(
+          `<svg x="${(cx - side / 2).toFixed(2)}" y="${(cx - side / 2).toFixed(2)}" ` +
+            `width="${side.toFixed(2)}" height="${side.toFixed(2)}" viewBox="0 0 16 16" ` +
+            `shape-rendering="crispEdges">${rects}</svg>`,
+        );
+      } else {
+        const emoji = persona.emoji.replace(/[<>&"']/g, '');
+        parts.push(
+          `<text x="${cx}" y="${cx}" font-size="${(n * 0.16).toFixed(2)}" ` +
+            `text-anchor="middle" dominant-baseline="central">${emoji}</text>`,
+        );
+      }
     }
 
     parts.push('</svg>');

@@ -24,7 +24,7 @@ import {
   type Persona,
   type ProfilePayload,
 } from '@moxy/core';
-import { PersonaChipComponent, QrCodeComponent, ToastService, copyText } from '@moxy/ui';
+import { CreatureIconComponent, PersonaChipComponent, QrCodeComponent, ToastService, copyText } from '@moxy/ui';
 import { CompareStore } from '../stores/compare.store';
 import { DraftStore } from '../stores/draft.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
@@ -53,7 +53,7 @@ interface LoadedGroup {
 @Component({
   selector: 'moxy-group',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, PersonaChipComponent, QrCodeComponent],
+  imports: [RouterLink, CreatureIconComponent, PersonaChipComponent, QrCodeComponent],
   template: `
     @if (view.error()) {
       <div class="card">
@@ -101,7 +101,7 @@ interface LoadedGroup {
                            (change)="toggleSelect(m.memberLocator)"
                            [attr.aria-label]="'Select ' + m.name">
                   }
-                  <span>{{ m.emoji }} {{ m.name }}</span>
+                  <span style="display:inline-flex;align-items:center;gap:5px"><moxy-creature-icon [emoji]="m.emoji ?? '🥚'" [size]="18" /> {{ m.name }}</span>
                   @if (m.isMe) { <span class="fine">(you)</span> }
                   @if (m.deposit.tier === 1) { <span class="fine">pseudonym</span> }
                 </label>

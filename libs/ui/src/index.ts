@@ -19,6 +19,9 @@ export { ToastService, type ToastKind } from './widgets/toast.service';
 export { ToastComponent } from './widgets/toast.component';
 export { QrCodeComponent } from './widgets/qr-code.component';
 export { PersonaChipComponent } from './widgets/persona-chip.component';
+export { CreatureIconComponent } from './widgets/creature-icon.component';
+export { CREATURE_SPRITES, type PixelSprite } from './creatures/pixel-grids';
+export { creaturePixelSvg, creatureSpriteRects, spriteSvg } from './creatures/pixel-art';
 
 export { copyText } from './util/clipboard';
 export { downloadText } from './util/download';
