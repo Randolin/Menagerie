@@ -32,6 +32,37 @@ export interface SavedGroupMembership {
   addedAt: number;
 }
 
+/**
+ * This profile's boop credentials. The private key and inbox token exist
+ * only here (encrypted under the edit key); the public key and inbox
+ * locator are published in blob_view. All four rotate together with the
+ * view phrase — rotation is the block lever.
+ */
+export interface BoopCreds {
+  /** Sealed-box private key (JWK JSON, b64url). */
+  priv: string;
+  /** Random inbox locator (matches the published payload's `k.inbox`). */
+  inbox: string;
+  /** Random inbox read/delete token. */
+  token: string;
+}
+
+/**
+ * A boop this profile sent, tracked so the one-shot reply box stays
+ * readable. Written to PrivData and saved BEFORE the reply box or knock
+ * exists server-side — a tab closed mid-send must never orphan a box the
+ * other person later replies into.
+ */
+export interface SentBoop {
+  id: string;
+  /** Recipient's claimed creature label + emoji, for display. */
+  label: string;
+  emoji: string;
+  replyBox: { locator: string; token: string; key: string };
+  sentAt: number;
+  status: 'pending' | 'sent' | 'answered';
+}
+
 export interface PrivData {
   v: 1;
   viewPhrase: string;
@@ -56,6 +87,10 @@ export interface PrivData {
   /** Last epoch this profile submitted counters for (best-effort dedup;
    *  the server's token set is the real gate). */
   metricsLastEpoch?: string;
+  /** Boop inbox credentials (absent on blobs written before boops). */
+  boop?: BoopCreds;
+  /** Boops sent, with their one-shot reply-box credentials. */
+  sentBoops?: SentBoop[];
 }
 
 export function emptyPrivData(viewPhrase: string): PrivData {

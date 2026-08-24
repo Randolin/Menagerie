@@ -20,6 +20,7 @@ import {
   type PutGroupRequest,
 } from '../group/group-api';
 import type { MetricsRecord, SubmitMetricsRequest } from '../metrics/metrics-api';
+import { BOOP_TOKEN_HEADER, type BoopInboxRecord, type BoopKnockRecord } from '../boop/boop-api';
 
 export type HatchFailure =
   | { kind: 'network'; cause: unknown }
@@ -218,6 +219,61 @@ export class HatchClient {
     const res = await this.request(`/v2/groups/${groupLocator}/members/${memberLocator}`, {
       method: 'DELETE',
       headers: { [header]: token },
+    });
+    if (res.status === 404 || res.ok) return;
+    throw await this.toError(res);
+  }
+
+  // ---- boops --------------------------------------------------------------
+
+  /** Register a freshly minted inbox. locator_taken → the caller decides
+   *  (a stored-token GET distinguishes "already mine" from a true clash). */
+  async createBoopInbox(locator: string, token: string): Promise<void> {
+    const res = await this.request('/v2/boops', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ locator, token }),
+    });
+    if (!res.ok) throw await this.toError(res);
+  }
+
+  /** Anonymous sealed drop; needs only the locator. 404 = inbox is gone
+   *  (rotated away), 503 = full, 429 = arrival throttle. */
+  async postKnock(locator: string, blob: string): Promise<void> {
+    const res = await this.request(`/v2/boops/${locator}/knocks`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ blob }),
+    });
+    if (!res.ok) throw await this.toError(res);
+  }
+
+  /** Owner poll; null when the inbox doesn't exist (self-heal by re-creating). */
+  async listKnocks(locator: string, token: string): Promise<BoopKnockRecord[] | null> {
+    const res = await this.request(`/v2/boops/${locator}`, {
+      method: 'GET',
+      headers: { [BOOP_TOKEN_HEADER]: token },
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) throw await this.toError(res);
+    return ((await res.json()) as BoopInboxRecord).knocks;
+  }
+
+  /** Idempotent: a 404 (already gone) counts as success. */
+  async deleteKnock(locator: string, token: string, id: string): Promise<void> {
+    const res = await this.request(`/v2/boops/${locator}/knocks/${id}`, {
+      method: 'DELETE',
+      headers: { [BOOP_TOKEN_HEADER]: token },
+    });
+    if (res.status === 404 || res.ok) return;
+    throw await this.toError(res);
+  }
+
+  /** Idempotent inbox teardown (rotation, profile deletion, answered box). */
+  async deleteBoopInbox(locator: string, token: string): Promise<void> {
+    const res = await this.request(`/v2/boops/${locator}`, {
+      method: 'DELETE',
+      headers: { [BOOP_TOKEN_HEADER]: token },
     });
     if (res.status === 404 || res.ok) return;
     throw await this.toError(res);

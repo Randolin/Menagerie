@@ -6,6 +6,7 @@
 import type {
   Acceptable,
   Answers,
+  BoopReachability,
   ImportanceWeight,
   ProfilePayload,
   Weights,
@@ -20,6 +21,11 @@ import { openItems } from '../schema/schema';
  * along only for items that are actually answered, and are normalized
  * defensively: scales cap at 2 (a scale dealbreaker is not a thing), and a
  * dealbreaker without a usable acceptable set downgrades to "matters a lot".
+ *
+ * `boopKey` is only ever passed by the profile's own view-blob save path.
+ * Group deposits build their snapshots through this function WITHOUT it, so
+ * a pseudonymous deposit can never be linked to a profile by comparing
+ * public keys or inbox locators (boop.spec.ts pins this).
  */
 export function buildSharePayload(
   answers: Answers,
@@ -27,6 +33,7 @@ export function buildSharePayload(
   salt: string | null,
   weights: Weights = {},
   acceptable: Acceptable = {},
+  boopKey?: BoopReachability,
 ): ProfilePayload {
   const open: Record<string, Answers[string]> = {};
   const w: Record<string, ImportanceWeight> = {};
@@ -62,5 +69,6 @@ export function buildSharePayload(
   }
   if (Object.keys(w).length) payload.w = w;
   if (Object.keys(d).length) payload.d = d;
+  if (boopKey) payload.k = boopKey;
   return payload;
 }

@@ -9,6 +9,17 @@ export * from './group/group-api';
 export * from './group/group-data';
 export * from './metrics/metrics-api';
 export * from './metrics/buckets';
+export * from './boop/boop-api';
+export * from './boop/boop-data';
+export {
+  SEAL_PAD_BYTES,
+  generateBoopKeyPair,
+  sealTo,
+  openSealed,
+  mintBoopBoxKey,
+  importBoopBoxKey,
+  type BoopKeyPair,
+} from './boop/sealed-box';
 
 export { bytesToB64url, b64urlToBytes } from './codec/base64url';
 export { deflate, inflate } from './codec/compress';
