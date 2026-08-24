@@ -21,24 +21,30 @@ import {
   METRICS_EPOCH_RE,
   METRICS_MAX_BUCKETS,
 } from '../libs/core/src/metrics/metrics-api.ts';
+import { BOOP_MAX_KNOCK_BYTES, BOOP_TOKEN_HEADER } from '../libs/core/src/boop/boop-api.ts';
 import type { ProfilesDb } from './profiles-db.ts';
 import type { GroupsDb } from './groups-db.ts';
 import type { MetricsDb } from './metrics-db.ts';
+import type { BoopsDb } from './boops-db.ts';
 import { RateLimiter } from './rate-limit.ts';
 
 export interface AppOptions {
   profiles: ProfilesDb;
   groups: GroupsDb;
   metrics: MetricsDb;
+  boops: BoopsDb;
   maxBlobBytes: number;
   trustProxy: boolean;
   readsPerMinute?: number;
   writesPerMinute?: number;
   metricsPerMinute?: number;
+  boopsPerMinute?: number;
   /** Circuit breaker: POST /v2/profiles answers 503 at_capacity beyond this. */
   maxProfiles?: number;
   /** Circuit breaker: POST /v2/groups answers 503 at_capacity beyond this. */
   maxGroups?: number;
+  /** Circuit breaker: POST /v2/boops answers 503 at_capacity beyond this. */
+  maxBoopInboxes?: number;
   /** k-floor: aggregate buckets under this count are never served. */
   metricsK?: number;
 }
@@ -48,7 +54,8 @@ const CORS_HEADERS = {
   'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'access-control-allow-headers':
     `content-type, if-match, ${EDIT_TOKEN_HEADER}, ${NEW_EDIT_TOKEN_HEADER}, ` +
-    `${ADMIN_TOKEN_HEADER}, ${MEMBER_TOKEN_HEADER}, ${NEW_ADMIN_TOKEN_HEADER}`,
+    `${ADMIN_TOKEN_HEADER}, ${MEMBER_TOKEN_HEADER}, ${NEW_ADMIN_TOKEN_HEADER}, ` +
+    `${BOOP_TOKEN_HEADER}`,
   'access-control-max-age': '86400',
 } as const;
 
@@ -102,6 +109,7 @@ export function createApp(opts: AppOptions) {
   const readLimiter = new RateLimiter(opts.readsPerMinute ?? 120);
   const writeLimiter = new RateLimiter(opts.writesPerMinute ?? 30);
   const metricsLimiter = new RateLimiter(opts.metricsPerMinute ?? 5);
+  const boopLimiter = new RateLimiter(opts.boopsPerMinute ?? 5);
   // HTTP body cap: two blobs plus JSON framing.
   const bodyCap = opts.maxBlobBytes * 3;
 
@@ -191,6 +199,48 @@ export function createApp(opts: AppOptions) {
         return;
       }
 
+      // POST /v2/boops/:locator/knocks — anonymous sealed drop, on its own
+      // tight rate bucket. No token: holding the locator (which travels only
+      // inside encrypted payloads) is the capability to knock. The server
+      // stores an opaque blob; what it unavoidably learns is that this inbox
+      // received a knock now — and a 503 here tells any locator holder the
+      // inbox is full, an accepted leak. A per-inbox arrival throttle in the
+      // DB backs up the per-IP bucket.
+      const knockMatch = pathname.match(/^\/v2\/boops\/([^/]+)\/knocks$/);
+      if (knockMatch && method === 'POST') {
+        if (!boopLimiter.take(key)) {
+          res.setHeader('retry-after', '60');
+          sendError(res, 429, 'rate_limited');
+          return;
+        }
+        if (!HATCH_LOCATOR_RE.test(knockMatch[1])) {
+          sendError(res, 400, 'bad_request', { message: 'malformed locator' });
+          return;
+        }
+        const body = await readJson(req, res);
+        if (!body) return;
+        const blob = body['blob'];
+        // Knocks get their own tight byte cap: clients pad every sealed
+        // knock to one fixed bucket, so anything bigger is malformed anyway.
+        if (
+          typeof blob !== 'string' ||
+          !HATCH_BLOB_RE.test(blob) ||
+          Buffer.byteLength(blob, 'utf8') > BOOP_MAX_KNOCK_BYTES
+        ) {
+          sendError(res, 400, 'bad_request', { message: 'blob must be base64url' });
+          return;
+        }
+        const outcome = opts.boops.addKnock(knockMatch[1], blob);
+        if (outcome === 'added') send(res, 201, { ok: true });
+        else if (outcome === 'not_found') sendError(res, 404, 'not_found');
+        else if (outcome === 'full') sendError(res, 503, 'at_capacity');
+        else {
+          res.setHeader('retry-after', '3600');
+          sendError(res, 429, 'rate_limited');
+        }
+        return;
+      }
+
       const limiter = method === 'GET' ? readLimiter : writeLimiter;
       if (!limiter.take(key)) {
         res.setHeader('retry-after', '60');
@@ -276,6 +326,87 @@ export function createApp(opts: AppOptions) {
         const record = profiles.getView(viewMatch[1]);
         if (!record) sendError(res, 404, 'not_found');
         else send(res, 200, record);
+        return;
+      }
+
+      // POST /v2/boops — register an inbox. Locator AND token are random,
+      // client-minted, and travel in the JSON body: the token is being
+      // registered here, not proven. Nothing links an inbox row to a profile
+      // row server-side — though a sender registering a reply box and then
+      // knocking on another inbox seconds later hands the server a timing
+      // correlation (clients jitter the pair to soften it).
+      if (pathname === '/v2/boops' && method === 'POST') {
+        if (opts.maxBoopInboxes !== undefined && opts.boops.count() >= opts.maxBoopInboxes) {
+          sendError(res, 503, 'at_capacity');
+          return;
+        }
+        const body = await readJson(req, res);
+        if (!body) return;
+        const locator = body['locator'];
+        const token = body['token'];
+        if (
+          typeof locator !== 'string' ||
+          !HATCH_LOCATOR_RE.test(locator) ||
+          typeof token !== 'string' ||
+          !HATCH_LOCATOR_RE.test(token)
+        ) {
+          sendError(res, 400, 'bad_request', { message: 'malformed locator or token' });
+          return;
+        }
+        const tokenHash = createHash('sha256').update(token, 'utf8').digest('hex');
+        const outcome = opts.boops.createInbox(locator, tokenHash);
+        if (outcome === 'created') send(res, 201, { ok: true });
+        else sendError(res, 409, 'locator_taken');
+        return;
+      }
+
+      // /v2/boops/:locator/knocks/:id — the owner deletes one knock.
+      const knockDeleteMatch = pathname.match(/^\/v2\/boops\/([^/]+)\/knocks\/([^/]+)$/);
+      if (knockDeleteMatch && method === 'DELETE') {
+        if (!HATCH_LOCATOR_RE.test(knockDeleteMatch[1])) {
+          sendError(res, 400, 'bad_request', { message: 'malformed locator' });
+          return;
+        }
+        const hash = tokenHashFrom(req, BOOP_TOKEN_HEADER);
+        if (!hash) {
+          sendError(res, 400, 'bad_request', { message: 'missing or malformed boop token' });
+          return;
+        }
+        const outcome = opts.boops.deleteKnock(knockDeleteMatch[1], hash, knockDeleteMatch[2]);
+        if (outcome === 'deleted') send(res, 200, { ok: true });
+        else if (outcome === 'bad_token') sendError(res, 401, 'bad_token');
+        else sendError(res, 404, 'not_found');
+        return;
+      }
+
+      // /v2/boops/:locator — the owner polls (bumping the idle-GC clock) or
+      // tears the inbox down (rotation, profile deletion, answered box).
+      const boopMatch = pathname.match(/^\/v2\/boops\/([^/]+)$/);
+      if (boopMatch) {
+        if (!HATCH_LOCATOR_RE.test(boopMatch[1])) {
+          sendError(res, 400, 'bad_request', { message: 'malformed locator' });
+          return;
+        }
+        const hash = tokenHashFrom(req, BOOP_TOKEN_HEADER);
+        if (!hash) {
+          sendError(res, 400, 'bad_request', { message: 'missing or malformed boop token' });
+          return;
+        }
+        if (method === 'GET') {
+          const outcome = opts.boops.list(boopMatch[1], hash);
+          if (outcome.status === 'ok') send(res, 200, { knocks: outcome.knocks });
+          else if (outcome.status === 'bad_token') sendError(res, 401, 'bad_token');
+          else sendError(res, 404, 'not_found');
+          return;
+        }
+        if (method === 'DELETE') {
+          const outcome = opts.boops.deleteInbox(boopMatch[1], hash);
+          if (outcome === 'deleted') send(res, 200, { ok: true });
+          else if (outcome === 'bad_token') sendError(res, 401, 'bad_token');
+          else sendError(res, 404, 'not_found');
+          return;
+        }
+        sendError(res, 400, 'bad_request', { message: `unsupported method ${method}` });
         return;
       }
 

@@ -10,6 +10,7 @@ import { join } from 'node:path';
 import { ProfilesDb } from './profiles-db.ts';
 import { GroupsDb } from './groups-db.ts';
 import { MetricsDb } from './metrics-db.ts';
+import { BoopsDb } from './boops-db.ts';
 import { createApp } from './http.ts';
 import { startGc } from './gc.ts';
 import {
@@ -21,6 +22,7 @@ import {
   MEMBER_TOKEN_HEADER,
   NEW_ADMIN_TOKEN_HEADER,
 } from '../libs/core/src/group/group-api.ts';
+import { BOOP_TOKEN_HEADER } from '../libs/core/src/boop/boop-api.ts';
 
 const DAY = 86_400_000;
 
@@ -40,6 +42,7 @@ let base: string;
 let profiles: ProfilesDb;
 let groups: GroupsDb;
 let metrics: MetricsDb;
+let boops: BoopsDb;
 /** Raw second connection for backdating rows in GC tests. */
 let raw: DatabaseSync;
 
@@ -86,6 +89,8 @@ beforeAll(async () => {
   profiles = new ProfilesDb(dbPath);
   groups = new GroupsDb(dbPath, 3); // tiny member cap to test 'full'
   metrics = new MetricsDb(dbPath);
+  // Tiny pending cap / hourly throttle so 'full' and 'throttled' are testable.
+  boops = new BoopsDb(dbPath, 4, 3, 30 * 86_400_000);
   raw = new DatabaseSync(dbPath);
   // Every request here shares one client key; keep the limiter out of the way.
   server = createServer(
@@ -93,11 +98,13 @@ beforeAll(async () => {
       profiles,
       groups,
       metrics,
+      boops,
       maxBlobBytes: 1024,
       trustProxy: false,
       readsPerMinute: 10_000,
       writesPerMinute: 10_000,
       metricsPerMinute: 10_000,
+      boopsPerMinute: 10_000,
       metricsK: 2, // small k so the floor is testable
     }),
   );
@@ -112,6 +119,7 @@ afterAll(async () => {
   profiles.close();
   groups.close();
   metrics.close();
+  boops.close();
   rmSync(dir, { recursive: true, force: true });
 });
 
@@ -558,5 +566,166 @@ describe('v2 metrics: epoch counters', () => {
     // Current epoch + 2020-03 + 2020-02 are the newest three present.
     expect(metrics.get('2020-01', 1)).toEqual({});
     expect(metrics.get('2020-02', 1)).toEqual({ 'age|0': 1 });
+  });
+});
+
+describe('v2 boops: inboxes and knocks', () => {
+  const INBOX = id('x');
+  const BTOKEN = id('y');
+
+  function createInbox(locator: string, token: string) {
+    return fetch(`${base}/v2/boops`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ locator, token }),
+    });
+  }
+
+  function knock(locator: string, blob = 'SEALED') {
+    return fetch(`${base}/v2/boops/${locator}/knocks`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ blob }),
+    });
+  }
+
+  function listKnocks(locator: string, token: string) {
+    return fetch(`${base}/v2/boops/${locator}`, { headers: { [BOOP_TOKEN_HEADER]: token } });
+  }
+
+  test('create → anonymous knock → owner-only read', async () => {
+    expect((await createInbox(INBOX, BTOKEN)).status).toBe(201);
+    expect((await createInbox(INBOX, id('z'))).status).toBe(409); // locator taken
+
+    expect((await knock(INBOX)).status).toBe(201);
+    const listed = await listKnocks(INBOX, BTOKEN);
+    expect(listed.status).toBe(200);
+    const { knocks } = (await listed.json()) as {
+      knocks: { id: string; blob: string; created: number }[];
+    };
+    expect(knocks).toHaveLength(1);
+    expect(knocks[0].blob).toBe('SEALED');
+    // Random id, not a counter — a sequential id would leak global volume.
+    expect(knocks[0].id).toMatch(/^[A-Za-z0-9_-]{22}$/);
+    expect(knocks[0].created % 3_600_000).toBe(0); // hour-coarse
+
+    expect((await listKnocks(INBOX, id('z'))).status).toBe(401);
+    expect((await listKnocks(id('9'), BTOKEN)).status).toBe(404);
+    expect((await knock(id('9'))).status).toBe(404); // no inbox, no drop
+  });
+
+  test('knock validation: oversized and non-b64url blobs refused', async () => {
+    expect((await knock(INBOX, 'not base64url!')).status).toBe(400);
+    // This app's tiny maxBlobBytes hits the general body cap first; a
+    // production-sized app must still refuse anything over the knock cap,
+    // which is far below the profile blob cap.
+    const wide = createServer(
+      createApp({
+        profiles,
+        groups,
+        metrics,
+        boops,
+        maxBlobBytes: 262_144,
+        trustProxy: false,
+        boopsPerMinute: 10_000,
+      }),
+    );
+    await new Promise<void>((resolve) => wide.listen(0, '127.0.0.1', resolve));
+    const address = wide.address();
+    const wideBase = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
+    const res = await fetch(`${wideBase}/v2/boops/${INBOX}/knocks`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ blob: 'A'.repeat(5000) }),
+    });
+    expect(res.status).toBe(400);
+    await new Promise((resolve) => wide.close(resolve));
+  });
+
+  test('per-inbox arrival throttle, then the pending cap', async () => {
+    // Test DB: 3 knocks/hour, 4 pending max. One knock already sits from
+    // the lifecycle test.
+    expect((await knock(INBOX)).status).toBe(201);
+    expect((await knock(INBOX)).status).toBe(201);
+    const throttled = await knock(INBOX);
+    expect(throttled.status).toBe(429);
+    expect(throttled.headers.get('retry-after')).toBe('3600');
+    // Age the three past the throttle window: the cap (4) takes over.
+    raw.prepare('UPDATE boop_knocks SET created_at = created_at - ?').run(3 * 3_600_000);
+    expect((await knock(INBOX)).status).toBe(201);
+    expect((await knock(INBOX)).status).toBe(503); // full
+  });
+
+  test('owner deletes knocks and finally the inbox itself', async () => {
+    const { knocks } = (await (await listKnocks(INBOX, BTOKEN)).json()) as {
+      knocks: { id: string }[];
+    };
+    expect(knocks.length).toBe(4);
+    const one = await fetch(`${base}/v2/boops/${INBOX}/knocks/${knocks[0].id}`, {
+      method: 'DELETE',
+      headers: { [BOOP_TOKEN_HEADER]: BTOKEN },
+    });
+    expect(one.status).toBe(200);
+    const again = await fetch(`${base}/v2/boops/${INBOX}/knocks/${knocks[0].id}`, {
+      method: 'DELETE',
+      headers: { [BOOP_TOKEN_HEADER]: BTOKEN },
+    });
+    expect(again.status).toBe(404);
+
+    const gone = await fetch(`${base}/v2/boops/${INBOX}`, {
+      method: 'DELETE',
+      headers: { [BOOP_TOKEN_HEADER]: BTOKEN },
+    });
+    expect(gone.status).toBe(200);
+    expect((await listKnocks(INBOX, BTOKEN)).status).toBe(404);
+    expect((await knock(INBOX)).status).toBe(404);
+    const orphaned = raw
+      .prepare('SELECT COUNT(*) AS n FROM boop_knocks WHERE inbox_locator = ?')
+      .get(INBOX) as { n: number };
+    expect(orphaned.n).toBe(0);
+  });
+
+  test('GC: stale knocks die on the knock TTL; unpolled inboxes idle out', async () => {
+    expect((await createInbox(id('g'), BTOKEN)).status).toBe(201);
+    expect((await knock(id('g'))).status).toBe(201);
+    // A fresh inbox+knock survive any shared TTL (knock TTL is its own knob).
+    expect(boops.sweep(0, 365 * DAY)).toBe(0);
+    // Backdate the knock past 30 days: it sweeps, the inbox stays.
+    raw
+      .prepare('UPDATE boop_knocks SET created_at = ? WHERE inbox_locator = ?')
+      .run(Date.now() - 31 * DAY, id('g'));
+    expect(boops.sweep(0, 365 * DAY)).toBe(1);
+    expect((await listKnocks(id('g'), BTOKEN)).status).toBe(200);
+    // A poll bumps the idle clock, so only truly abandoned inboxes die.
+    raw
+      .prepare('UPDATE boop_inboxes SET created_at = ?, last_polled_at = ? WHERE inbox_locator = ?')
+      .run(Date.now() - 400 * DAY, Date.now() - 400 * DAY, id('g'));
+    expect(boops.sweep(0, 365 * DAY)).toBe(1);
+    expect((await listKnocks(id('g'), BTOKEN)).status).toBe(404);
+  });
+
+  test('capacity circuit breaker on inbox creation', async () => {
+    const capped = createServer(
+      createApp({
+        profiles,
+        groups,
+        metrics,
+        boops,
+        maxBlobBytes: 1024,
+        trustProxy: false,
+        writesPerMinute: 10_000,
+        maxBoopInboxes: boops.count(),
+      }),
+    );
+    await new Promise<void>((resolve) => capped.listen(0, '127.0.0.1', resolve));
+    const address = capped.address();
+    const cappedBase = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
+    const res = await fetch(`${cappedBase}/v2/boops`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ locator: id('q'), token: id('r') }),
+    });
+    expect(res.status).toBe(503);
+    await new Promise((resolve) => capped.close(resolve));
   });
 });

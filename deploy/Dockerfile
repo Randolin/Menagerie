@@ -13,6 +13,7 @@ COPY libs/core/src/hatch/hatch-api.ts libs/core/src/hatch/hatch-api.ts
 COPY libs/core/src/hatch/constants.ts libs/core/src/hatch/constants.ts
 COPY libs/core/src/group/group-api.ts libs/core/src/group/group-api.ts
 COPY libs/core/src/metrics/metrics-api.ts libs/core/src/metrics/metrics-api.ts
+COPY libs/core/src/boop/boop-api.ts libs/core/src/boop/boop-api.ts
 
 RUN mkdir /data && chown node:node /data
 USER node
