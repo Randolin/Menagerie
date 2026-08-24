@@ -37,9 +37,10 @@ a { color: var(--accent); }
 }
 
 .brand {
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-weight: 600;
   font-size: 20px;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   color: var(--ink);
   text-decoration: none;
   display: flex;
@@ -51,13 +52,16 @@ a { color: var(--accent); }
   width: 26px;
   height: 26px;
   border-radius: 8px;
-  background: var(--accent);
-  color: var(--accent-ink);
+  /* Tinted by the logged-in creature's color when a session is live; the
+     paw stays white then (persona colors are all luminance-bounded dark). */
+  background: var(--session-persona, var(--accent));
+  color: var(--session-persona-ink, var(--accent-ink));
   display: grid;
   place-items: center;
   font-size: 15px;
   font-weight: 800;
 }
+.brand-mark svg { width: 72%; height: 72%; display: block; }
 
 .nav {
   display: flex;
@@ -70,7 +74,7 @@ a { color: var(--accent); }
   text-decoration: none;
   color: var(--ink-2);
   padding: 7px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 14.5px;
   font-weight: 550;
 }
@@ -129,8 +133,8 @@ main {
 }
 .habitat-motif { font-size: 14px; opacity: 0.75; }
 
-h1 { font-size: clamp(26px, 4.5vw, 38px); letter-spacing: -0.02em; line-height: 1.15; margin: 0 0 10px; }
-h2 { font-size: 21px; letter-spacing: -0.01em; margin: 0 0 8px; }
+h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(26px, 4.5vw, 38px); letter-spacing: -0.01em; line-height: 1.15; margin: 0 0 10px; }
+h2 { font-family: var(--font-display); font-weight: 550; font-size: 21px; letter-spacing: 0; margin: 0 0 8px; }
 h3 { font-size: 16.5px; margin: 0 0 6px; }
 p { margin: 0 0 12px; }
 .lede { font-size: 18px; color: var(--ink-2); max-width: 60ch; }
@@ -149,7 +153,7 @@ p { margin: 0 0 12px; }
   font-weight: 600;
   font-size: 15px;
   padding: 10px 18px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   text-decoration: none;
   transition: transform 0.05s ease, background 0.15s ease;
@@ -203,7 +207,7 @@ textarea { min-height: 84px; resize: vertical; }
   border: 1px solid var(--baseline);
   background: var(--surface);
   color: var(--ink-2);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 7px 14px;
   font: inherit;
   font-size: 14.5px;
@@ -249,7 +253,7 @@ textarea { min-height: 84px; resize: vertical; }
   font-size: 13px;
   font-weight: 600;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 6px 12px;
   cursor: pointer;
   background: var(--surface-2);
@@ -380,7 +384,7 @@ textarea { min-height: 84px; resize: vertical; }
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 2px 9px;
   white-space: nowrap;
 }
@@ -491,7 +495,7 @@ textarea { min-height: 84px; resize: vertical; }
   background: var(--ink);
   color: var(--page);
   padding: 10px 18px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 14.5px;
   font-weight: 600;
   opacity: 0;

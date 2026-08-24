@@ -2,11 +2,22 @@
    Chart color tokens follow the validated reference palette of the dataviz
    method (categorical slots in fixed order, one-hue ordinal ramp, chrome ink). */
 
+/* Display face for headings and the brand — self-hosted (public/fonts,
+   OFL.txt alongside), so no third-party request ever leaves the page.
+   Variable weight; body text stays on the system stack. */
+@font-face {
+  font-family: 'Fredoka';
+  src: url('/fonts/fredoka-latin.woff2') format('woff2');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   color-scheme: light;
-  --page: #f9f9f7;
-  --surface: #fcfcfb;
-  --surface-2: #f0efec;
+  --page: #faf8f3;
+  --surface: #fdfcfa;
+  --surface-2: #f2efe8;
   --ink: #0b0b0b;
   --ink-2: #52514e;
   --muted: #898781;
@@ -34,47 +45,17 @@
   --ramp-3: #104281;
   --ramp-track: #cde2fb;
 
-  --radius: 12px;
+  --radius: 16px;
   --radius-sm: 8px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
   --shadow: 0 1px 2px rgba(11, 11, 11, 0.05), 0 4px 16px rgba(11, 11, 11, 0.05);
   --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: 'Fredoka', system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme="light"])) {
-    color-scheme: dark;
-    --page: #0d0d0d;
-    --surface: #1a1a19;
-    --surface-2: #242422;
-    --ink: #ffffff;
-    --ink-2: #c3c2b7;
-    --muted: #898781;
-    --hairline: #2c2c2a;
-    --baseline: #383835;
-    --border: rgba(255, 255, 255, 0.10);
-
-    --accent: #9085e9;
-    --accent-ink: #14131c;
-    --accent-soft: rgba(144, 133, 233, 0.16);
-
-    --danger: #e66767;
-    --danger-soft: rgba(230, 103, 103, 0.12);
-    --warn-soft: rgba(236, 131, 90, 0.16);
-    --good: #0ca30c;
-
-    --series-1: #3987e5;
-    --series-2: #d95926;
-    --series-3: #199e70;
-    --series-4: #c98500;
-
-    --ramp-1: #184f95;
-    --ramp-2: #2a78d6;
-    --ramp-3: #86b6ef;
-    --ramp-track: #0d366b;
-  }
-}
-
-:root[data-theme="dark"] {
+/* One definition of dark, applied through both theme mechanisms below. */
+@mixin dark-tokens {
   color-scheme: dark;
   --page: #0d0d0d;
   --surface: #1a1a19;
@@ -104,4 +85,14 @@
   --ramp-2: #2a78d6;
   --ramp-3: #86b6ef;
   --ramp-track: #0d366b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    @include dark-tokens;
+  }
+}
+
+:root[data-theme="dark"] {
+  @include dark-tokens;
 }

@@ -20,7 +20,7 @@ import { CreatureIconComponent } from './creature-icon.component';
       align-items: center;
       gap: 6px;
       padding: 3px 12px 3px 8px;
-      border-radius: 999px;
+      border-radius: var(--radius-pill);
       border: 1px solid color-mix(in srgb, var(--persona-color) 45%, transparent);
       background: color-mix(in srgb, var(--persona-color) 10%, transparent);
       font-size: 14px;
