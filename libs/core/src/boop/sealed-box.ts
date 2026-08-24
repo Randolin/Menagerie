@@ -144,14 +144,64 @@ export async function openSealed<T>(priv: string, sealed: string): Promise<T> {
   return unpadPlaintext(plain) as T;
 }
 
+/** The b64url raw public point, rebuilt from a stored private key — so
+ *  PrivData needs to hold only the private half. */
+export function boopPublicKey(priv: string): string {
+  const jwk = JSON.parse(new TextDecoder().decode(b64urlToBytes(priv))) as JsonWebKey;
+  const x = b64urlToBytes(jwk.x ?? '');
+  const y = b64urlToBytes(jwk.y ?? '');
+  const raw = new Uint8Array(1 + x.length + y.length);
+  raw[0] = 0x04;
+  raw.set(x, 1);
+  raw.set(y, 1 + x.length);
+  return bytesToB64url(raw);
+}
+
 /** Mint the symmetric key a reply box rides on (32 raw AES-GCM bytes, b64url). */
 export function mintBoopBoxKey(): string {
   return bytesToB64url(randomBytes(32));
 }
 
-export async function importBoopBoxKey(keyB64: string): Promise<CryptoKey> {
+async function importBoopBoxKey(keyB64: string): Promise<CryptoKey> {
   return subtle.importKey('raw', b64urlToBytes(keyB64) as BufferSource, { name: 'AES-GCM' }, false, [
     'encrypt',
     'decrypt',
   ]);
+}
+
+/**
+ * Symmetric sibling of sealTo for the reply box: same fixed padding bucket
+ * (a reply's length must not reveal what it carries any more than a knock's
+ * does), AES-GCM under the key that rode inside the sealed knock, iv‖ct.
+ * Deliberately NOT the deflate-based blob envelope — compression would give
+ * content-dependent lengths back.
+ */
+export async function sealWithKey(keyB64: string, obj: unknown): Promise<string> {
+  const key = await importBoopBoxKey(keyB64);
+  const iv = randomBytes(IV_BYTES);
+  const ct = new Uint8Array(
+    await subtle.encrypt(
+      { name: 'AES-GCM', iv: iv as BufferSource },
+      key,
+      padPlaintext(obj) as BufferSource,
+    ),
+  );
+  const out = new Uint8Array(iv.length + ct.length);
+  out.set(iv, 0);
+  out.set(ct, iv.length);
+  return bytesToB64url(out);
+}
+
+export async function openWithKey<T>(keyB64: string, sealed: string): Promise<T> {
+  const key = await importBoopBoxKey(keyB64);
+  const bytes = b64urlToBytes(sealed);
+  if (bytes.length <= IV_BYTES) throw new Error('Malformed sealed box.');
+  const plain = new Uint8Array(
+    await subtle.decrypt(
+      { name: 'AES-GCM', iv: bytes.slice(0, IV_BYTES) as BufferSource },
+      key,
+      bytes.slice(IV_BYTES) as BufferSource,
+    ),
+  );
+  return unpadPlaintext(plain) as T;
 }

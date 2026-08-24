@@ -1,15 +1,16 @@
 import { describe, expect, test } from 'vitest';
 import {
   SEAL_PAD_BYTES,
+  boopPublicKey,
   generateBoopKeyPair,
-  importBoopBoxKey,
   mintBoopBoxKey,
   openSealed,
+  openWithKey,
   sealTo,
   sealWithEphemeral,
+  sealWithKey,
 } from './sealed-box';
 import { b64urlToBytes } from '../codec/base64url';
-import { encryptBlob, decryptBlob } from '../hatch/blob';
 
 // Frozen vectors: a fixed recipient keypair, a fixed ephemeral keypair, and
 // a fixed IV must forever produce this exact ciphertext, and the ciphertext
@@ -98,12 +99,18 @@ describe('sealed box', () => {
     await expect(openSealed(other.priv, VEC.sealed)).rejects.toThrow();
   });
 
-  test('reply-box key roundtrips through the standard blob envelope', async () => {
+  test('the public key rebuilds from the stored private half', async () => {
+    const pair = await generateBoopKeyPair();
+    expect(boopPublicKey(pair.priv)).toBe(pair.pub);
+  });
+
+  test('reply-box seal: roundtrip, fixed size, wrong key refused', async () => {
     const keyB64 = mintBoopBoxKey();
-    const key = await importBoopBoxKey(keyB64);
-    const blob = await encryptBlob({ hello: 'reply' }, key);
-    await expect(decryptBlob(blob, await importBoopBoxKey(keyB64))).resolves.toEqual({
-      hello: 'reply',
-    });
+    const tiny = await sealWithKey(keyB64, { v: 1 });
+    const big = await sealWithKey(keyB64, { v: 1, pad: 'x'.repeat(900) });
+    expect(tiny.length).toBe(big.length);
+    expect(b64urlToBytes(tiny).length).toBe(12 + SEAL_PAD_BYTES + 16);
+    await expect(openWithKey(keyB64, tiny)).resolves.toEqual({ v: 1 });
+    await expect(openWithKey(mintBoopBoxKey(), tiny)).rejects.toThrow();
   });
 });

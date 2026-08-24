@@ -14,10 +14,12 @@ export * from './boop/boop-data';
 export {
   SEAL_PAD_BYTES,
   generateBoopKeyPair,
+  boopPublicKey,
   sealTo,
   openSealed,
   mintBoopBoxKey,
-  importBoopBoxKey,
+  sealWithKey,
+  openWithKey,
   type BoopKeyPair,
 } from './boop/sealed-box';
 

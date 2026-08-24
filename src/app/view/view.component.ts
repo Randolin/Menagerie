@@ -23,6 +23,7 @@ import {
   ScaleStripComponent,
   ToastService,
 } from '@moxy/ui';
+import { BoopComposerComponent } from '../boop/boop-composer.component';
 import { CompareStore } from '../stores/compare.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
 import { ServerConfigStore } from '../stores/server-config.store';
@@ -47,7 +48,13 @@ interface LoadedProfile {
 @Component({
   selector: 'moxy-view',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, AnswerTextComponent, PersonaChipComponent, ScaleStripComponent],
+  imports: [
+    RouterLink,
+    AnswerTextComponent,
+    BoopComposerComponent,
+    PersonaChipComponent,
+    ScaleStripComponent,
+  ],
   template: `
     @if (view.error()) {
       <div class="card">
@@ -77,6 +84,18 @@ interface LoadedProfile {
             <a class="btn btn-ghost" routerLink="/">Hatch your own creature to compare</a>
           }
         </div>
+        @if (session.active()) {
+          @if (v.payload.k; as reach) {
+            <div style="margin-top:12px">
+              <moxy-boop-composer [target]="reach" [label]="v.name"
+                                  [emoji]="v.persona?.emoji ?? '🥚'" />
+            </div>
+          } @else {
+            <p class="fine" style="margin-top:12px">
+              This creature can’t be booped yet — its profile predates boops.
+            </p>
+          }
+        }
       </div>
 
       @if (v.sections.length === 0) {

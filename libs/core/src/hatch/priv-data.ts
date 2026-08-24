@@ -5,6 +5,7 @@
 // desires exist in blob_view only as salted hashes, so this is the sole
 // place they survive for re-editing.
 import type { Acceptable, Answers, Weights } from '../schema/types';
+import type { BoopContent } from '../boop/boop-data';
 
 export interface SavedConnection {
   id: string;
@@ -61,6 +62,8 @@ export interface SentBoop {
   replyBox: { locator: string; token: string; key: string };
   sentAt: number;
   status: 'pending' | 'sent' | 'answered';
+  /** The one reply, kept here once read — the reply box is deleted after. */
+  reply?: BoopContent;
 }
 
 export interface PrivData {

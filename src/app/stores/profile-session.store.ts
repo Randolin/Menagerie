@@ -1,5 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import {
+  boopPublicKey,
+  buildBoop,
   buildDeposit,
   buildMatchTokens,
   buildMetricsBuckets,
@@ -15,20 +17,31 @@ import {
   emptyGroupMeta,
   emptyPrivData,
   encryptBlob,
+  generateBoopKeyPair,
   HatchError,
+  migrateBoopContent,
   migratePrivData,
+  mintBoopBoxKey,
   mintEditPhrase,
   mintPseudonym,
   mintViewPhrase,
+  openSealed,
+  openWithKey,
   personaFromViewPhrase,
   PROFILE_VERSION,
   pseudonymEmoji,
   randomLocator,
   randomSalt,
   randomToken,
+  sealTo,
+  sealWithKey,
   viewUrlFor,
   type Acceptable,
   type Answers,
+  type BoopContact,
+  type BoopContent,
+  type BoopCreds,
+  type BoopReachability,
   type Weights,
   type EditKeys,
   type Persona,
@@ -36,6 +49,7 @@ import {
   type ProfilePayload,
   type SavedConnection,
   type SavedGroupMembership,
+  type SentBoop,
   type ViewKeys,
 } from '@moxy/core';
 import { APP_STORAGE } from './storage.token';
@@ -48,6 +62,13 @@ const SESSION_KEY = 'moxy.hatch.session.v1';
 const REMEMBER_KEY = 'moxy.hatch.remember.v1';
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'conflict' | 'error';
+
+/** A knock from my inbox, opened and validated. */
+export interface IncomingBoop {
+  id: string;
+  created: number;
+  content: BoopContent;
+}
 
 /**
  * The logged-in profile: phrases, derived keys, decrypted private data, and
@@ -70,6 +91,8 @@ export class ProfileSessionStore {
   readonly connections = signal<readonly SavedConnection[]>([]);
   readonly groups = signal<readonly SavedGroupMembership[]>([]);
   readonly metricsOptIn = signal(false);
+  readonly incomingBoops = signal<readonly IncomingBoop[]>([]);
+  readonly sentBoops = signal<readonly SentBoop[]>([]);
   /** Epochs this tab already submitted (server dedups for real). */
   private readonly submittedEpochs = new Set<string>();
   readonly saveState = signal<SaveState>('idle');
@@ -172,6 +195,17 @@ export class ProfileSessionStore {
     const client = this.requireClient();
     const { editKeys, priv } = this.requireSession();
     const answers = this.draft.answers();
+    // The boop identity rotates with the view phrase: fresh keypair, fresh
+    // inbox, published in the same atomic PUT. Old knockers lose the
+    // address — rotation IS the block lever.
+    const oldBoop = priv.boop;
+    const nextBoop: BoopCreds | undefined = oldBoop
+      ? {
+          priv: (await generateBoopKeyPair()).priv,
+          inbox: randomLocator(),
+          token: randomToken(),
+        }
+      : undefined;
     for (let attempt = 0; ; attempt++) {
       const viewPhrase = await mintViewPhrase();
       const viewKeys = await deriveViewKeys(viewPhrase);
@@ -182,6 +216,7 @@ export class ProfileSessionStore {
         answers,
         weights: this.draft.weights(),
         acceptable: this.draft.acceptable(),
+        boop: nextBoop,
       };
       const { blobView, blobPriv, populated } = await this.encryptState(nextPriv, viewKeys);
       try {
@@ -198,6 +233,14 @@ export class ProfileSessionStore {
         this.version.set(version);
         this.populated.set(this.populated() || populated);
         this.snapshotSaved(nextPriv);
+        // Best-effort inbox swap: a failed delete falls to GC; a failed
+        // create self-heals on the next poll. Unread knocks die with the
+        // old inbox — correct for a rotation.
+        if (oldBoop && nextBoop) {
+          this.incomingBoops.set([]);
+          await client.deleteBoopInbox(oldBoop.inbox, oldBoop.token).catch(() => undefined);
+          await client.createBoopInbox(nextBoop.inbox, nextBoop.token).catch(() => undefined);
+        }
         return;
       } catch (err) {
         if (err instanceof HatchError && err.failure.kind === 'locator_taken' && attempt < 3) {
@@ -255,10 +298,22 @@ export class ProfileSessionStore {
     }
   }
 
-  /** Server-side delete, then a full local logout. */
+  /**
+   * Server-side delete, then a full local logout. Boop inboxes go first:
+   * the server can't cascade rows it can't link to the profile, so the
+   * client tears them down (best-effort — a missed one orphans to GC).
+   */
   async deleteProfile(): Promise<void> {
     const client = this.requireClient();
-    const { editKeys } = this.requireSession();
+    const { editKeys, priv } = this.requireSession();
+    if (priv.boop) {
+      await client.deleteBoopInbox(priv.boop.inbox, priv.boop.token).catch(() => undefined);
+    }
+    for (const sent of priv.sentBoops ?? []) {
+      await client
+        .deleteBoopInbox(sent.replyBox.locator, sent.replyBox.token)
+        .catch(() => undefined);
+    }
     await client.remove(editKeys.editLocator, editKeys.editToken);
     this.logout();
   }
@@ -274,6 +329,8 @@ export class ProfileSessionStore {
     this.connections.set([]);
     this.groups.set([]);
     this.metricsOptIn.set(false);
+    this.incomingBoops.set([]);
+    this.sentBoops.set([]);
     this.saveState.set('idle');
     this.savedAnswers.set({});
     this.savedWeights.set({});
@@ -499,6 +556,232 @@ export class ProfileSessionStore {
     }
   }
 
+  // ---- boops --------------------------------------------------------------
+
+  /**
+   * Make this profile boopable: mint a sealed-box keypair and a random
+   * inbox, persist the credentials in PrivData FIRST (a tab dying between
+   * save and registration must never strand a registered inbox nobody can
+   * read), then register the inbox. The save also publishes `k` in the view
+   * blob; a knock racing the registration gets a 404 and reads as "can't be
+   * booped yet". Safe to call repeatedly — it self-heals a missing inbox.
+   */
+  async ensureBoopInbox(): Promise<void> {
+    const client = this.requireClient();
+    const { priv } = this.requireSession();
+    if (!priv.boop) {
+      const pair = await generateBoopKeyPair();
+      priv.boop = { priv: pair.priv, inbox: randomLocator(), token: randomToken() };
+      await this.save();
+    }
+    const creds = priv.boop;
+    try {
+      await client.createBoopInbox(creds.inbox, creds.token);
+    } catch (err) {
+      if (err instanceof HatchError && err.failure.kind === 'locator_taken') {
+        // Ours already (an earlier run registered it) — or, absurdly, a
+        // random collision. A token-authenticated read distinguishes them.
+        const mine = await client.listKnocks(creds.inbox, creds.token).catch(() => null);
+        if (mine !== null) return;
+        priv.boop = undefined;
+        await this.save();
+        return this.ensureBoopInbox();
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Stage a boop toward one recipient: the reply box is minted, persisted
+   * (see ensureBoopInbox for why persistence comes first), and registered
+   * now — at composer-open — so its creation never sits adjacent to the
+   * knock POST in the server's view of time; the human filling in the
+   * composer provides the jitter.
+   */
+  async prepareBoop(label: string, emoji: string): Promise<string> {
+    const client = this.requireClient();
+    const { priv } = this.requireSession();
+    const entry: SentBoop = {
+      id: crypto.randomUUID(),
+      label,
+      emoji,
+      replyBox: { locator: randomLocator(), token: randomToken(), key: mintBoopBoxKey() },
+      sentAt: Date.now(),
+      status: 'pending',
+    };
+    this.mutateSentBoops((list) => [...list, entry]);
+    await this.save();
+    await client.createBoopInbox(entry.replyBox.locator, entry.replyBox.token);
+    return entry.id;
+  }
+
+  /** Composer closed without sending: tear the staged reply box down. */
+  async discardBoop(id: string): Promise<void> {
+    const client = this.requireClient();
+    const entry = this.sentBoops().find((b) => b.id === id);
+    if (!entry || entry.status !== 'pending') return;
+    await client.deleteBoopInbox(entry.replyBox.locator, entry.replyBox.token).catch(() => undefined);
+    this.mutateSentBoops((list) => list.filter((b) => b.id !== id));
+    await this.save();
+  }
+
+  /**
+   * Seal and deliver a staged boop. Everything inside is a claim the
+   * recipient can't verify — the advisory language in the composer owns
+   * that honesty. Throws HatchError not_found when the recipient rotated
+   * (no longer accepting), at_capacity when their inbox is full.
+   */
+  async sendBoop(
+    id: string,
+    target: BoopReachability,
+    intents: readonly number[],
+    attachments?: { viewPhrase?: string; contact?: BoopContact },
+  ): Promise<void> {
+    const client = this.requireClient();
+    this.requireSession();
+    const entry = this.sentBoops().find((b) => b.id === id);
+    if (!entry) throw new Error('This boop was discarded.');
+    const persona = this.persona();
+    const content = buildBoop(
+      'boop',
+      { label: persona?.name ?? 'a creature', emoji: persona?.emoji ?? '🥚' },
+      intents,
+      attachments,
+      entry.replyBox,
+    );
+    await client.postKnock(target.inbox, await sealTo(target.pub, content));
+    this.mutateSentBoops((list) =>
+      list.map((b) => (b.id === id ? { ...b, status: 'sent' as const } : b)),
+    );
+    await this.save();
+  }
+
+  /**
+   * Read my inbox. Knocks that don't open with my key are deleted on the
+   * spot — garbage cannot occupy the 16 pending slots for 30 days — and
+   * duplicate ciphertexts collapse to one.
+   */
+  async pollBoops(): Promise<void> {
+    const client = this.requireClient();
+    const { priv } = this.requireSession();
+    const creds = priv.boop;
+    if (!creds) return;
+    const knocks = await client.listKnocks(creds.inbox, creds.token);
+    if (knocks === null) {
+      // Rotated away or GC'd — self-heal with the stored credentials.
+      await client.createBoopInbox(creds.inbox, creds.token).catch(() => undefined);
+      this.incomingBoops.set([]);
+      return;
+    }
+    const seen = new Set<string>();
+    const opened: IncomingBoop[] = [];
+    for (const knock of knocks) {
+      if (seen.has(knock.blob)) {
+        void client.deleteKnock(creds.inbox, creds.token, knock.id).catch(() => undefined);
+        continue;
+      }
+      seen.add(knock.blob);
+      try {
+        const content = migrateBoopContent(await openSealed(creds.priv, knock.blob));
+        opened.push({ id: knock.id, created: knock.created, content });
+      } catch {
+        void client.deleteKnock(creds.inbox, creds.token, knock.id).catch(() => undefined);
+      }
+    }
+    this.incomingBoops.set(opened);
+  }
+
+  /**
+   * The one reply: sealed under the key that rode inside the knock, dropped
+   * into the sender's reply box, and the original knock is deleted — the
+   * exchange is complete on our side.
+   */
+  async replyToBoop(
+    boop: IncomingBoop,
+    intents: readonly number[],
+    attachments?: { viewPhrase?: string; contact?: BoopContact },
+  ): Promise<void> {
+    const client = this.requireClient();
+    this.requireSession();
+    const replyBox = boop.content.replyBox;
+    if (!replyBox) throw new Error('This boop carries no reply box.');
+    const persona = this.persona();
+    const content = buildBoop(
+      'reply',
+      { label: persona?.name ?? 'a creature', emoji: persona?.emoji ?? '🥚' },
+      intents,
+      attachments,
+    );
+    await client.postKnock(replyBox.locator, await sealWithKey(replyBox.key, content));
+    await this.dismissBoop(boop.id);
+  }
+
+  /** Silent decline — deletion is the whole gesture. */
+  async dismissBoop(knockId: string): Promise<void> {
+    const client = this.requireClient();
+    const { priv } = this.requireSession();
+    const creds = priv.boop;
+    if (creds) await client.deleteKnock(creds.inbox, creds.token, knockId).catch(() => undefined);
+    this.incomingBoops.set(this.incomingBoops().filter((b) => b.id !== knockId));
+  }
+
+  /**
+   * Check every outstanding reply box. A found reply is kept in PrivData
+   * and its box torn down; a missing box is re-created from stored creds
+   * (the knock may still have gone out — the reply must stay receivable).
+   */
+  async pollSentBoops(): Promise<void> {
+    const client = this.requireClient();
+    this.requireSession();
+    let changed = false;
+    for (const entry of this.sentBoops()) {
+      if (entry.status === 'answered') continue;
+      const knocks = await client
+        .listKnocks(entry.replyBox.locator, entry.replyBox.token)
+        .catch(() => null);
+      if (knocks === null) {
+        await client
+          .createBoopInbox(entry.replyBox.locator, entry.replyBox.token)
+          .catch(() => undefined);
+        continue;
+      }
+      for (const knock of knocks) {
+        try {
+          const reply = migrateBoopContent(await openWithKey(entry.replyBox.key, knock.blob));
+          this.mutateSentBoops((list) =>
+            list.map((b) =>
+              b.id === entry.id ? { ...b, status: 'answered' as const, reply } : b,
+            ),
+          );
+          await client
+            .deleteBoopInbox(entry.replyBox.locator, entry.replyBox.token)
+            .catch(() => undefined);
+          changed = true;
+          break;
+        } catch {
+          void client
+            .deleteKnock(entry.replyBox.locator, entry.replyBox.token, knock.id)
+            .catch(() => undefined);
+        }
+      }
+    }
+    if (changed) await this.save();
+  }
+
+  /** Forget a sent boop; an unanswered reply box is torn down with it. */
+  async removeSentBoop(id: string): Promise<void> {
+    const client = this.requireClient();
+    const entry = this.sentBoops().find((b) => b.id === id);
+    if (!entry) return;
+    if (entry.status !== 'answered') {
+      await client
+        .deleteBoopInbox(entry.replyBox.locator, entry.replyBox.token)
+        .catch(() => undefined);
+    }
+    this.mutateSentBoops((list) => list.filter((b) => b.id !== id));
+    await this.save();
+  }
+
   // ---- anonymous metrics --------------------------------------------------
 
   /**
@@ -606,6 +889,8 @@ export class ProfileSessionStore {
         this.priv = remotePriv;
         this.version.set(remote.version);
         this.connections.set(remotePriv.connections);
+        this.groups.set(remotePriv.groups ?? []);
+        this.sentBoops.set(remotePriv.sentBoops ?? []);
         this.snapshotSaved(remotePriv);
         this.draft.loadFrom(remotePriv.answers, remotePriv.weights, remotePriv.acceptable);
         this.saveState.set('conflict');
@@ -639,6 +924,9 @@ export class ProfileSessionStore {
       salt,
       priv.weights ?? {},
       priv.acceptable ?? {},
+      // Boop reachability rides ONLY here — the view blob. Group deposits
+      // build their snapshots without it, by design.
+      priv.boop ? { pub: boopPublicKey(priv.boop.priv), inbox: priv.boop.inbox } : undefined,
     );
     return {
       blobView: await encryptBlob(payload, viewKeys.viewKey),
@@ -666,12 +954,17 @@ export class ProfileSessionStore {
     this.connections.set(priv.connections);
     this.groups.set(priv.groups ?? []);
     this.metricsOptIn.set(priv.metricsOptIn === true);
+    this.sentBoops.set(priv.sentBoops ?? []);
+    this.incomingBoops.set([]);
     this.snapshotSaved(priv);
     this.saveState.set('idle');
     this.draft.loadFrom(priv.answers, priv.weights, priv.acceptable);
     this.active.set(true);
     this.writeSession(editPhrase);
     this.remembered.set(this.readRemembered() === editPhrase);
+    // Legacy profiles become boopable on their next login; fire-and-forget
+    // (save() serializes internally, so this can't race the user's edits).
+    void this.ensureBoopInbox().catch(() => undefined);
   }
 
   /** Records what the server now holds, for the dirty comparison. */
@@ -693,6 +986,12 @@ export class ProfileSessionStore {
     const { priv } = this.requireSession();
     priv.groups = fn(priv.groups ?? []);
     this.groups.set(priv.groups);
+  }
+
+  private mutateSentBoops(fn: (list: readonly SentBoop[]) => SentBoop[]): void {
+    const { priv } = this.requireSession();
+    priv.sentBoops = fn(priv.sentBoops ?? []);
+    this.sentBoops.set(priv.sentBoops);
   }
 
   private requireClient() {
