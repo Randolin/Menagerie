@@ -9,17 +9,26 @@ import {
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
 import type { Persona } from '@moxy/core';
 import qrcode from 'qrcode-generator';
+import { blobPath } from './qr-path';
+
+let gradientSeq = 0;
 
 /**
  * QR code for a share URL. Without a persona it renders the library's plain
  * SVG at error level M, exactly as before. With a persona it hand-builds a
- * styled SVG from the module matrix — persona-colored rounded modules,
- * classic concentric finder corners, 4-module quiet zone, and (at error
- * level H only) a white center badge holding the creature emoji.
+ * styled SVG from the module matrix — dark modules fused into rounded blobs
+ * (see qr-path.ts) filled with a two-stop gradient from the persona color
+ * into the creature's adjB hue, classic concentric finder "eyes" (outer ring
+ * in the persona color, pupil in the adjB hue — geometry untouched, and
+ * detectors binarize so color is invisible to them), 4-module quiet zone,
+ * and (at error level H only) a white center badge holding the creature.
  *
  * Fallback ladder when a persona is present: 'H' + badge → payload too big
  * for H → 'M' styled color, NO badge (occlusion is only safe under H's 30%
  * correction) → too big for M → the "share the link instead" note.
+ *
+ * Both gradient stops come from tables spec-bounded at relative luminance
+ * ≤ 0.20, so every point of the gradient keeps QR-safe contrast on white.
  *
  * The SVG is generated locally from our own strings and shapes, so
  * bypassing sanitization here is sound.
@@ -84,6 +93,11 @@ export class QrCodeComponent {
     const quiet = 4;
     const size = n + quiet * 2;
     const color = persona.color;
+    const color2 = persona.color2;
+    // Instance-unique gradient id: these SVGs land in the shared page DOM
+    // via innerHTML, and duplicate ids would cross-wire fills between two
+    // rendered QRs (dashboard + group page).
+    const gid = `qr-g-${gradientSeq++}`;
     const inFinder = (r: number, c: number): boolean =>
       (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
 
@@ -92,18 +106,18 @@ export class QrCodeComponent {
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" ` +
         `role="img" aria-label="QR code for this profile link">`,
       `<rect width="${size}" height="${size}" fill="#ffffff"/>`,
+      `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0.55" y2="1">` +
+        `<stop offset="0" stop-color="${color}"/>` +
+        `<stop offset="1" stop-color="${color2}"/>` +
+        `</linearGradient></defs>`,
     );
 
-    // Data modules: rounded dots. Finder areas are skipped and drawn as
-    // classic concentric squares below — detectors lock on faster that way.
-    for (let r = 0; r < n; r++) {
-      for (let c = 0; c < n; c++) {
-        if (!qr.isDark(r, c) || inFinder(r, c)) continue;
-        parts.push(
-          `<rect x="${c + quiet}" y="${r + quiet}" width="1" height="1" rx="0.3" fill="${color}"/>`,
-        );
-      }
-    }
+    // Data modules fused into blobs. Finder areas are masked out of the
+    // neighbor checks and drawn as classic concentric squares below —
+    // detectors lock on faster that way (the always-light separator ring
+    // means data modules never actually abut finder modules).
+    const dark = (r: number, c: number): boolean => qr.isDark(r, c) && !inFinder(r, c);
+    parts.push(`<path d="${blobPath(dark, n, quiet)}" fill="url(#${gid})"/>`);
 
     for (const [fr, fc] of [[0, 0], [0, n - 7], [n - 7, 0]] as const) {
       const x = fc + quiet;
@@ -111,7 +125,7 @@ export class QrCodeComponent {
       parts.push(
         `<rect x="${x}" y="${y}" width="7" height="7" rx="1.75" fill="${color}"/>`,
         `<rect x="${x + 1}" y="${y + 1}" width="5" height="5" rx="1.25" fill="#ffffff"/>`,
-        `<rect x="${x + 2}" y="${y + 2}" width="3" height="3" rx="0.75" fill="${color}"/>`,
+        `<rect x="${x + 2}" y="${y + 2}" width="3" height="3" rx="0.75" fill="${color2}"/>`,
       );
     }
 
