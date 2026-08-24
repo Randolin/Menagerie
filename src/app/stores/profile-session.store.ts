@@ -580,12 +580,21 @@ export class ProfileSessionStore {
     } catch (err) {
       if (err instanceof HatchError && err.failure.kind === 'locator_taken') {
         // Ours already (an earlier run registered it) — or, absurdly, a
-        // random collision. A token-authenticated read distinguishes them.
-        const mine = await client.listKnocks(creds.inbox, creds.token).catch(() => null);
-        if (mine !== null) return;
-        priv.boop = undefined;
-        await this.save();
-        return this.ensureBoopInbox();
+        // random collision. A token-authenticated read distinguishes them;
+        // ONLY an explicit bad_token may discard credentials — a transient
+        // failure must never rotate a published inbox out from under us.
+        try {
+          const mine = await client.listKnocks(creds.inbox, creds.token);
+          if (mine !== null) return;
+          return this.ensureBoopInbox(); // row vanished mid-race — re-register
+        } catch (probeErr) {
+          if (probeErr instanceof HatchError && probeErr.failure.kind === 'bad_token') {
+            priv.boop = undefined;
+            await this.save();
+            return this.ensureBoopInbox();
+          }
+          return; // transient — keep credentials; a later poll self-heals
+        }
       }
       throw err;
     }

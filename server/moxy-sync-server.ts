@@ -13,6 +13,10 @@
 //   MOXY_MAX_GROUP_MEMBERS  deposits per group cap (default 32)
 //   MOXY_MAX_BOOP_INBOXES boop inbox circuit breaker (default 200000; 503 beyond)
 //   MOXY_METRICS_K       aggregate k-floor (default 10; buckets under k hidden)
+//   MOXY_READS_PER_MINUTE   per-IP GET budget (default 120)
+//   MOXY_WRITES_PER_MINUTE  per-IP write budget (default 30)
+//   MOXY_BOOPS_PER_MINUTE   per-IP knock-POST budget (default 5)
+//   MOXY_METRICS_PER_MINUTE per-IP metrics-POST budget (default 5)
 //   MOXY_GC_EMPTY_MS     never-populated profiles die after this (default 7d)
 //   MOXY_GC_IDLE_MS      populated ones after no edit+no view for (default 365d)
 //   MOXY_GC_SWEEP_MS     sweep interval (default 1h)
@@ -45,6 +49,10 @@ const maxProfiles = Number(process.env['MOXY_MAX_PROFILES'] ?? 100_000);
 const maxGroups = Number(process.env['MOXY_MAX_GROUPS'] ?? 10_000);
 const maxGroupMembers = Number(process.env['MOXY_MAX_GROUP_MEMBERS'] ?? GROUP_MAX_MEMBERS);
 const maxBoopInboxes = Number(process.env['MOXY_MAX_BOOP_INBOXES'] ?? 200_000);
+const readsPerMinute = Number(process.env['MOXY_READS_PER_MINUTE'] ?? 120);
+const writesPerMinute = Number(process.env['MOXY_WRITES_PER_MINUTE'] ?? 30);
+const boopsPerMinute = Number(process.env['MOXY_BOOPS_PER_MINUTE'] ?? 5);
+const metricsPerMinute = Number(process.env['MOXY_METRICS_PER_MINUTE'] ?? 5);
 const metricsK = Number(process.env['MOXY_METRICS_K'] ?? 10);
 const gcEmptyMs = Number(process.env['MOXY_GC_EMPTY_MS'] ?? GC_EMPTY_MS);
 const gcIdleMs = Number(process.env['MOXY_GC_IDLE_MS'] ?? GC_IDLE_MS);
@@ -71,6 +79,10 @@ const server = createServer(
     maxGroups,
     maxBoopInboxes,
     metricsK,
+    readsPerMinute,
+    writesPerMinute,
+    boopsPerMinute,
+    metricsPerMinute,
   }),
 );
 

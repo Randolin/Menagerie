@@ -44,9 +44,20 @@ await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const BASE = `http://127.0.0.1:${server.address().port}/`;
 
 // --- profile servers, each on its own origin -------------------------------
+// Rate limits get generous headroom: the whole suite hammers one IP, and on a
+// fast runner it fits inside a single refill window — production defaults
+// would 429 mid-scenario. The limiters have their own server tests.
 const spawnMoxyServer = async (env) => {
   const proc = spawn(process.execPath, [join(root, 'server/moxy-sync-server.ts')], {
-    env: { ...process.env, PORT: '0', ...env },
+    env: {
+      ...process.env,
+      PORT: '0',
+      MOXY_READS_PER_MINUTE: '100000',
+      MOXY_WRITES_PER_MINUTE: '100000',
+      MOXY_BOOPS_PER_MINUTE: '100000',
+      MOXY_METRICS_PER_MINUTE: '100000',
+      ...env,
+    },
     stdio: ['ignore', 'pipe', 'inherit'],
   });
   const url = await new Promise((resolve, reject) => {
