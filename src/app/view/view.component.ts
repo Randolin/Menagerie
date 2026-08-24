@@ -16,6 +16,8 @@ import {
   type Persona,
   type ProfilePayload,
   type ScaleItem,
+  personaHabitat,
+  HABITAT_META,
 } from '@moxy/core';
 import {
   AnswerTextComponent,
@@ -63,10 +65,13 @@ interface LoadedProfile {
         <a class="btn" routerLink="/">Go to the start</a>
       </div>
     } @else if (view.value(); as v) {
-      <div class="card">
+      <div class="card habitat-accent" [class]="habitatClass(v.persona)">
         <h2 style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           {{ v.name }}’s profile
           @if (v.persona; as persona) { <moxy-persona-chip [persona]="persona" /> }
+          @if (habitatMotif(v.persona); as motif) {
+            <span class="habitat-motif" [title]="motif.title" aria-hidden="true">{{ motif.glyph }}</span>
+          }
         </h2>
         <p class="sub">
           A Menagerie profile — anonymous by design, stored only as ciphertext the server
@@ -134,6 +139,20 @@ interface LoadedProfile {
   `,
 })
 export class ViewComponent {
+  protected habitatClass(persona: Persona | null | undefined): string {
+    const habitat = personaHabitat(persona);
+    return habitat ? `habitat-${habitat}` : '';
+  }
+
+  protected habitatMotif(
+    persona: Persona | null | undefined,
+  ): { glyph: string; title: string } | null {
+    const habitat = personaHabitat(persona);
+    if (!habitat) return null;
+    const meta = HABITAT_META[habitat];
+    return { glyph: meta.motif, title: `a creature ${meta.label}` };
+  }
+
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly config = inject(ServerConfigStore);

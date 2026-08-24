@@ -11,8 +11,11 @@ import {
   extractViewPhrase,
   visiblePacks,
   type Pack,
+  personaHabitat,
+  HABITAT_META,
+  type Persona,
 } from '@moxy/core';
-import { PersonaChipComponent, QrCodeComponent, RingComponent, ToastService, copyText } from '@moxy/ui';
+import { CreatureIconComponent, PersonaChipComponent, QrCodeComponent, RingComponent, ToastService, copyText } from '@moxy/ui';
 import { APP_STORAGE } from '../stores/storage.token';
 import { DraftStore } from '../stores/draft.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
@@ -22,7 +25,7 @@ import { BoopComposerComponent } from '../boop/boop-composer.component';
 @Component({
   selector: 'moxy-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, BoopComposerComponent, PersonaChipComponent, QrCodeComponent, RingComponent],
+  imports: [RouterLink, BoopComposerComponent, CreatureIconComponent, PersonaChipComponent, QrCodeComponent, RingComponent],
   template: `
     @if (!noticeDismissed()) {
       <div class="card" style="border-color:var(--accent)">
@@ -47,10 +50,13 @@ import { BoopComposerComponent } from '../boop/boop-composer.component';
       </div>
     }
 
-    <div class="card">
+    <div class="card habitat-accent" [class]="habitatClass(session.persona())">
       <h2 style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         My profile
         @if (session.persona(); as persona) { <moxy-persona-chip [persona]="persona" /> }
+        @if (habitatMotif(session.persona()); as motif) {
+          <span class="habitat-motif" [title]="motif.title" aria-hidden="true">{{ motif.glyph }}</span>
+        }
         <button class="btn btn-ghost btn-small" (click)="regenerate()">🎲 New creature</button>
       </h2>
       <p class="sub">
@@ -208,7 +214,7 @@ import { BoopComposerComponent } from '../boop/boop-composer.component';
       @for (boop of session.incomingBoops(); track boop.id) {
         <div class="grid-row" style="align-items:flex-start">
           <div class="grid-item-label">
-            says it’s from {{ boop.content.from.emoji }} {{ boop.content.from.label }}
+            says it’s from <moxy-creature-icon [emoji]="boop.content.from.emoji" [size]="18" /> {{ boop.content.from.label }}
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
               @for (i of boop.content.intents; track i) {
                 <span class="fine">· {{ intentLabel(i) }}</span>
@@ -250,7 +256,7 @@ import { BoopComposerComponent } from '../boop/boop-composer.component';
         @for (sent of session.sentBoops(); track sent.id) {
           <div class="grid-row" style="align-items:flex-start">
             <div class="grid-item-label">
-              {{ sent.emoji }} {{ sent.label }}
+              <moxy-creature-icon [emoji]="sent.emoji" [size]="18" /> {{ sent.label }}
               <span class="fine">
                 {{ sent.status === 'answered' ? '↩️ replied' :
                    sent.status === 'sent' ? 'sent — no reply yet' : 'not sent' }}
@@ -333,6 +339,20 @@ import { BoopComposerComponent } from '../boop/boop-composer.component';
   `,
 })
 export class DashboardComponent {
+  protected habitatClass(persona: Persona | null | undefined): string {
+    const habitat = personaHabitat(persona);
+    return habitat ? `habitat-${habitat}` : '';
+  }
+
+  protected habitatMotif(
+    persona: Persona | null | undefined,
+  ): { glyph: string; title: string } | null {
+    const habitat = personaHabitat(persona);
+    if (!habitat) return null;
+    const meta = HABITAT_META[habitat];
+    return { glyph: meta.motif, title: `a creature ${meta.label}` };
+  }
+
   protected readonly session = inject(ProfileSessionStore);
   protected readonly draft = inject(DraftStore);
   private readonly compare = inject(CompareStore);

@@ -44,6 +44,9 @@ jobs:
       - name: Profile server integration tests
         run: npm run test:server
 
+      - name: UI library pure-module tests (plain Node)
+        run: npm run test:ui
+
       - name: App component tests
         run: npx ng test
 

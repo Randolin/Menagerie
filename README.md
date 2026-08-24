@@ -35,8 +35,10 @@ Node file.
   locators and ciphertext — never a phrase, a key, or an answer. Lose the
   edit phrase and the profile can never be edited again; that's the design.
 - **Your creature is your view phrase.** The first three words are the
-  profile's persona — name, emoji, and QR styling — so everyone you share with
-  recognizes the same creature. Honest arithmetic: those words are public by
+  profile's persona — name, first-party pixel-art portrait, and QR styling
+  (blob-merged modules in a two-hue gradient: the persona color plus a hue
+  from the color-word slot) — so everyone you share with recognizes the same
+  creature. All 64 portraits live at `/creatures`. Honest arithmetic: those words are public by
   design, so a view phrase's secret is its poetic 3-word tail, drawn from
   curated 2,048-entry lists (exactly 33 bits ≈ GPU-months-to-a-year to
   brute-force at Argon2id's memory cost) — a curtain for casual reading,
@@ -265,4 +267,8 @@ inbound = outbound plus a maintainer relicensing grant).
 
 Bundled dependencies of note: [qrcode-generator](https://www.npmjs.com/package/qrcode-generator)
 (MIT, Kazuhiko Arase); EFF large wordlist (CC-BY 3.0), embedded as a lazy
-chunk. Their notices remain intact and their licenses are AGPL-compatible.
+chunk; the [Fredoka](https://fonts.google.com/specimen/Fredoka) display face
+(SIL OFL 1.1, self-hosted under `public/fonts/` — no font CDN is ever
+contacted). Their notices remain intact and their licenses are
+AGPL-compatible. The pixel-art creature sprites are first-party and ship
+under the project license.

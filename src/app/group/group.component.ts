@@ -23,8 +23,10 @@ import {
   type GroupDeposit,
   type Persona,
   type ProfilePayload,
+  personaHabitat,
+  HABITAT_META,
 } from '@moxy/core';
-import { PersonaChipComponent, QrCodeComponent, ToastService, copyText } from '@moxy/ui';
+import { CreatureIconComponent, PersonaChipComponent, QrCodeComponent, ToastService, copyText } from '@moxy/ui';
 import { CompareStore } from '../stores/compare.store';
 import { DraftStore } from '../stores/draft.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
@@ -53,7 +55,7 @@ interface LoadedGroup {
 @Component({
   selector: 'moxy-group',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, PersonaChipComponent, QrCodeComponent],
+  imports: [RouterLink, CreatureIconComponent, PersonaChipComponent, QrCodeComponent],
   template: `
     @if (view.error()) {
       <div class="card">
@@ -62,10 +64,13 @@ interface LoadedGroup {
         <a class="btn" routerLink="/">Go to the start</a>
       </div>
     } @else if (view.value(); as g) {
-      <div class="card">
+      <div class="card habitat-accent" [class]="habitatClass(g.persona)">
         <h2 style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           {{ g.persona?.name ?? 'A group' }}
           @if (g.persona; as persona) { <moxy-persona-chip [persona]="persona" /> }
+          @if (habitatMotif(g.persona); as motif) {
+            <span class="habitat-motif" [title]="motif.title" aria-hidden="true">{{ motif.glyph }}</span>
+          }
           <span class="fine">group</span>
         </h2>
         <p class="sub">
@@ -101,7 +106,7 @@ interface LoadedGroup {
                            (change)="toggleSelect(m.memberLocator)"
                            [attr.aria-label]="'Select ' + m.name">
                   }
-                  <span>{{ m.emoji }} {{ m.name }}</span>
+                  <span style="display:inline-flex;align-items:center;gap:5px"><moxy-creature-icon [emoji]="m.emoji ?? '🥚'" [size]="18" /> {{ m.name }}</span>
                   @if (m.isMe) { <span class="fine">(you)</span> }
                   @if (m.deposit.tier === 1) { <span class="fine">pseudonym</span> }
                 </label>
@@ -195,6 +200,20 @@ interface LoadedGroup {
   `,
 })
 export class GroupComponent {
+  protected habitatClass(persona: Persona | null | undefined): string {
+    const habitat = personaHabitat(persona);
+    return habitat ? `habitat-${habitat}` : '';
+  }
+
+  protected habitatMotif(
+    persona: Persona | null | undefined,
+  ): { glyph: string; title: string } | null {
+    const habitat = personaHabitat(persona);
+    if (!habitat) return null;
+    const meta = HABITAT_META[habitat];
+    return { glyph: meta.motif, title: `a creature ${meta.label}` };
+  }
+
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly config = inject(ServerConfigStore);

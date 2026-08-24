@@ -219,6 +219,10 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
         extension. It simply refuses to create the identity databases such attacks
         usually target.
       </p>
+      <p class="fine">
+        Curious what your creature could have been?
+        <a routerLink="/creatures">Meet the whole menagerie</a> — all 64 of them.
+      </p>
     </div>
   `,
 })

@@ -10,6 +10,7 @@
     "test": "ng test",
     "test:core": "vitest run --config libs/core/vitest.config.ts",
     "test:app": "ng test",
+    "test:ui": "vitest run --config libs/ui/vitest.config.ts",
     "e2e": "node e2e/run-e2e.mjs",
     "server": "node server/moxy-sync-server.ts",
     "test:server": "vitest run --config server/vitest.config.ts"

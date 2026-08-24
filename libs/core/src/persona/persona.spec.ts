@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { personaFromViewPhrase } from './persona';
 import { ADJECTIVES_A, ADJECTIVES_B, ANIMALS, PERSONA_COLORS } from './wordlists';
+import { ADJ_B_HUES } from './adjb-hues';
 
 function relativeLuminance(hex: string): number {
   const channels = [1, 3, 5]
@@ -40,6 +41,8 @@ describe('personaFromViewPhrase', () => {
     expect(a?.name).toBe(`${ADJECTIVES_A[0]}-${ADJECTIVES_B[0]}-${ANIMALS[0].name}`);
     expect(a?.emoji).toBe(ANIMALS[0].emoji);
     expect(PERSONA_COLORS).toContain(a?.color);
+    // color2 is the adjB word's own hue — index-aligned, HEAD-only.
+    expect(a?.color2).toBe(ADJ_B_HUES[0]);
   });
 
   test('spaces and case normalize like phrases do', async () => {
