@@ -113,6 +113,22 @@ main {
   margin-bottom: 20px;
 }
 
+/* Habitat accents — a hint of where the creature lives, derived from the
+   PUBLIC head words only (the animal; see libs/core habitat.ts). The
+   color-mix against --surface keeps one declaration working in both
+   themes, matching the persona-chip idiom. */
+.habitat-forest { --habitat-tint: color-mix(in srgb, #3e7d4a 55%, var(--surface)); }
+.habitat-water { --habitat-tint: color-mix(in srgb, #2f7fb0 55%, var(--surface)); }
+.habitat-sky { --habitat-tint: color-mix(in srgb, #7aa5d8 60%, var(--surface)); }
+.habitat-meadow { --habitat-tint: color-mix(in srgb, #d9a125 55%, var(--surface)); }
+.habitat-mythic { --habitat-tint: color-mix(in srgb, #9b6fd0 55%, var(--surface)); }
+.card.habitat-accent {
+  border-top: 3px solid var(--habitat-tint, var(--border));
+  border-top-left-radius: var(--radius);
+  border-top-right-radius: var(--radius);
+}
+.habitat-motif { font-size: 14px; opacity: 0.75; }
+
 h1 { font-size: clamp(26px, 4.5vw, 38px); letter-spacing: -0.02em; line-height: 1.15; margin: 0 0 10px; }
 h2 { font-size: 21px; letter-spacing: -0.01em; margin: 0 0 8px; }
 h3 { font-size: 16.5px; margin: 0 0 6px; }

@@ -100,3 +100,10 @@ export function habitatOf(animalName: string): Habitat | null {
   const index = ANIMALS.findIndex((a) => a.name === animalName);
   return index >= 0 ? ANIMAL_HABITATS[index] : null;
 }
+
+/** Convenience over habitatOf for the persona's animal (HEAD word 3). */
+export function personaHabitat(
+  persona: { readonly words: readonly [string, string, string] } | null | undefined,
+): Habitat | null {
+  return persona ? habitatOf(persona.words[2]) : null;
+}

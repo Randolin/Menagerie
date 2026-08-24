@@ -11,6 +11,9 @@ import {
   extractViewPhrase,
   visiblePacks,
   type Pack,
+  personaHabitat,
+  HABITAT_META,
+  type Persona,
 } from '@moxy/core';
 import { CreatureIconComponent, PersonaChipComponent, QrCodeComponent, RingComponent, ToastService, copyText } from '@moxy/ui';
 import { APP_STORAGE } from '../stores/storage.token';
@@ -47,10 +50,13 @@ import { BoopComposerComponent } from '../boop/boop-composer.component';
       </div>
     }
 
-    <div class="card">
+    <div class="card habitat-accent" [class]="habitatClass(session.persona())">
       <h2 style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         My profile
         @if (session.persona(); as persona) { <moxy-persona-chip [persona]="persona" /> }
+        @if (habitatMotif(session.persona()); as motif) {
+          <span class="habitat-motif" [title]="motif.title" aria-hidden="true">{{ motif.glyph }}</span>
+        }
         <button class="btn btn-ghost btn-small" (click)="regenerate()">🎲 New creature</button>
       </h2>
       <p class="sub">
@@ -333,6 +339,20 @@ import { BoopComposerComponent } from '../boop/boop-composer.component';
   `,
 })
 export class DashboardComponent {
+  protected habitatClass(persona: Persona | null | undefined): string {
+    const habitat = personaHabitat(persona);
+    return habitat ? `habitat-${habitat}` : '';
+  }
+
+  protected habitatMotif(
+    persona: Persona | null | undefined,
+  ): { glyph: string; title: string } | null {
+    const habitat = personaHabitat(persona);
+    if (!habitat) return null;
+    const meta = HABITAT_META[habitat];
+    return { glyph: meta.motif, title: `a creature ${meta.label}` };
+  }
+
   protected readonly session = inject(ProfileSessionStore);
   protected readonly draft = inject(DraftStore);
   private readonly compare = inject(CompareStore);
