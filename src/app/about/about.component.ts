@@ -117,6 +117,31 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
     </div>
 
     <div class="card">
+      <h2>👉 Boops: anonymous first contact, honestly explained</h2>
+      <p>
+        A boop is a sealed “I’m interested” — not a message. It’s encrypted to a key only
+        the recipient holds, so the server, other viewers, and even a stolen database can’t
+        open it, and every boop is padded to the same size so nothing about it leaks from
+        its shape. There is no message box: intents come from a fixed list, and escalation
+        is a deliberate choice — attach your view phrase (they see your creature) or a
+        contact card (they learn who you are elsewhere; Menagerie can’t take that back).
+        The recipient can reply exactly once through a one-shot reply box, or delete the
+        boop and you will never know. Regenerating your creature closes your boop address
+        for good — that’s the block button. Menagerie is not a messenger: two people who
+        want to talk take a contact card and go somewhere built for talking.
+      </p>
+      <div class="notice-warn notice">
+        <strong>The honest ledger: </strong>
+        a sealed boop proves nothing about its sender — the name, the reply box, all of it
+        is claimed, which is why the app says “says it’s from.” The server can’t read
+        boops, but it does see that your inbox received sealed notes, when
+        (hour-coarsely), and how many are waiting; anyone who can view your profile can
+        also notice when your inbox stops accepting because it’s full. And a contact card,
+        once revealed, is knowledge in a person’s head — no re-mint reaches it.
+      </div>
+    </div>
+
+    <div class="card">
       <h2>🎭 The desires section: mutual reveal, honestly explained</h2>
       <p>
         Desires never travel as readable answers. Each positive answer (anything warmer

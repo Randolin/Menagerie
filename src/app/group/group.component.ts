@@ -115,6 +115,14 @@ interface LoadedGroup {
               }
               @if (m.deposit?.tier === 2 && m.deposit?.viewPhrase) {
                 <a class="btn btn-ghost btn-small" [routerLink]="['/view', m.deposit!.viewPhrase]">View</a>
+                @if (session.active() && !m.isMe) {
+                  <a class="btn btn-ghost btn-small" [routerLink]="['/view', m.deposit!.viewPhrase]"
+                     title="Boop from their profile page">👉 Boop</a>
+                }
+              } @else if (m.deposit?.tier === 1 && !m.isMe) {
+                <span class="fine" title="Pseudonymous members can’t be reached in this version">
+                  not boopable
+                </span>
               }
               @if (isAdmin() && !m.isMe) {
                 <button class="btn btn-ghost btn-small" (click)="kick(g, m)">✕ Kick</button>

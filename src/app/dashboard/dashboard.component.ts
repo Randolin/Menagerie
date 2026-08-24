@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import {
+  BOOP_INTENTS,
+  CONTACT_PLATFORMS,
   GC_EMPTY_HUMAN,
   GC_IDLE_HUMAN,
   SECTIONS,
@@ -15,11 +17,12 @@ import { APP_STORAGE } from '../stores/storage.token';
 import { DraftStore } from '../stores/draft.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
 import { CompareStore } from '../stores/compare.store';
+import { BoopComposerComponent } from '../boop/boop-composer.component';
 
 @Component({
   selector: 'moxy-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, PersonaChipComponent, QrCodeComponent, RingComponent],
+  imports: [RouterLink, BoopComposerComponent, PersonaChipComponent, QrCodeComponent, RingComponent],
   template: `
     @if (!noticeDismissed()) {
       <div class="card" style="border-color:var(--accent)">
@@ -193,6 +196,88 @@ import { CompareStore } from '../stores/compare.store';
           {{ creatingGroup() ? 'Hatching…' : '🐣 Create a group' }}
         </button>
       </form>
+    </div>
+
+    <div class="card">
+      <h2>Boops</h2>
+      <p class="sub">
+        A boop is an anonymous “I’m interested” — sealed so only you can open it, with no
+        message box on either side. Everything inside is what the sender <em>says</em>;
+        Menagerie can’t verify who booped you.
+      </p>
+      @for (boop of session.incomingBoops(); track boop.id) {
+        <div class="grid-row" style="align-items:flex-start">
+          <div class="grid-item-label">
+            says it’s from {{ boop.content.from.emoji }} {{ boop.content.from.label }}
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+              @for (i of boop.content.intents; track i) {
+                <span class="fine">· {{ intentLabel(i) }}</span>
+              }
+            </div>
+          </div>
+          <div class="grid-answers" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            @if (boop.content.attachments?.viewPhrase; as phrase) {
+              <a class="btn btn-ghost btn-small" [routerLink]="['/view', phrase]">Their profile</a>
+              <button class="btn btn-ghost btn-small" (click)="compareWith(phrase)">Compare</button>
+            }
+            @if (boop.content.attachments?.contact; as contact) {
+              @if (revealed().has(boop.id)) {
+                <span class="fine">
+                  {{ platformLabel(contact.platform) }}:
+                  <strong style="user-select:all">{{ contact.handle }}</strong>
+                </span>
+                <button class="btn btn-ghost btn-small"
+                        (click)="copy(contact.handle, 'Handle copied')">📋</button>
+              } @else {
+                <button class="btn btn-ghost btn-small" (click)="reveal(boop.id)"
+                        title="They chose to de-anonymize themselves to you. Off-platform contact is outside Menagerie's protection — trust it like a stranger's note.">
+                  Reveal contact card
+                </button>
+              }
+            }
+            @if (boop.content.replyBox) {
+              <moxy-boop-composer [replyTo]="boop" />
+            }
+            <button class="btn btn-ghost btn-small" (click)="dismissBoop(boop.id)"
+                    title="Silently declines — they are not notified">✕ Dismiss</button>
+          </div>
+        </div>
+      } @empty {
+        <p class="fine">No boops waiting. Booping happens from someone’s profile page.</p>
+      }
+      @if (session.sentBoops().length > 0) {
+        <h3 class="fine" style="margin-top:16px">Sent</h3>
+        @for (sent of session.sentBoops(); track sent.id) {
+          <div class="grid-row" style="align-items:flex-start">
+            <div class="grid-item-label">
+              {{ sent.emoji }} {{ sent.label }}
+              <span class="fine">
+                {{ sent.status === 'answered' ? '↩️ replied' :
+                   sent.status === 'sent' ? 'sent — no reply yet' : 'not sent' }}
+              </span>
+            </div>
+            <div class="grid-answers" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              @if (sent.reply; as reply) {
+                @for (i of reply.intents; track i) {
+                  <span class="fine">· {{ intentLabel(i) }}</span>
+                }
+                @if (reply.attachments?.viewPhrase; as phrase) {
+                  <a class="btn btn-ghost btn-small" [routerLink]="['/view', phrase]">Their profile</a>
+                }
+                @if (reply.attachments?.contact; as contact) {
+                  <span class="fine">
+                    {{ platformLabel(contact.platform) }}:
+                    <strong style="user-select:all">{{ contact.handle }}</strong>
+                  </span>
+                  <button class="btn btn-ghost btn-small"
+                          (click)="copy(contact.handle, 'Handle copied')">📋</button>
+                }
+              }
+              <button class="btn btn-ghost btn-small" (click)="removeSentBoop(sent.id)">✕</button>
+            </div>
+          </div>
+        }
+      }
     </div>
 
     <div class="card">
@@ -390,6 +475,40 @@ export class DashboardComponent {
   constructor() {
     // Recurring monthly counter submission, decoupled from any save.
     this.session.maybeSubmitMetrics();
+    // Boops are pull-only: the dashboard visit is the notification.
+    void this.session.pollBoops().catch(() => undefined);
+    void this.session.pollSentBoops().catch(() => undefined);
+  }
+
+  protected readonly revealed = signal<ReadonlySet<string>>(new Set());
+
+  protected reveal(id: string): void {
+    this.revealed.set(new Set([...this.revealed(), id]));
+  }
+
+  protected intentLabel(i: number): string {
+    return BOOP_INTENTS[i] ?? '';
+  }
+
+  protected platformLabel(i: number): string {
+    return CONTACT_PLATFORMS[i] ?? 'Elsewhere';
+  }
+
+  protected async dismissBoop(id: string): Promise<void> {
+    try {
+      await this.session.dismissBoop(id);
+      this.toast.show('Dismissed — they are not notified.');
+    } catch (err) {
+      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+    }
+  }
+
+  protected async removeSentBoop(id: string): Promise<void> {
+    try {
+      await this.session.removeSentBoop(id);
+    } catch (err) {
+      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+    }
   }
 
   protected async toggleMetrics(event: Event): Promise<void> {

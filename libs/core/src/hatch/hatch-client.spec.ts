@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { HatchClient, HatchError, type HatchFailure } from './hatch-client';
 import { EDIT_TOKEN_HEADER, NEW_EDIT_TOKEN_HEADER } from './hatch-api';
+import { BOOP_TOKEN_HEADER } from '../boop/boop-api';
 
 interface Captured {
   url: string;
@@ -187,5 +188,54 @@ describe('HatchClient.remove and health', () => {
     const { fetch, captured } = fake(200, { blob_view: 'V', version: 1 });
     await new HatchClient('https://s///', fetch).getView(LOC);
     expect(captured[0].url).toBe(`https://s/v2/profiles/view/${LOC}`);
+  });
+});
+
+describe('HatchClient boops', () => {
+  test('inbox create POSTs locator+token in the body (no header — token is registered, not proven)', async () => {
+    const { fetch, captured } = fake(201);
+    await new HatchClient('https://s', fetch).createBoopInbox(LOC, TOKEN);
+    expect(captured[0]).toMatchObject({
+      url: 'https://s/v2/boops',
+      method: 'POST',
+      body: { locator: LOC, token: TOKEN },
+    });
+  });
+
+  test('postKnock is tokenless; full and throttled inboxes surface as their own kinds', async () => {
+    const { fetch, captured } = fake(201);
+    await new HatchClient('https://s', fetch).postKnock(LOC, 'SEALED');
+    expect(captured[0].url).toBe(`https://s/v2/boops/${LOC}/knocks`);
+    expect(captured[0].headers[BOOP_TOKEN_HEADER]).toBeUndefined();
+    expect(captured[0].body).toEqual({ blob: 'SEALED' });
+
+    const full = await failure(new HatchClient('https://s', fake(503).fetch).postKnock(LOC, 'X'));
+    expect(full).toEqual({ kind: 'at_capacity' });
+    const throttled = await failure(
+      new HatchClient('https://s', fake(429).fetch).postKnock(LOC, 'X'),
+    );
+    expect(throttled).toEqual({ kind: 'rate_limited' });
+  });
+
+  test('listKnocks sends the owner token; a missing inbox is null (self-heal cue)', async () => {
+    const knocks = [{ id: 'k', blob: 'B', created: 3600000 }];
+    const { fetch, captured } = fake(200, { knocks });
+    await expect(new HatchClient('https://s', fetch).listKnocks(LOC, TOKEN)).resolves.toEqual(
+      knocks,
+    );
+    expect(captured[0].headers[BOOP_TOKEN_HEADER]).toBe(TOKEN);
+    await expect(
+      new HatchClient('https://s', fake(404).fetch).listKnocks(LOC, TOKEN),
+    ).resolves.toBeNull();
+  });
+
+  test('knock and inbox deletes are idempotent on 404', async () => {
+    const client404 = new HatchClient('https://s', fake(404).fetch);
+    await expect(client404.deleteKnock(LOC, TOKEN, 'kid')).resolves.toBeUndefined();
+    await expect(client404.deleteBoopInbox(LOC, TOKEN)).resolves.toBeUndefined();
+    const { fetch, captured } = fake(200);
+    await new HatchClient('https://s', fetch).deleteKnock(LOC, TOKEN, 'kid');
+    expect(captured[0].url).toBe(`https://s/v2/boops/${LOC}/knocks/kid`);
+    expect(captured[0].method).toBe('DELETE');
   });
 });

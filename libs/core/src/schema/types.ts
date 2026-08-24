@@ -134,6 +134,19 @@ export interface ProfilePayloadV2 {
   m?: string[];
   w?: Weights;
   d?: Acceptable;
+  /**
+   * Boop reachability: the profile's sealed-box public key plus its random
+   * inbox locator (see boop/). Additive and optional — old viewers ignore
+   * it and migrate.ts passes v2 through, so do NOT bump PROFILE_VERSION
+   * for this field. Group deposit snapshots never carry it (codec.ts).
+   */
+  k?: BoopReachability;
+}
+
+/** Published in blob_view; both halves rotate with the view phrase. */
+export interface BoopReachability {
+  readonly pub: string;
+  readonly inbox: string;
 }
 
 /** Widens to a union when a v3 payload lands; migrate.ts upgrades old shapes. */

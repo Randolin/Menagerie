@@ -44,9 +44,20 @@ await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const BASE = `http://127.0.0.1:${server.address().port}/`;
 
 // --- profile servers, each on its own origin -------------------------------
+// Rate limits get generous headroom: the whole suite hammers one IP, and on a
+// fast runner it fits inside a single refill window — production defaults
+// would 429 mid-scenario. The limiters have their own server tests.
 const spawnMoxyServer = async (env) => {
   const proc = spawn(process.execPath, [join(root, 'server/moxy-sync-server.ts')], {
-    env: { ...process.env, PORT: '0', ...env },
+    env: {
+      ...process.env,
+      PORT: '0',
+      MOXY_READS_PER_MINUTE: '100000',
+      MOXY_WRITES_PER_MINUTE: '100000',
+      MOXY_BOOPS_PER_MINUTE: '100000',
+      MOXY_METRICS_PER_MINUTE: '100000',
+      ...env,
+    },
     stdio: ['ignore', 'pipe', 'inherit'],
   });
   const url = await new Promise((resolve, reject) => {
@@ -470,6 +481,69 @@ try {
   await deadGroup.goto(`${BASE}#/group/${groupPhrase}`);
   await deadGroup.waitForSelector('text=Couldn’t open that group', { timeout: 30000 });
 
+  // --- boops: sealed first contact, one reply, rotation closes the door -----
+  step = 'boop-send';
+  await pageB.goto(viewUrl); // B on A's profile
+  await pageB.waitForSelector(`text=${personaName}’s profile`, { timeout: 30000 });
+  await pageB.click('text=👉 Boop');
+  await pageB.waitForSelector('text=What are you hoping for?', { timeout: 30000 });
+  await pageB.locator('.boop-check', { hasText: 'Curious to connect' })
+    .locator('input').check();
+  await pageB.locator('.boop-check', { hasText: 'Include a contact card' })
+    .locator('input').check();
+  await pageB.waitForSelector('text=leaves Menagerie’s protection');
+  await pageB.fill('input[placeholder="your handle"]', 'amber.fox.77');
+  await pageB.locator('.boop-check', { hasText: 'I understand this de-anonymizes me' })
+    .locator('input').check();
+  await pageB.click('text=Send boop');
+  await pageB.waitForSelector('text=Booped!', { timeout: 30000 });
+  // Mid-flight at-rest check: the knock sits on the server RIGHT NOW, and the
+  // handle and intent text must already be unreadable in the raw DB.
+  {
+    let liveBytes = '';
+    for (const suffix of ['', '-wal', '-shm']) {
+      const f = dbPath + suffix;
+      if (existsSync(f)) liveBytes += readFileSync(f, 'latin1');
+    }
+    if (liveBytes.includes('amber.fox.77')) fail('contact handle readable at rest');
+    if (liveBytes.includes('Curious to connect')) fail('boop intent readable at rest');
+  }
+
+  step = 'boop-receive';
+  await page.goto(`${BASE}#/me`); // A's dashboard polls on load
+  await page.waitForSelector(`text=says it’s from`, { timeout: 30000 });
+  const boopRow = await page.textContent('body');
+  if (!boopRow.includes(personaNameB)) fail('boop does not show the claimed sender creature');
+  if (boopRow.includes('amber.fox.77')) fail('contact handle shown without the reveal tap');
+  await page.click('text=Reveal contact card');
+  await page.waitForSelector('text=amber.fox.77', { timeout: 30000 });
+  if (!(await page.textContent('body')).includes('Signal')) {
+    fail('contact platform label missing after reveal');
+  }
+
+  step = 'boop-reply';
+  await page.click('text=↩️ Reply once');
+  await page.waitForSelector('text=One reply, then the channel closes', { timeout: 30000 });
+  await page.locator('.boop-check', { hasText: 'We seem compatible' })
+    .locator('input').check();
+  await page.locator('.boop-check', { hasText: 'Include my view phrase' })
+    .locator('input').check();
+  await page.click('text=Send reply');
+  await page.waitForSelector('text=Reply sent', { timeout: 30000 });
+
+  step = 'boop-answer';
+  await pageB.goto(`${BASE}#/me`);
+  await pageB.waitForSelector('text=↩️ replied', { timeout: 30000 });
+  const answerBody = await pageB.textContent('body');
+  if (!answerBody.includes('We seem compatible')) fail('reply intents missing');
+  if (!(await pageB.locator('a', { hasText: 'Their profile' }).count())) {
+    fail('reply view-phrase attachment missing');
+  }
+  // Park B on A's (still-current) profile page: after A regenerates, this
+  // stale page's boop attempt must be turned away.
+  await pageB.goto(viewUrl);
+  await pageB.waitForSelector(`text=${personaName}’s profile`, { timeout: 30000 });
+
   // --- regenerate: new creature, old links and QRs die ----------------------
   step = 'regenerate';
   await page.goto(`${BASE}#/me`);
@@ -495,6 +569,16 @@ try {
   const newViewer = await freshPage();
   await newViewer.goto(`${BASE}#/view/${viewPhrase2}`);
   await newViewer.waitForSelector(`text=${personaName2}’s profile`, { timeout: 30000 });
+
+  // Rotation closed the boop address: B's stale copy of A's profile still
+  // shows the button, but the send must come back "no longer accepting".
+  step = 'boop-after-regenerate';
+  await pageB.click('text=👉 Boop');
+  await pageB.waitForSelector('text=What are you hoping for?', { timeout: 30000 });
+  await pageB.locator('.boop-check', { hasText: 'Curious to connect' })
+    .locator('input').check();
+  await pageB.click('text=Send boop');
+  await pageB.waitForSelector('text=no longer accepting boops', { timeout: 30000 });
 
   // --- garbage collection: empty profiles die, populated ones live ----------
   step = 'gc';
@@ -591,6 +675,7 @@ try {
     editPhrase, viewPhrase, viewPhrase2, groupPhrase, groupPhrase2, groupAdminPhrase,
     '"answers"', '"viewPhrase"', '"connections"', '"weights"', '"pseudonym"',
     '"snapshot"', 'dp.rope', '"a":',
+    'amber.fox.77', '"sentBoops"', '"replyBox"', 'Curious to connect',
   ]) {
     if (dbBytes.includes(marker)) fail(`plaintext ${JSON.stringify(marker)} at rest`);
   }
