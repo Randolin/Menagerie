@@ -10,6 +10,7 @@
 // everyone. Regenerating the view phrase is the unlink lever — new creature,
 // and every previously shared link or QR stops working.
 import { ADJECTIVES_A, ADJECTIVES_B, ANIMALS, PERSONA_COLORS } from './wordlists';
+import { adjBHue } from './adjb-hues';
 
 export interface Persona {
   /** [adjectiveA, adjectiveB, animal] */
@@ -18,6 +19,8 @@ export interface Persona {
   readonly name: string;
   readonly emoji: string;
   readonly color: string;
+  /** Second accent, straight from the adjB color-word (HEAD-only like color). */
+  readonly color2: string;
   readonly colorIndex: number;
 }
 
@@ -41,6 +44,8 @@ export async function personaFromViewPhrase(viewPhrase: string): Promise<Persona
     name: `${adjA}-${adjB}-${animal.name}`,
     emoji: animal.emoji,
     color: PERSONA_COLORS[colorIndex],
+    // Membership was checked above, so the lookup can't miss.
+    color2: adjBHue(adjB) ?? PERSONA_COLORS[colorIndex],
     colorIndex,
   };
 }
