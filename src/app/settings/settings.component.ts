@@ -18,15 +18,17 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
       <h2>Contribute anonymously</h2>
       <p class="sub">
         Once a month, opted-in profiles add coarse counts to a public,
-        <a routerLink="/community">community-wide picture</a> — age band plus
-        bucketed answers, never your name, creature, phrases, or anything the server
-        could tie back to this profile. Desire counts are submitted with random noise,
-        so even the server can’t know any single answer was real. Buckets with fewer
-        than ten contributors are never shown.
+        <a routerLink="/community">community-wide picture</a> — age band plus bucketed answers,
+        never your name, creature, phrases, or anything the server could tie back to this profile.
+        Desire counts are submitted with random noise, so even the server can’t know any single
+        answer was real. Buckets with fewer than ten contributors are never shown.
       </p>
       <label class="fine" style="display:flex;gap:8px;align-items:center">
-        <input type="checkbox" [checked]="session.metricsOptIn()"
-               (change)="toggleMetrics($event)">
+        <input
+          type="checkbox"
+          [checked]="session.metricsOptIn()"
+          (change)="toggleMetrics($event)"
+        />
         Count my answers in the anonymous community stats
       </label>
     </div>
@@ -34,13 +36,12 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
     <div class="card">
       <h2>Keys &amp; housekeeping</h2>
       <p class="sub">
-        Housekeeping: profiles with no saved answers are deleted after {{ gcEmpty }};
-        profiles untouched and unviewed for {{ gcIdle }} are deleted too. Saving
-        anything, or anyone viewing you, keeps yours alive.
+        Housekeeping: profiles with no saved answers are deleted after {{ gcEmpty }}; profiles
+        untouched and unviewed for {{ gcIdle }} are deleted too. Saving anything, or anyone viewing
+        you, keeps yours alive.
       </p>
       <label class="fine" style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
-        <input type="checkbox" [checked]="session.remembered()"
-               (change)="toggleRemember($event)">
+        <input type="checkbox" [checked]="session.remembered()" (change)="toggleRemember($event)" />
         Remember my edit phrase on this device — stored unencrypted in this browser
       </label>
       @if (newEditPhrase(); as phrase) {
@@ -73,7 +74,7 @@ export class SettingsComponent {
       this.newEditPhrase.set(await this.session.changeEditPhrase());
       this.toast.show('Edit phrase changed — save the new one now');
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     }
   }
 
@@ -88,10 +89,12 @@ export class SettingsComponent {
     try {
       await this.session.setMetricsOptIn(on);
       this.toast.show(
-        on ? 'Counted — thank you. You can opt out any time.' : 'Opted out — no further submissions.',
+        on
+          ? 'Counted — thank you. You can opt out any time.'
+          : 'Opted out — no further submissions.',
       );
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     }
   }
 
@@ -110,7 +113,7 @@ export class SettingsComponent {
       this.toast.show('Profile deleted');
       void this.router.navigate(['/']);
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     }
   }
 }

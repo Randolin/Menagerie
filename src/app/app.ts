@@ -34,7 +34,6 @@ export class App {
       }
     });
 
-
     // Boops are pull-only, and they used to be fetched by the dashboard's
     // constructor — so they were only ever discovered by visiting /me. Now
     // that they live on their own page, the shell polls once when a session

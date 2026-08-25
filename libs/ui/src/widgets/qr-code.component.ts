@@ -50,7 +50,11 @@ let gradientSeq = 0;
   // encapsulation attributes would never reach it.
   encapsulation: ViewEncapsulation.None,
   styles: `
-    moxy-qr-code .qr-svg > svg { width: 208px; height: 208px; display: block; }
+    moxy-qr-code .qr-svg > svg {
+      width: 208px;
+      height: 208px;
+      display: block;
+    }
   `,
 })
 export class QrCodeComponent {
@@ -120,7 +124,11 @@ export class QrCodeComponent {
     const dark = (r: number, c: number): boolean => qr.isDark(r, c) && !inFinder(r, c);
     parts.push(`<path d="${blobPath(dark, n, quiet)}" fill="url(#${gid})"/>`);
 
-    for (const [fr, fc] of [[0, 0], [0, n - 7], [n - 7, 0]] as const) {
+    for (const [fr, fc] of [
+      [0, 0],
+      [0, n - 7],
+      [n - 7, 0],
+    ] as const) {
       const x = fc + quiet;
       const y = fr + quiet;
       parts.push(

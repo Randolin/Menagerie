@@ -52,6 +52,7 @@ import {
   type SentBoop,
   type ViewKeys,
 } from '@moxy/core';
+import { clone } from './clone';
 import { APP_STORAGE } from './storage.token';
 import { DraftStore } from './draft.store';
 import { ServerConfigStore } from './server-config.store';
@@ -98,16 +99,20 @@ export class ProfileSessionStore {
   readonly saveState = signal<SaveState>('idle');
   readonly remembered = signal(false);
 
-  /** Answers/weights as last persisted to the server — drive the dirty flag. */
-  private readonly savedAnswers = signal<Answers>({});
-  private readonly savedWeights = signal<Weights>({});
-  private readonly savedAcceptable = signal<Acceptable>({});
+  /** Draft state as last persisted to the server — drives the dirty flag. */
+  private readonly savedSnapshot = signal(ProfileSessionStore.draftSnapshot({}, {}, {}));
   readonly dirty = computed(
     () =>
-      JSON.stringify(this.draft.answers()) !== JSON.stringify(this.savedAnswers()) ||
-      JSON.stringify(this.draft.weights()) !== JSON.stringify(this.savedWeights()) ||
-      JSON.stringify(this.draft.acceptable()) !== JSON.stringify(this.savedAcceptable()),
+      ProfileSessionStore.draftSnapshot(
+        this.draft.answers(),
+        this.draft.weights(),
+        this.draft.acceptable(),
+      ) !== this.savedSnapshot(),
   );
+
+  private static draftSnapshot(a: Answers, w: Weights, ac: Acceptable): string {
+    return JSON.stringify([a, w, ac]);
+  }
 
   private editKeys: EditKeys | null = null;
   private viewKeys: ViewKeys | null = null;
@@ -126,32 +131,24 @@ export class ProfileSessionStore {
    */
   async hatch(): Promise<void> {
     const client = this.requireClient();
-    for (let attempt = 0; ; attempt++) {
+    await this.withRemint(async () => {
       const viewPhrase = await mintViewPhrase();
       const editPhrase = await mintEditPhrase();
       const viewKeys = await deriveViewKeys(viewPhrase);
       const editKeys = await deriveEditKeys(editPhrase);
       const priv = emptyPrivData(viewPhrase);
       const payload: ProfilePayload = { v: PROFILE_VERSION, a: {} };
-      try {
-        await client.create(
-          {
-            view_locator: viewKeys.viewLocator,
-            edit_locator: editKeys.editLocator,
-            blob_view: await encryptBlob(payload, viewKeys.viewKey),
-            blob_priv: await encryptBlob(priv, editKeys.editKey),
-          },
-          editKeys.editToken,
-        );
-      } catch (err) {
-        if (err instanceof HatchError && err.failure.kind === 'locator_taken' && attempt < 3) {
-          continue;
-        }
-        throw err;
-      }
+      await client.create(
+        {
+          view_locator: viewKeys.viewLocator,
+          edit_locator: editKeys.editLocator,
+          blob_view: await encryptBlob(payload, viewKeys.viewKey),
+          blob_priv: await encryptBlob(priv, editKeys.editKey),
+        },
+        editKeys.editToken,
+      );
       await this.adopt(editPhrase, editKeys, priv, viewKeys, 1, false);
-      return;
-    }
+    });
   }
 
   /** True on success; false when no profile answers to that phrase. */
@@ -206,7 +203,7 @@ export class ProfileSessionStore {
           token: randomToken(),
         }
       : undefined;
-    for (let attempt = 0; ; attempt++) {
+    await this.withRemint(async () => {
       const viewPhrase = await mintViewPhrase();
       const viewKeys = await deriveViewKeys(viewPhrase);
       const nextPriv: PrivData = {
@@ -219,36 +216,28 @@ export class ProfileSessionStore {
         boop: nextBoop,
       };
       const { blobView, blobPriv, populated } = await this.encryptState(nextPriv, viewKeys);
-      try {
-        const version = await client.put(editKeys.editLocator, editKeys.editToken, this.version(), {
-          blob_view: blobView,
-          blob_priv: blobPriv,
-          populated,
-          new_view_locator: viewKeys.viewLocator,
-        });
-        this.viewKeys = viewKeys;
-        this.priv = nextPriv;
-        this.viewPhrase.set(viewPhrase);
-        this.persona.set(await personaFromViewPhrase(viewPhrase));
-        this.version.set(version);
-        this.populated.set(this.populated() || populated);
-        this.snapshotSaved(nextPriv);
-        // Best-effort inbox swap: a failed delete falls to GC; a failed
-        // create self-heals on the next poll. Unread knocks die with the
-        // old inbox — correct for a rotation.
-        if (oldBoop && nextBoop) {
-          this.incomingBoops.set([]);
-          await client.deleteBoopInbox(oldBoop.inbox, oldBoop.token).catch(() => undefined);
-          await client.createBoopInbox(nextBoop.inbox, nextBoop.token).catch(() => undefined);
-        }
-        return;
-      } catch (err) {
-        if (err instanceof HatchError && err.failure.kind === 'locator_taken' && attempt < 3) {
-          continue;
-        }
-        throw err;
+      const version = await client.put(editKeys.editLocator, editKeys.editToken, this.version(), {
+        blob_view: blobView,
+        blob_priv: blobPriv,
+        populated,
+        new_view_locator: viewKeys.viewLocator,
+      });
+      this.viewKeys = viewKeys;
+      this.priv = nextPriv;
+      this.viewPhrase.set(viewPhrase);
+      this.persona.set(await personaFromViewPhrase(viewPhrase));
+      this.version.set(version);
+      this.populated.set(this.populated() || populated);
+      this.snapshotSaved(nextPriv);
+      // Best-effort inbox swap: a failed delete falls to GC; a failed
+      // create self-heals on the next poll. Unread knocks die with the
+      // old inbox — correct for a rotation.
+      if (oldBoop && nextBoop) {
+        this.incomingBoops.set([]);
+        await client.deleteBoopInbox(oldBoop.inbox, oldBoop.token).catch(() => undefined);
+        await client.createBoopInbox(nextBoop.inbox, nextBoop.token).catch(() => undefined);
       }
-    }
+    });
   }
 
   /** Mints and switches to a new edit phrase; returns it for one-time display. */
@@ -256,7 +245,7 @@ export class ProfileSessionStore {
     const client = this.requireClient();
     const { editKeys, viewKeys, priv } = this.requireSession();
     const answers = this.draft.answers();
-    for (let attempt = 0; ; attempt++) {
+    return this.withRemint(async () => {
       const editPhrase = await mintEditPhrase();
       const nextKeys = await deriveEditKeys(editPhrase);
       const nextPriv: PrivData = {
@@ -267,35 +256,28 @@ export class ProfileSessionStore {
       };
       const blobPriv = await encryptBlob(nextPriv, nextKeys.editKey);
       const { blobView, populated } = await this.encryptState(nextPriv, viewKeys);
-      try {
-        const version = await client.put(
-          editKeys.editLocator,
-          editKeys.editToken,
-          this.version(),
-          {
-            blob_view: blobView,
-            blob_priv: blobPriv,
-            populated,
-            new_edit_locator: nextKeys.editLocator,
-          },
-          nextKeys.editToken,
-        );
-        this.editKeys = nextKeys;
-        this.priv = nextPriv;
-        this.editPhrase.set(editPhrase);
-        this.version.set(version);
-        this.populated.set(this.populated() || populated);
-        this.snapshotSaved(nextPriv);
-        this.writeSession(editPhrase);
-        if (this.remembered()) this.writeRemembered(editPhrase);
-        return editPhrase;
-      } catch (err) {
-        if (err instanceof HatchError && err.failure.kind === 'locator_taken' && attempt < 3) {
-          continue;
-        }
-        throw err;
-      }
-    }
+      const version = await client.put(
+        editKeys.editLocator,
+        editKeys.editToken,
+        this.version(),
+        {
+          blob_view: blobView,
+          blob_priv: blobPriv,
+          populated,
+          new_edit_locator: nextKeys.editLocator,
+        },
+        nextKeys.editToken,
+      );
+      this.editKeys = nextKeys;
+      this.priv = nextPriv;
+      this.editPhrase.set(editPhrase);
+      this.version.set(version);
+      this.populated.set(this.populated() || populated);
+      this.snapshotSaved(nextPriv);
+      this.writeSession(editPhrase);
+      if (this.remembered()) this.writeRemembered(editPhrase);
+      return editPhrase;
+    });
   }
 
   /**
@@ -332,9 +314,7 @@ export class ProfileSessionStore {
     this.incomingBoops.set([]);
     this.sentBoops.set([]);
     this.saveState.set('idle');
-    this.savedAnswers.set({});
-    this.savedWeights.set({});
-    this.savedAcceptable.set({});
+    this.savedSnapshot.set(ProfileSessionStore.draftSnapshot({}, {}, {}));
     this.editKeys = null;
     this.viewKeys = null;
     this.priv = null;
@@ -396,27 +376,20 @@ export class ProfileSessionStore {
   async createGroup(): Promise<{ groupPhrase: string; adminPhrase: string }> {
     const client = this.requireClient();
     this.requireSession();
-    for (let attempt = 0; ; attempt++) {
+    return this.withRemint(async () => {
       const groupPhrase = await mintViewPhrase();
       const adminPhrase = await mintEditPhrase();
       const { groupLocator, groupKey } = await deriveGroupReadKeys(groupPhrase);
       const adminToken = await deriveGroupAdminToken(adminPhrase);
       const blobMeta = await encryptBlob(emptyGroupMeta(Date.now()), groupKey);
-      try {
-        await client.createGroup({ group_locator: groupLocator, blob_meta: blobMeta }, adminToken);
-      } catch (err) {
-        if (err instanceof HatchError && err.failure.kind === 'locator_taken' && attempt < 3) {
-          continue;
-        }
-        throw err;
-      }
+      await client.createGroup({ group_locator: groupLocator, blob_meta: blobMeta }, adminToken);
       this.mutateGroups((list) => [
         ...list,
         { id: crypto.randomUUID(), groupPhrase, adminPhrase, addedAt: Date.now() },
       ]);
       await this.save();
       return { groupPhrase, adminPhrase };
-    }
+    });
   }
 
   /**
@@ -431,14 +404,17 @@ export class ProfileSessionStore {
     const { groupLocator, groupKey } = await deriveGroupReadKeys(groupPhrase);
     const existing = this.groups().find((g) => g.groupPhrase === groupPhrase);
     const pseudonym = existing?.pseudonym
-      ? { pseudonym: existing.pseudonym, emoji: existing.emoji ?? pseudonymEmoji(existing.pseudonym) }
+      ? {
+          pseudonym: existing.pseudonym,
+          emoji: existing.emoji ?? pseudonymEmoji(existing.pseudonym),
+        }
       : mintPseudonym();
     const deposit = buildDeposit(
       tier,
       this.draft.answers(),
       this.draft.weights(),
       this.draft.acceptable(),
-      tier === 2 ? this.viewPhrase() ?? undefined : undefined,
+      tier === 2 ? (this.viewPhrase() ?? undefined) : undefined,
       pseudonym,
       Date.now(),
     );
@@ -521,26 +497,19 @@ export class ProfileSessionStore {
     for (const member of roster.members) {
       await client.removeMember(oldLocator, member.member_locator, oldAdminToken, 'admin');
     }
-    for (let attempt = 0; ; attempt++) {
+    return this.withRemint(async () => {
       const groupPhrase = await mintViewPhrase();
       const adminPhrase = await mintEditPhrase();
       const { groupLocator, groupKey } = await deriveGroupReadKeys(groupPhrase);
       const adminToken = await deriveGroupAdminToken(adminPhrase);
       const blobMeta = await encryptBlob(emptyGroupMeta(Date.now()), groupKey);
-      try {
-        await client.putGroup(
-          oldLocator,
-          oldAdminToken,
-          roster.version,
-          { blob_meta: blobMeta, new_group_locator: groupLocator },
-          adminToken,
-        );
-      } catch (err) {
-        if (err instanceof HatchError && err.failure.kind === 'locator_taken' && attempt < 3) {
-          continue;
-        }
-        throw err;
-      }
+      await client.putGroup(
+        oldLocator,
+        oldAdminToken,
+        roster.version,
+        { blob_meta: blobMeta, new_group_locator: groupLocator },
+        adminToken,
+      );
       const hadDeposit = Boolean(entry.memberLocator);
       const tier = entry.tier ?? 1;
       this.mutateGroups((list) =>
@@ -553,7 +522,7 @@ export class ProfileSessionStore {
       await this.save();
       if (hadDeposit) await this.depositToGroup(groupPhrase, tier);
       return groupPhrase;
-    }
+    });
   }
 
   // ---- boops --------------------------------------------------------------
@@ -609,7 +578,7 @@ export class ProfileSessionStore {
    */
   async prepareBoop(label: string, emoji: string): Promise<string> {
     const client = this.requireClient();
-    const { priv } = this.requireSession();
+    this.requireSession();
     const entry: SentBoop = {
       id: crypto.randomUUID(),
       label,
@@ -629,7 +598,9 @@ export class ProfileSessionStore {
     const client = this.requireClient();
     const entry = this.sentBoops().find((b) => b.id === id);
     if (!entry || entry.status !== 'pending') return;
-    await client.deleteBoopInbox(entry.replyBox.locator, entry.replyBox.token).catch(() => undefined);
+    await client
+      .deleteBoopInbox(entry.replyBox.locator, entry.replyBox.token)
+      .catch(() => undefined);
     this.mutateSentBoops((list) => list.filter((b) => b.id !== id));
     await this.save();
   }
@@ -758,9 +729,7 @@ export class ProfileSessionStore {
         try {
           const reply = migrateBoopContent(await openWithKey(entry.replyBox.key, knock.blob));
           this.mutateSentBoops((list) =>
-            list.map((b) =>
-              b.id === entry.id ? { ...b, status: 'answered' as const, reply } : b,
-            ),
+            list.map((b) => (b.id === entry.id ? { ...b, status: 'answered' as const, reply } : b)),
           );
           await client
             .deleteBoopInbox(entry.replyBox.locator, entry.replyBox.token)
@@ -848,30 +817,35 @@ export class ProfileSessionStore {
     priv.metricsLastEpoch = epoch; // rides the next organic save
   }
 
-  /** Track a group without depositing (opened someone's invite link). */
-  async rememberGroup(rawGroupPhrase: string): Promise<void> {
-    this.requireSession();
-    const groupPhrase = canonicalViewPhrase(rawGroupPhrase);
-    if (this.groups().some((g) => g.groupPhrase === groupPhrase)) return;
-    this.mutateGroups((list) => [
-      ...list,
-      { id: crypto.randomUUID(), groupPhrase, addedAt: Date.now() },
-    ]);
-    await this.save();
-  }
-
   // ---- internals ----------------------------------------------------------
+
+  /**
+   * Run a mint-and-register attempt, re-minting on the astronomically rare
+   * locator collision (server 409 locator_taken), up to three retries.
+   */
+  private async withRemint<T>(attempt: () => Promise<T>): Promise<T> {
+    for (let tries = 0; ; tries++) {
+      try {
+        return await attempt();
+      } catch (err) {
+        if (err instanceof HatchError && err.failure.kind === 'locator_taken' && tries < 3) {
+          continue;
+        }
+        throw err;
+      }
+    }
+  }
 
   private async doSave(): Promise<void> {
     const client = this.requireClient();
     const { editKeys, viewKeys, priv } = this.requireSession();
     this.saveState.set('saving');
-    const answers = structuredClone(this.draft.answers()) as Answers;
+    const answers = clone(this.draft.answers());
     const nextPriv: PrivData = {
       ...priv,
       answers,
-      weights: structuredClone(this.draft.weights()) as Weights,
-      acceptable: structuredClone(this.draft.acceptable()) as Acceptable,
+      weights: clone(this.draft.weights()),
+      acceptable: clone(this.draft.acceptable()),
     };
     try {
       const { blobView, blobPriv, populated } = await this.encryptState(nextPriv, viewKeys);
@@ -892,9 +866,7 @@ export class ProfileSessionStore {
         // the server's copy wins, the local edit is the casualty and the UI
         // says so.
         const remote = err.failure.remote;
-        const remotePriv = migratePrivData(
-          await decryptBlob(remote.blob_priv, editKeys.editKey),
-        );
+        const remotePriv = migratePrivData(await decryptBlob(remote.blob_priv, editKeys.editKey));
         this.priv = remotePriv;
         this.version.set(remote.version);
         this.connections.set(remotePriv.connections);
@@ -978,9 +950,9 @@ export class ProfileSessionStore {
 
   /** Records what the server now holds, for the dirty comparison. */
   private snapshotSaved(priv: PrivData): void {
-    this.savedAnswers.set(structuredClone(priv.answers) as Answers);
-    this.savedWeights.set(structuredClone(priv.weights ?? {}) as Weights);
-    this.savedAcceptable.set(structuredClone(priv.acceptable ?? {}) as Acceptable);
+    this.savedSnapshot.set(
+      ProfileSessionStore.draftSnapshot(priv.answers, priv.weights ?? {}, priv.acceptable ?? {}),
+    );
   }
 
   private mutateConnections(fn: (list: readonly SavedConnection[]) => SavedConnection[]): void {

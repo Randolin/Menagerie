@@ -1,4 +1,5 @@
-import { computed, Injectable, signal } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
+import { clone } from './clone';
 import type {
   Acceptable,
   Answers,
@@ -22,11 +23,6 @@ export class DraftStore {
   readonly answers = signal<Answers>({});
   readonly weights = signal<Weights>({});
   readonly acceptable = signal<Acceptable>({});
-  readonly hasAnswers = computed(() => Object.keys(this.answers()).length > 0);
-
-  get(id: ItemId): AnswerValue | undefined {
-    return this.answers()[id];
-  }
 
   set(id: ItemId, value: AnswerValue | undefined): void {
     this.answers.update((a) => {
@@ -40,14 +36,6 @@ export class DraftStore {
       // An unanswered item can't carry a weight.
       this.setWeight(id, undefined);
     }
-  }
-
-  weightOf(id: ItemId): ImportanceWeight | undefined {
-    return this.weights()[id];
-  }
-
-  acceptableOf(id: ItemId): readonly number[] | undefined {
-    return this.acceptable()[id];
   }
 
   setWeight(id: ItemId, weight: ImportanceWeight | undefined): void {
@@ -77,8 +65,9 @@ export class DraftStore {
   isOptedIn(section: Section): boolean {
     if (!section.optIn) return true;
     const a = this.answers();
-    return a[`_optin.${section.id}`] !== undefined ||
-      section.items.some((it) => a[it.id] !== undefined);
+    return (
+      a[`_optin.${section.id}`] !== undefined || section.items.some((it) => a[it.id] !== undefined)
+    );
   }
 
   /**
@@ -98,9 +87,7 @@ export class DraftStore {
   }
 
   isAdded(section: Section): boolean {
-    return (
-      this.answers()[`_added.${section.id}`] !== undefined || this.answeredIn(section) > 0
-    );
+    return this.answers()[`_added.${section.id}`] !== undefined || this.answeredIn(section) > 0;
   }
 
   /**
@@ -143,9 +130,9 @@ export class DraftStore {
   }
 
   loadFrom(answers: Answers, weights?: Weights, acceptable?: Acceptable): void {
-    this.answers.set(structuredClone(answers) as Answers);
-    this.weights.set(structuredClone(weights ?? {}) as Weights);
-    this.acceptable.set(structuredClone(acceptable ?? {}) as Acceptable);
+    this.answers.set(clone(answers));
+    this.weights.set(clone(weights ?? {}));
+    this.acceptable.set(clone(acceptable ?? {}));
   }
 
   clear(): void {

@@ -15,7 +15,13 @@ describe('similarity scoring', () => {
     expect(itemSimilarity(scale, 0, 6)).toBe(0);
     expect(itemSimilarity(scale, 2, undefined)).toBeNull();
 
-    const ord: ChoiceItem = { id: 'x', type: 'choice', label: 'x', ordinal: true, options: ['a', 'b', 'c', 'd'] };
+    const ord: ChoiceItem = {
+      id: 'x',
+      type: 'choice',
+      label: 'x',
+      ordinal: true,
+      options: ['a', 'b', 'c', 'd'],
+    };
     expect(itemSimilarity(ord, 1, 2)).toBe(1 - 1 / 3);
     const nom: ChoiceItem = { id: 'x', type: 'choice', label: 'x', options: ['a', 'b', 'c'] };
     expect(itemSimilarity(nom, 0, 2)).toBe(0);
@@ -78,11 +84,7 @@ describe('pair scores and grid', () => {
         null,
         w ? { 'va.novelty': w } : {},
       );
-    const other = buildSharePayload(
-      { 'va.novelty': 6, 'va.together': 3, 'ls.diet': 1 },
-      [],
-      null,
-    );
+    const other = buildSharePayload({ 'va.novelty': 6, 'va.together': 3, 'ls.diet': 1 }, [], null);
     const unweighted = pairScores(mk(), other);
     const weighted = pairScores(mk(2), other);
     expect(weighted.fitA.overall!).toBeLessThan(unweighted.fitA.overall!);
@@ -92,16 +94,8 @@ describe('pair scores and grid', () => {
   test('give/receive scores as an interlock, not similarity', () => {
     // A gives touch+time, needs words. B gives words, needs acts.
     // B covers A's needs fully (words ∈ B.give); A covers none of B's.
-    const a = buildSharePayload(
-      { 'cn.give': [1, 2], 'cn.receive': [0] },
-      [],
-      null,
-    );
-    const b = buildSharePayload(
-      { 'cn.give': [0], 'cn.receive': [3] },
-      [],
-      null,
-    );
+    const a = buildSharePayload({ 'cn.give': [1, 2], 'cn.receive': [0] }, [], null);
+    const b = buildSharePayload({ 'cn.give': [0], 'cn.receive': [3] }, [], null);
     const scores = pairScores(a, b);
     expect(scores.fitA.sections['connection'].score).toBe(1);
     expect(scores.fitB.sections['connection'].score).toBe(0);

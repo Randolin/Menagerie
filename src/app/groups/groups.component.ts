@@ -13,15 +13,15 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
     <div class="card">
       <h2>My groups</h2>
       <p class="sub">
-        A group is a shared, encrypted roster with its own creature and invite QR.
-        Members deposit a snapshot of their open answers — pseudonymously, or openly
-        with their creature — and everyone in it can compare across the roster.
+        A group is a shared, encrypted roster with its own creature and invite QR. Members deposit a
+        snapshot of their open answers — pseudonymously, or openly with their creature — and
+        everyone in it can compare across the roster.
       </p>
       @if (newGroup(); as created) {
         <div class="notice">
           Your group is hatched. Share the <strong>invite link</strong>; keep the
-          <strong>admin phrase</strong> — it’s the only way to manage or re-mint the group
-          (it’s also saved inside your encrypted profile):
+          <strong>admin phrase</strong> — it’s the only way to manage or re-mint the group (it’s
+          also saved inside your encrypted profile):
           <div class="passphrase-box" style="margin-top:8px">{{ created.adminPhrase }}</div>
         </div>
       }
@@ -29,9 +29,13 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
         <div class="grid-row" style="align-items:center">
           <div class="grid-item-label">
             {{ groupName(g.groupPhrase) }}
-            @if (g.adminPhrase) { <span class="fine">creator</span> }
+            @if (g.adminPhrase) {
+              <span class="fine">creator</span>
+            }
             @if (g.memberLocator) {
-              <span class="fine">{{ g.tier === 2 ? 'open' : 'as ' + (g.emoji ?? '') + ' ' + (g.pseudonym ?? 'pseudonym') }}</span>
+              <span class="fine">{{
+                g.tier === 2 ? 'open' : 'as ' + (g.emoji ?? '') + ' ' + (g.pseudonym ?? 'pseudonym')
+              }}</span>
             } @else {
               <span class="fine">not deposited</span>
             }
@@ -41,17 +45,26 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
           </div>
         </div>
       } @empty {
-        <p class="fine">
-          No groups yet. Paste an invite to join one, or hatch your own.
-        </p>
+        <p class="fine">No groups yet. Paste an invite to join one, or hatch your own.</p>
       }
-      <form style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"
-            (submit)="openGroup($event, groupInput)">
-        <input #groupInput type="text" placeholder="Paste a group invite link or phrase"
-               aria-label="Group invite link or phrase" style="flex:1;min-width:220px">
+      <form
+        style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"
+        (submit)="openGroup($event, groupInput)"
+      >
+        <input
+          #groupInput
+          type="text"
+          placeholder="Paste a group invite link or phrase"
+          aria-label="Group invite link or phrase"
+          style="flex:1;min-width:220px"
+        />
         <button class="btn">Open group</button>
-        <button class="btn btn-primary" type="button" [disabled]="creatingGroup()"
-                (click)="createGroup()">
+        <button
+          class="btn btn-primary"
+          type="button"
+          [disabled]="creatingGroup()"
+          (click)="createGroup()"
+        >
           {{ creatingGroup() ? 'Hatching…' : '🐣 Create a group' }}
         </button>
       </form>
@@ -77,7 +90,7 @@ export class GroupsComponent {
       this.newGroup.set(await this.session.createGroup());
       this.toast.show('Group hatched — save the admin phrase');
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     } finally {
       this.creatingGroup.set(false);
     }

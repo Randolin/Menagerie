@@ -15,23 +15,14 @@ export { FlowComponent } from './charts/flow.component';
 export { DumbbellComponent } from './charts/dumbbell.component';
 export { AgreementStripComponent, type AgreementRow } from './charts/agreement-strip.component';
 
-export { ToastService, type ToastKind } from './widgets/toast.service';
+export { ToastService } from './widgets/toast.service';
 export { ToastComponent } from './widgets/toast.component';
 export { QrCodeComponent } from './widgets/qr-code.component';
 export { PersonaChipComponent } from './widgets/persona-chip.component';
 export { CreatureIconComponent } from './widgets/creature-icon.component';
 export { LocationBannerComponent } from './widgets/location-banner.component';
-export {
-  locationPattern,
-  PATTERN_WIDTH,
-  PATTERN_HEIGHT,
-  type PatternShape,
-} from './patterns/location-pattern';
-export { voronoiCells, shrinkPolygon, type Point } from './patterns/voronoi';
-export { mulberry32 } from './patterns/rng';
+export { SubjectCardComponent } from './widgets/subject-card.component';
 export { habitatClass, habitatMotif, type HabitatMotif } from './widgets/persona-decor';
-export { CREATURE_SPRITES, type PixelSprite } from './creatures/pixel-grids';
-export { creaturePixelSvg, creatureSpriteRects, spriteSvg } from './creatures/pixel-art';
 
 export { copyText } from './util/clipboard';
-export { downloadText } from './util/download';
+export { errorText } from './util/errors';

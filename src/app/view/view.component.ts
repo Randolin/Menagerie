@@ -2,15 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, inject, resource } from '
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
-  decryptBlob,
-  deriveViewKeys,
+  fetchViewPayload,
   extractViewPhrase,
   hasDesiresTokens,
-  IMPORTANCE_WEIGHTS,
-  migrateToCurrent,
+  importanceLabel,
   personaFromViewPhrase,
-  bannerStyleFor,
-  tailPlaceOf,
   SECTIONS,
   type AnswerValue,
   type ImportanceWeight,
@@ -21,12 +17,10 @@ import {
 } from '@moxy/core';
 import {
   AnswerTextComponent,
-  LocationBannerComponent,
-  PersonaChipComponent,
   ScaleStripComponent,
+  SubjectCardComponent,
   ToastService,
-  habitatClass,
-  habitatMotif,
+  errorText,
 } from '@moxy/ui';
 import { BoopComposerComponent } from '../boop/boop-composer.component';
 import { CompareStore } from '../stores/compare.store';
@@ -57,9 +51,8 @@ interface LoadedProfile {
     RouterLink,
     AnswerTextComponent,
     BoopComposerComponent,
-    LocationBannerComponent,
-    PersonaChipComponent,
     ScaleStripComponent,
+    SubjectCardComponent,
   ],
   template: `
     @if (view.error()) {
@@ -69,21 +62,13 @@ interface LoadedProfile {
         <a class="btn" routerLink="/">Go to the start</a>
       </div>
     } @else if (view.value(); as v) {
-      <div class="card habitat-accent" [class]="habitatClass(v.persona)">
-        <moxy-location-banner [banner]="bannerFor(v.persona, v.phrase)" />
-        <h2 style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          {{ v.name }}’s profile
-          @if (v.persona; as persona) { <moxy-persona-chip [persona]="persona" /> }
-          @if (habitatMotif(v.persona); as motif) {
-            <span class="habitat-motif" [title]="motif.title" aria-hidden="true">{{ motif.glyph }}</span>
-          }
-        </h2>
+      <moxy-subject-card [persona]="v.persona" [phrase]="v.phrase" [title]="v.name + '’s profile'">
         <p class="sub">
-          A Menagerie profile — anonymous by design, stored only as ciphertext the server
-          can’t read.
+          A Menagerie profile — anonymous by design, stored only as ciphertext the server can’t
+          read.
           @if (v.hasDesires) {
-            It includes a private desires section that only unlocks against a profile
-            with mutual answers.
+            It includes a private desires section that only unlocks against a profile with mutual
+            answers.
           }
         </p>
         <div class="btn-row" style="margin-top:16px">
@@ -97,8 +82,11 @@ interface LoadedProfile {
         @if (session.active()) {
           @if (v.payload.k; as reach) {
             <div style="margin-top:12px">
-              <moxy-boop-composer [target]="reach" [label]="v.name"
-                                  [emoji]="v.persona?.emoji ?? '🥚'" />
+              <moxy-boop-composer
+                [target]="reach"
+                [label]="v.name"
+                [emoji]="v.persona?.emoji ?? '🥚'"
+              />
             </div>
           } @else {
             <p class="fine" style="margin-top:12px">
@@ -106,7 +94,7 @@ interface LoadedProfile {
             </p>
           }
         }
-      </div>
+      </moxy-subject-card>
 
       @if (v.sections.length === 0) {
         <div class="card">
@@ -118,8 +106,11 @@ interface LoadedProfile {
           <h2>{{ section.title }}</h2>
           @for (entry of section.items; track entry.item.id) {
             @if (entry.item.type === 'scale') {
-              <moxy-scale-strip [item]="asScale(entry.item)" [answers]="[$any(entry.value)]"
-                                [names]="[v.name]" />
+              <moxy-scale-strip
+                [item]="asScale(entry.item)"
+                [answers]="[$any(entry.value)]"
+                [names]="[v.name]"
+              />
             } @else {
               <div class="grid-row">
                 <div class="grid-item-label">
@@ -144,21 +135,6 @@ interface LoadedProfile {
   `,
 })
 export class ViewComponent {
-
-  /**
-   * The banner renders only on this top card — the subject whose phrase the
-   * viewer is holding. Never on member rows or compare panels: those carry a
-   * random pseudonym and a null persona, and bannerStyleFor returns null for
-   * them, but the structural rule is what actually keeps the tail off screens
-   * whose viewer has no phrase.
-   */
-  protected bannerFor(persona: Persona | null | undefined, phrase: string | null | undefined) {
-    return bannerStyleFor(persona, tailPlaceOf(phrase));
-  }
-
-  protected readonly habitatClass = habitatClass;
-  protected readonly habitatMotif = habitatMotif;
-
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly config = inject(ServerConfigStore);
@@ -182,14 +158,12 @@ export class ViewComponent {
       if (!phrase) throw new Error('That’s not a valid Menagerie view phrase.');
       const client = this.config.client();
       if (!client) throw new Error('No profile server is configured.');
-      const { viewLocator, viewKey } = await deriveViewKeys(phrase);
-      const record = await client.getView(viewLocator);
-      if (!record) {
+      const payload = await fetchViewPayload(client, phrase);
+      if (!payload) {
         throw new Error(
           'No profile answers to that phrase. It may have been deleted, expired, or replaced by a new creature.',
         );
       }
-      const payload = migrateToCurrent(await decryptBlob(record.blob_view, viewKey));
       const sections = SECTIONS.filter((s) => s.privacy === 'open')
         .map((s) => ({
           title: s.title,
@@ -215,8 +189,7 @@ export class ViewComponent {
   });
 
   protected errorMessage(): string {
-    const err = this.view.error();
-    return err instanceof Error ? err.message : String(err ?? 'Unknown error');
+    return errorText(this.view.error());
   }
 
   protected asScale(item: unknown): ScaleItem {
@@ -224,7 +197,7 @@ export class ViewComponent {
   }
 
   protected weightLabel(w: ImportanceWeight): string {
-    return IMPORTANCE_WEIGHTS.find((d) => d.value === w)?.label ?? '';
+    return importanceLabel(w) ?? '';
   }
 
   protected compareWith(v: LoadedProfile): void {
@@ -239,7 +212,7 @@ export class ViewComponent {
       await this.session.addConnection(v.name, v.phrase);
       this.toast.show(`${v.name} joined your menagerie`);
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     }
   }
 }

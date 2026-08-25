@@ -13,7 +13,13 @@ import type { ComparePanelComponent } from '../compare-panels.token';
 @Component({
   selector: 'moxy-headline-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DumbbellComponent, MeterComponent, PairMatrixComponent, PersonKeyComponent, StatTileComponent],
+  imports: [
+    DumbbellComponent,
+    MeterComponent,
+    PairMatrixComponent,
+    PersonKeyComponent,
+    StatTileComponent,
+  ],
   template: `
     <div class="card">
       <h2>The headline</h2>
@@ -23,15 +29,23 @@ import type { ComparePanelComponent } from '../compare-panels.token';
       }
       <div class="stat-row">
         @if (overallPct(); as pct) {
-          <moxy-stat-tile label="Overall alignment" [value]="pct + '%'"
-                          [sub]="'from ' + coverage() + ' shared answers'" />
+          <moxy-stat-tile
+            label="Overall alignment"
+            [value]="pct + '%'"
+            [sub]="'from ' + coverage() + ' shared answers'"
+          />
         }
-        <moxy-stat-tile label="Mutual connection types"
-                        [value]="'' + model().mutualSeekingCount"
-                        sub="both “Curious” or “Into it”" />
+        <moxy-stat-tile
+          label="Mutual connection types"
+          [value]="'' + model().mutualSeekingCount"
+          sub="both “Curious” or “Into it”"
+        />
         @if (model().withTokensCount >= 2) {
-          <moxy-stat-tile label="Mutual desires" [value]="'' + model().desireRows.length"
-                          sub="revealed because both said yes" />
+          <moxy-stat-tile
+            label="Mutual desires"
+            [value]="'' + model().desireRows.length"
+            sub="revealed because both said yes"
+          />
         }
       </div>
       @if (fits(); as f) {
@@ -40,9 +54,12 @@ import type { ComparePanelComponent } from '../compare-panels.token';
           <p class="fine" style="margin-top:0">
             Weighted by what each of you said matters — honestly different numbers.
           </p>
-          <moxy-dumbbell [scoreA]="f.a" [scoreB]="f.b"
-                         [labelA]="'Fit for ' + model().names[0]"
-                         [labelB]="'Fit for ' + model().names[1]" />
+          <moxy-dumbbell
+            [scoreA]="f.a"
+            [scoreB]="f.b"
+            [labelA]="'Fit for ' + model().names[0]"
+            [labelB]="'Fit for ' + model().names[1]"
+          />
         </div>
       }
       @if (model().pair) {
@@ -89,8 +106,7 @@ export class HeadlinePanel implements ComparePanelComponent {
     if (!pair) return [];
     const describe = (holder: string, other: string, ids: readonly string[]) =>
       ids.map((id) => {
-        const label =
-          (getItem(id)?.item as { label?: string } | undefined)?.label ?? id;
+        const label = (getItem(id)?.item as { label?: string } | undefined)?.label ?? id;
         return `${other} differs on “${label}” — ${holder} marked it a dealbreaker.`;
       });
     return [

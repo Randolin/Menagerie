@@ -16,8 +16,8 @@ import { CreatureIconComponent } from '@moxy/ui';
     <div class="card">
       <h1>Meet the menagerie</h1>
       <p class="lede">
-        Every profile hatches as one of these 64 creatures — the animal is the third word of
-        its view phrase. Same phrase, same creature, for everyone who looks.
+        Every profile hatches as one of these 64 creatures — the animal is the third word of its
+        view phrase. Same phrase, same creature, for everyone who looks.
       </p>
       <div class="creature-grid">
         @for (animal of animals; track animal.name) {
@@ -29,8 +29,8 @@ import { CreatureIconComponent } from '@moxy/ui';
         }
       </div>
       <p class="fine">
-        Art is first-party pixel work and always improving — the creature on your dashboard
-        may get a glow-up someday, but it will never change species.
+        Art is first-party pixel work and always improving — the creature on your dashboard may get
+        a glow-up someday, but it will never change species.
       </p>
     </div>
   `,
@@ -51,7 +51,9 @@ import { CreatureIconComponent } from '@moxy/ui';
       border-radius: var(--radius-sm);
       background: var(--surface-2);
     }
-    .creature-habitat { opacity: 0.8; }
+    .creature-habitat {
+      opacity: 0.8;
+    }
   `,
 })
 export class CreaturesComponent {

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { pct } from './series';
 
 /** Similarity meter: sequential fill on a lighter same-ramp track. */
 @Component({
@@ -17,5 +18,5 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 export class MeterComponent {
   readonly score = input.required<number>();
   readonly label = input.required<string>();
-  protected readonly pct = computed(() => Math.round(this.score() * 100));
+  protected readonly pct = computed(() => pct(this.score()));
 }

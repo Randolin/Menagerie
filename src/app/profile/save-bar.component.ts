@@ -47,7 +47,7 @@ export class SaveBarComponent {
         this.toast.show('Saved');
       }
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     } finally {
       this.saving.set(false);
     }

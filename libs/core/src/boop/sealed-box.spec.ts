@@ -84,13 +84,12 @@ describe('sealed box', () => {
 
   test('content larger than the bucket refuses to seal', async () => {
     const pair = await generateBoopKeyPair();
-    await expect(sealTo(pair.pub, { x: 'a'.repeat(SEAL_PAD_BYTES) })).rejects.toThrow(
-      /too large/i,
-    );
+    await expect(sealTo(pair.pub, { x: 'a'.repeat(SEAL_PAD_BYTES) })).rejects.toThrow(/too large/i);
   });
 
   test('tampered ciphertext refuses to open', async () => {
-    const flipped = VEC.sealed.slice(0, 200) + (VEC.sealed[200] === 'A' ? 'B' : 'A') + VEC.sealed.slice(201);
+    const flipped =
+      VEC.sealed.slice(0, 200) + (VEC.sealed[200] === 'A' ? 'B' : 'A') + VEC.sealed.slice(201);
     await expect(openSealed(VEC.recipientPriv, flipped)).rejects.toThrow();
   });
 

@@ -1,4 +1,12 @@
-import { INTEREST_LEVELS, type Item, type Section } from './types';
+import {
+  IMPORTANCE_WEIGHTS,
+  INTEREST_LEVELS,
+  SCALE_MAX,
+  type AnswerValue,
+  type ImportanceWeight,
+  type Item,
+  type Section,
+} from './types';
 import { SECTIONS } from './sections';
 
 export interface ItemRef {
@@ -39,4 +47,31 @@ export function coreItems(): ItemRef[] {
 
 export function interestLabel(level: number): string {
   return INTEREST_LEVELS.find((l) => l.value === level)?.label ?? String(level);
+}
+
+export function importanceLabel(weight: ImportanceWeight | undefined): string | undefined {
+  return IMPORTANCE_WEIGHTS.find((d) => d.value === weight)?.label;
+}
+
+/**
+ * Canonical readable form of an answer — one chip per selected option, null
+ * when unanswered. The single source every text renderer shares; a new item
+ * type fails compilation here until it renders.
+ */
+export function answerChips(item: Item, value: AnswerValue | null | undefined): string[] | null {
+  if (value === null || value === undefined) return null;
+  switch (item.type) {
+    case 'choice':
+      return [item.options[value as number] ?? '?'];
+    case 'multi':
+      return (Array.isArray(value) ? value : []).map((i) => item.options[i] ?? '?');
+    case 'scale':
+      return [`${value}/${SCALE_MAX}`];
+    case 'interest':
+      return [interestLabel(value as number)];
+    default: {
+      const exhaustive: never = item;
+      return exhaustive;
+    }
+  }
 }

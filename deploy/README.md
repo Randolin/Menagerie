@@ -8,11 +8,11 @@ profiles live — the app needs one configured to hatch or view anything.
 
 ## DNS at the registrar (Porkbun)
 
-| Type  | Host  | Answer                | Purpose |
-|-------|-------|-----------------------|---------|
-| ALIAS | (root)| `randolin.github.io`  | the app on GitHub Pages |
-| CNAME | `www` | `randolin.github.io`  | www → same |
-| A     | `api` | `<your server's IP>`  | the profile server (add when the box exists) |
+| Type  | Host   | Answer               | Purpose                                      |
+| ----- | ------ | -------------------- | -------------------------------------------- |
+| ALIAS | (root) | `randolin.github.io` | the app on GitHub Pages                      |
+| CNAME | `www`  | `randolin.github.io` | www → same                                   |
+| A     | `api`  | `<your server's IP>` | the profile server (add when the box exists) |
 
 Then in the repo: **Settings → Pages → Custom domain: `menagerie.love`** →
 wait for the DNS check → tick **Enforce HTTPS**. GitHub provisions the
@@ -28,6 +28,7 @@ branch, stamping the profile-server URL into `moxy.config.json` from the
 `MOXY_SERVER_URL` repository variable.
 
 One-time setup:
+
 1. Repo **Settings → Pages → Source: "GitHub Actions"**.
 2. **Settings → Secrets and variables → Actions → Variables** → add
    `MOXY_SERVER_URL` = `https://api.menagerie.love` (your server, below).
@@ -128,7 +129,10 @@ curl -s http://127.0.0.1:8787/v2/health
 ```
 
 `deploy/update.sh` is the same cycle with guard rails (build before swap, a
-health check, and a no-op when nothing changed):
+health check, and a no-op when nothing changed). Note it cycles the Docker
+container, so it — and both hands-free options below — apply to option A
+only; an option-B (systemd/bare-node) box updates with `git pull` +
+`systemctl restart moxy-sync` instead:
 
 ```sh
 MOXY_REPO_DIR=/opt/menagerie /opt/menagerie/deploy/update.sh --force
@@ -137,7 +141,7 @@ MOXY_REPO_DIR=/opt/menagerie /opt/menagerie/deploy/update.sh --force
 ### Hands-free option 1: the box follows main (recommended)
 
 A systemd timer runs `update.sh` every 10 minutes and cycles only when
-`origin/main` moved — merging a PR *is* deploying, and CI already gates
+`origin/main` moved — merging a PR _is_ deploying, and CI already gates
 main. Paste once, on the box:
 
 ```sh

@@ -38,6 +38,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Format check (prettier)
+        run: npm run format:check
+
+      - name: Server typecheck (vitest strips types without checking them)
+        run: npm run typecheck:server
+
       - name: Core library tests (plain Node, framework-free)
         run: npm run test:core
 
@@ -48,7 +54,7 @@ jobs:
         run: npm run test:ui
 
       - name: App component tests
-        run: npx ng test
+        run: npm run test:app
 
       - name: Production build
         run: npx ng build --base-href ./

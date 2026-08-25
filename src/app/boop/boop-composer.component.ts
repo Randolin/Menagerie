@@ -7,7 +7,7 @@ import {
   validContactHandle,
   type BoopReachability,
 } from '@moxy/core';
-import { ToastService } from '@moxy/ui';
+import { ToastService, errorText } from '@moxy/ui';
 import { ProfileSessionStore, type IncomingBoop } from '../stores/profile-session.store';
 
 type Phase = 'idle' | 'staging' | 'composing' | 'sending' | 'done';
@@ -35,24 +35,33 @@ type Phase = 'idle' | 'staging' | 'composing' | 'sending' | 'done';
       }
       @case ('done') {
         <p class="sub">
-          {{ replyTo() ? 'Reply sent — this exchange is complete.' : 'Booped! If they’re
-          interested, their one reply will appear on your dashboard.' }}
+          {{
+            replyTo()
+              ? 'Reply sent — this exchange is complete.'
+              : 'Booped! If they’re
+          interested, their one reply will appear on your dashboard.'
+          }}
         </p>
       }
       @default {
         <div class="boop-form">
           <p class="sub" style="margin-bottom:8px">
-            {{ replyTo()
-              ? 'One reply, then the channel closes. Share only what you choose to.'
-              : 'A boop says “I’m interested” — no message box, no pressure. They can reply
-                 once or quietly decline; you won’t be notified either way.' }}
+            {{
+              replyTo()
+                ? 'One reply, then the channel closes. Share only what you choose to.'
+                : 'A boop says “I’m interested” — no message box, no pressure. They can reply
+                 once or quietly decline; you won’t be notified either way.'
+            }}
           </p>
           <fieldset class="boop-intents">
             <legend class="fine">What are you hoping for?</legend>
             @for (intent of intents; track $index) {
               <label class="boop-check">
-                <input type="checkbox" [checked]="chosen().has($index)"
-                       (change)="toggleIntent($index)" />
+                <input
+                  type="checkbox"
+                  [checked]="chosen().has($index)"
+                  (change)="toggleIntent($index)"
+                />
                 {{ intent }}
               </label>
             }
@@ -60,29 +69,35 @@ type Phase = 'idle' | 'staging' | 'composing' | 'sending' | 'done';
 
           @if (canAttachViewPhrase()) {
             <label class="boop-check" style="margin-top:10px">
-              <input type="checkbox" [checked]="attachView()"
-                     (change)="attachView.set(!attachView())" />
+              <input
+                type="checkbox"
+                [checked]="attachView()"
+                (change)="attachView.set(!attachView())"
+              />
               Include my view phrase
             </label>
             @if (attachView()) {
               <p class="fine">
                 They’ll see your full open profile and can boop you back. Your creature stays
-                anonymous — but a shared view phrase can’t be unshared (regenerating your
-                creature is the only undo).
+                anonymous — but a shared view phrase can’t be unshared (regenerating your creature
+                is the only undo).
               </p>
             }
           }
 
           <label class="boop-check" style="margin-top:6px">
-            <input type="checkbox" [checked]="attachContact()"
-                   (change)="attachContact.set(!attachContact())" />
+            <input
+              type="checkbox"
+              [checked]="attachContact()"
+              (change)="attachContact.set(!attachContact())"
+            />
             Include a contact card
           </label>
           @if (attachContact()) {
             <p class="fine boop-warn">
-              ⚠️ A contact card leaves Menagerie’s protection: it ties this boop to who you
-              are on another platform, permanently, for this person. Menagerie can’t take it
-              back, and can’t verify who reads it.
+              ⚠️ A contact card leaves Menagerie’s protection: it ties this boop to who you are on
+              another platform, permanently, for this person. Menagerie can’t take it back, and
+              can’t verify who reads it.
             </p>
             <div class="btn-row" style="align-items:center;gap:8px">
               <select #platformSel (change)="platform.set(platformSel.selectedIndex)">
@@ -90,20 +105,34 @@ type Phase = 'idle' | 'staging' | 'composing' | 'sending' | 'done';
                   <option [selected]="$index === platform()">{{ p }}</option>
                 }
               </select>
-              <input type="text" [attr.maxlength]="handleMax" placeholder="your handle"
-                     [value]="handle()" #handleInput (input)="handle.set(handleInput.value)" />
+              <input
+                type="text"
+                [attr.maxlength]="handleMax"
+                placeholder="your handle"
+                [value]="handle()"
+                #handleInput
+                (input)="handle.set(handleInput.value)"
+              />
             </div>
             <label class="boop-check">
-              <input type="checkbox" [checked]="contactConfirmed()"
-                     (change)="contactConfirmed.set(!contactConfirmed())" />
+              <input
+                type="checkbox"
+                [checked]="contactConfirmed()"
+                (change)="contactConfirmed.set(!contactConfirmed())"
+              />
               I understand this de-anonymizes me to this person
             </label>
           }
 
-          @if (error(); as msg) { <p class="fine boop-warn">{{ msg }}</p> }
+          @if (error(); as msg) {
+            <p class="fine boop-warn">{{ msg }}</p>
+          }
           <div class="btn-row" style="margin-top:12px">
-            <button class="btn btn-primary" [disabled]="!canSend() || phase() === 'sending'"
-                    (click)="send()">
+            <button
+              class="btn btn-primary"
+              [disabled]="!canSend() || phase() === 'sending'"
+              (click)="send()"
+            >
               {{ phase() === 'sending' ? 'Sending…' : replyTo() ? 'Send reply' : 'Send boop' }}
             </button>
             <button class="btn btn-ghost" [disabled]="phase() === 'sending'" (click)="cancel()">
@@ -115,10 +144,25 @@ type Phase = 'idle' | 'staging' | 'composing' | 'sending' | 'done';
     }
   `,
   styles: `
-    .boop-form { margin-top: 8px; }
-    .boop-intents { border: none; padding: 0; margin: 0; display: grid; gap: 4px; }
-    .boop-check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-    .boop-warn { color: var(--warn, #b45309); }
+    .boop-form {
+      margin-top: 8px;
+    }
+    .boop-intents {
+      border: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 4px;
+    }
+    .boop-check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .boop-warn {
+      color: var(--warn, #b45309);
+    }
   `,
 })
 export class BoopComposerComponent {
@@ -177,7 +221,7 @@ export class BoopComposerComponent {
       this.phase.set('composing');
     } catch (err) {
       this.phase.set('idle');
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     }
   }
 
@@ -194,7 +238,7 @@ export class BoopComposerComponent {
     this.error.set(null);
     this.phase.set('sending');
     const attachments = {
-      viewPhrase: this.attachView() ? this.session.viewPhrase() ?? undefined : undefined,
+      viewPhrase: this.attachView() ? (this.session.viewPhrase() ?? undefined) : undefined,
       contact: this.attachContact()
         ? { platform: this.platform(), handle: this.handle().trim() }
         : undefined,
@@ -222,7 +266,7 @@ export class BoopComposerComponent {
       } else if (err instanceof HatchError && err.failure.kind === 'rate_limited') {
         this.error.set('This hatch has heard a lot of knocking lately — try again later.');
       } else {
-        this.error.set(err instanceof Error ? err.message : String(err));
+        this.error.set(errorText(err));
       }
     }
   }

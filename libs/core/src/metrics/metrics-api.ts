@@ -22,6 +22,12 @@ export interface MetricsRecord {
 }
 
 export const METRICS_EPOCH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+/** UTC year-month, e.g. "2026-08" — the epoch a submission made `now` belongs to. */
+export function currentEpoch(now: number): string {
+  const d = new Date(now);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
 export const METRICS_BUCKET_RE = /^[a-z0-9._|-]{1,80}$/;
 export const METRICS_MAX_BUCKETS = 256;
 /** Buckets with fewer than this many contributors are never served. */

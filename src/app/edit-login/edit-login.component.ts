@@ -12,14 +12,23 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
     <div class="card" style="max-width:540px;margin-inline:auto">
       <h2>Open your profile</h2>
       <p class="sub">
-        Enter the 5-word edit phrase you were given when you hatched. It’s the only key —
-        there is no account and no reset.
+        Enter the 5-word edit phrase you were given when you hatched. It’s the only key — there is
+        no account and no reset.
       </p>
-      <form style="display:flex;flex-direction:column;gap:10px" (submit)="login($event)">
-        <input #phraseInput type="text" placeholder="correct horse battery staple luck"
-               autocomplete="off" aria-label="Edit phrase" [disabled]="busy()">
+      <form
+        style="display:flex;flex-direction:column;gap:10px"
+        (submit)="login($event, phraseInput.value, rememberBox.checked)"
+      >
+        <input
+          #phraseInput
+          type="text"
+          placeholder="correct horse battery staple luck"
+          autocomplete="off"
+          aria-label="Edit phrase"
+          [disabled]="busy()"
+        />
         <label class="fine" style="display:flex;gap:8px;align-items:center">
-          <input type="checkbox" #rememberBox>
+          <input type="checkbox" #rememberBox />
           Remember on this device — stores the phrase unencrypted in this browser
         </label>
         <div class="btn-row">
@@ -42,11 +51,8 @@ export class EditLoginComponent {
 
   protected readonly busy = signal(false);
 
-  protected async login(event: Event): Promise<void> {
+  protected async login(event: Event, phrase: string, remember: boolean): Promise<void> {
     event.preventDefault();
-    const form = event.target as HTMLFormElement;
-    const phrase = (form.querySelector('input[type=text]') as HTMLInputElement).value;
-    const remember = (form.querySelector('input[type=checkbox]') as HTMLInputElement).checked;
     this.busy.set(true);
     try {
       if (await this.session.login(phrase)) {
@@ -56,7 +62,7 @@ export class EditLoginComponent {
         this.toast.show('No profile answers to that phrase.', 'error');
       }
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     } finally {
       this.busy.set(false);
     }

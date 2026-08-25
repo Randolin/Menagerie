@@ -2,6 +2,7 @@
 // one deliberately readable table, holding only opt-in coarse aggregates
 // plus hashed once-per-epoch dedup tokens that no profile locator links to.
 import { DatabaseSync } from 'node:sqlite';
+import { METRICS_KEEP_EPOCHS } from '../libs/core/src/metrics/metrics-api.ts';
 
 export type SubmitResult = 'ok' | 'duplicate';
 
@@ -66,7 +67,7 @@ export class MetricsDb {
 
   /** Sweepable-compatible shim: TTL args don't apply to epoch retention. */
   sweep(_emptyTtlMs: number, _idleTtlMs: number): number {
-    return this.dropOldEpochs(3);
+    return this.dropOldEpochs(METRICS_KEEP_EPOCHS);
   }
 
   close(): void {

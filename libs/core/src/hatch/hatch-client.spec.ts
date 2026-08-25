@@ -61,9 +61,9 @@ describe('HatchClient.create', () => {
 
   test('locator collision and capacity map to their own kinds', async () => {
     const taken = fake(409, { error: 'locator_taken' });
-    expect(
-      await failure(new HatchClient('https://s', taken.fetch).create(CREATE, TOKEN)),
-    ).toEqual({ kind: 'locator_taken' });
+    expect(await failure(new HatchClient('https://s', taken.fetch).create(CREATE, TOKEN))).toEqual({
+      kind: 'locator_taken',
+    });
 
     const full = fake(503, { error: 'at_capacity' });
     expect(await failure(new HatchClient('https://s', full.fetch).create(CREATE, TOKEN))).toEqual({
@@ -134,27 +134,31 @@ describe('HatchClient.put', () => {
       blob_view: 'RV',
       blob_priv: 'RP',
     });
-    expect(await failure(new HatchClient('https://s', conflict.fetch).put(LOC, TOKEN, 4, BODY))).toEqual(
-      { kind: 'conflict', remote: { blob_view: 'RV', blob_priv: 'RP', version: 7 } },
-    );
+    expect(
+      await failure(new HatchClient('https://s', conflict.fetch).put(LOC, TOKEN, 4, BODY)),
+    ).toEqual({ kind: 'conflict', remote: { blob_view: 'RV', blob_priv: 'RP', version: 7 } });
   });
 
   test('re-key collision is locator_taken, distinct from the CAS conflict', async () => {
     const taken = fake(409, { error: 'locator_taken' });
-    expect(await failure(new HatchClient('https://s', taken.fetch).put(LOC, TOKEN, 4, BODY))).toEqual(
-      { kind: 'locator_taken' },
-    );
+    expect(
+      await failure(new HatchClient('https://s', taken.fetch).put(LOC, TOKEN, 4, BODY)),
+    ).toEqual({ kind: 'locator_taken' });
   });
 
   test('auth and size failures', async () => {
     const bad = fake(401, { error: 'bad_token' });
-    expect(await failure(new HatchClient('https://s', bad.fetch).put(LOC, TOKEN, 4, BODY))).toEqual({
-      kind: 'bad_token',
-    });
+    expect(await failure(new HatchClient('https://s', bad.fetch).put(LOC, TOKEN, 4, BODY))).toEqual(
+      {
+        kind: 'bad_token',
+      },
+    );
     const big = fake(413, { error: 'too_large' });
-    expect(await failure(new HatchClient('https://s', big.fetch).put(LOC, TOKEN, 4, BODY))).toEqual({
-      kind: 'too_large',
-    });
+    expect(await failure(new HatchClient('https://s', big.fetch).put(LOC, TOKEN, 4, BODY))).toEqual(
+      {
+        kind: 'too_large',
+      },
+    );
   });
 });
 

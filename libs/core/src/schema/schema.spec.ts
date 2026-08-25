@@ -27,12 +27,13 @@ describe('schema', () => {
   });
 
   test('honors the v2 freeze: ids/types/sections/privacy immutable, options append-only', () => {
-    const byId = new Map(
-      allItems().map(({ section, item }) => [item.id, { section, item }]),
-    );
+    const byId = new Map(allItems().map(({ section, item }) => [item.id, { section, item }]));
     for (const [id, frozen] of Object.entries(freeze.items)) {
       const found = byId.get(id);
-      expect(found, `frozen item ${id} was removed — old links would lose this answer`).toBeDefined();
+      expect(
+        found,
+        `frozen item ${id} was removed — old links would lose this answer`,
+      ).toBeDefined();
       const { section, item } = found!;
       expect(item.type, `${id}: type changed`).toBe(frozen.type);
       expect(section.id, `${id}: moved to another section`).toBe(frozen.section);

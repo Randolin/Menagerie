@@ -11,7 +11,7 @@
 import type { Answers, InterestLevel, ProfilePayload } from '../schema/types';
 import { matchItems } from '../schema/schema';
 import { bytesToB64url } from '../codec/base64url';
-import { randomBytes } from './random';
+import { randomBytes, randomIndex } from './random';
 
 const subtle = globalThis.crypto.subtle;
 
@@ -46,10 +46,10 @@ export async function buildMatchTokens(answers: Answers, salt: string): Promise<
   while (tokens.length < padTo) {
     tokens.push(bytesToB64url(randomBytes(12)).slice(0, TOKEN_CHARS));
   }
-  // Fisher–Yates with crypto randomness.
+  // Fisher–Yates with crypto randomness (randomIndex is rejection-sampled,
+  // so no modulo bias).
   for (let i = tokens.length - 1; i > 0; i--) {
-    const j = randomBytes(4).reduce((a, b) => (a << 8) | b, 0) >>> 0;
-    const k = j % (i + 1);
+    const k = randomIndex(i + 1);
     [tokens[i], tokens[k]] = [tokens[k], tokens[i]];
   }
   return tokens;

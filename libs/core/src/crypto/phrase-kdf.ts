@@ -30,7 +30,11 @@ export interface PhraseKeys {
 }
 
 export function normalizePassphrase(pass: string): string {
-  return pass.trim().toLowerCase().split(/[\s-]+/).join(' ');
+  return pass
+    .trim()
+    .toLowerCase()
+    .split(/[\s-]+/)
+    .join(' ');
 }
 
 export async function derivePhraseKeys(

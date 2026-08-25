@@ -45,11 +45,7 @@ function clipHalfPlane(poly: Point[], nx: number, ny: number, c: number): Point[
  * Returns one polygon per site, in the same order; a degenerate cell (from
  * duplicate sites) comes back as an empty array and should be skipped.
  */
-export function voronoiCells(
-  sites: readonly Point[],
-  width: number,
-  height: number,
-): Point[][] {
+export function voronoiCells(sites: readonly Point[], width: number, height: number): Point[][] {
   return sites.map((site) => {
     let cell: Point[] = [
       { x: 0, y: 0 },

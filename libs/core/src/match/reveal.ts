@@ -1,5 +1,4 @@
 import type { InterestItem, InterestLevel, ProfilePayload } from '../schema/types';
-import { INTEREST_LEVELS } from '../schema/types';
 import { SECTIONS } from '../schema/sections';
 import { probeLevel } from '../crypto/match-tokens';
 
@@ -35,8 +34,4 @@ export async function revealMutualDesires(
 
 export function hasDesiresTokens(payload: ProfilePayload): boolean {
   return Boolean(payload.m && payload.m.length && payload.s);
-}
-
-export function interestLevelLabel(level: number): string {
-  return INTEREST_LEVELS.find((l) => l.value === level)?.label ?? String(level);
 }

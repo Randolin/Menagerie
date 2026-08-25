@@ -21,7 +21,10 @@ describe('CREATURE_SPRITES', () => {
 
   test('every sprite is a real animal', () => {
     for (const key of Object.keys(CREATURE_SPRITES)) {
-      expect(ANIMALS.some((a) => a.name === key), key).toBe(true);
+      expect(
+        ANIMALS.some((a) => a.name === key),
+        key,
+      ).toBe(true);
     }
   });
 

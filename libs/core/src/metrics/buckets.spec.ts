@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { METRICS_BUCKET_RE, METRICS_MAX_BUCKETS } from './metrics-api';
-import { buildMetricsBuckets, currentEpoch, debiasDesireRate, METRICS_ITEMS } from './buckets';
+import { buildMetricsBuckets, debiasDesireRate, METRICS_ITEMS } from './buckets';
+import { currentEpoch } from './metrics-api';
 import { deriveEditKeys, deriveMetricsToken, deriveViewKeys } from '../hatch/keys';
 
 describe('metrics buckets', () => {

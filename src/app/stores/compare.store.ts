@@ -1,13 +1,11 @@
 import { inject, Injectable, resource, signal } from '@angular/core';
 import {
-  decryptBlob,
-  deriveViewKeys,
+  fetchViewPayload,
   extractViewPhrase,
-  migrateToCurrent,
   personaFromViewPhrase,
   type ProfilePayload,
 } from '@moxy/core';
-import { MAX_COMPARE } from '@moxy/ui';
+import { MAX_COMPARE, errorText } from '@moxy/ui';
 import { buildCompareModel, type CompareModel, type CompareSlot } from '../compare/compare-model';
 import { ServerConfigStore } from './server-config.store';
 
@@ -44,7 +42,6 @@ export class CompareStore {
 
   /** Null while (re)computing — views hold the previous render via this. */
   readonly model = this.modelResource.value;
-  readonly loading = this.modelResource.isLoading;
 
   get full(): boolean {
     return this.entries().length >= MAX_COMPARE;
@@ -87,11 +84,6 @@ export class CompareStore {
     this.entries.set([]);
   }
 
-  /** Latest computed model, for callers outside templates. */
-  current(): CompareModel | undefined {
-    return this.model();
-  }
-
   private async load(entry: CompareEntry): Promise<CompareSlot> {
     if (entry.kind === 'payload') {
       return {
@@ -106,13 +98,11 @@ export class CompareStore {
     try {
       const client = this.config.client();
       if (!client) throw new Error('No profile server is configured.');
-      const { viewLocator, viewKey } = await deriveViewKeys(phrase);
-      const record = await client.getView(viewLocator);
-      if (!record) throw new Error('No profile answers to this phrase (deleted or replaced?).');
-      const payload = migrateToCurrent(await decryptBlob(record.blob_view, viewKey));
+      const payload = await fetchViewPayload(client, phrase);
+      if (!payload) throw new Error('No profile answers to this phrase (deleted or replaced?).');
       return { ref: phrase, payload, persona: await personaFromViewPhrase(phrase) };
     } catch (err) {
-      return { ref: phrase, error: err instanceof Error ? err.message : String(err) };
+      return { ref: phrase, error: errorText(err) };
     }
   }
 }

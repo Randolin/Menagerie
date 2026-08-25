@@ -93,21 +93,29 @@ export function isViewPhraseShaped(text: string): boolean {
   );
 }
 
-/**
- * Accepts a bare phrase (spaces or hyphens) or a full view URL
- * (…#/view/<phrase>); returns the canonical phrase, or null.
- */
-export function extractViewPhrase(text: string): string | null {
+function extractPhrase(text: string, path: 'view' | 'group'): string | null {
   let candidate = text.trim();
-  const urlMatch = candidate.match(/#\/view\/([A-Za-z-]+)/);
+  const urlMatch = candidate.match(new RegExp(`#/${path}/([A-Za-z-]+)`));
   if (urlMatch) candidate = urlMatch[1];
   const canonical = canonicalViewPhrase(candidate);
   return isViewPhraseShaped(canonical) ? canonical : null;
 }
 
-export function viewUrlFor(viewPhrase: string, baseUrl?: string): string {
+function phraseUrlFor(phrase: string, path: 'view' | 'group', baseUrl?: string): string {
   const base = baseUrl ?? `${location.origin}${location.pathname}`;
-  return `${base}#/view/${canonicalViewPhrase(viewPhrase)}`;
+  return `${base}#/${path}/${canonicalViewPhrase(phrase)}`;
+}
+
+/**
+ * Accepts a bare phrase (spaces or hyphens) or a full view URL
+ * (…#/view/<phrase>); returns the canonical phrase, or null.
+ */
+export function extractViewPhrase(text: string): string | null {
+  return extractPhrase(text, 'view');
+}
+
+export function viewUrlFor(viewPhrase: string, baseUrl?: string): string {
+  return phraseUrlFor(viewPhrase, 'view', baseUrl);
 }
 
 /**
@@ -115,14 +123,9 @@ export function viewUrlFor(viewPhrase: string, baseUrl?: string): string {
  * too); only the URL path differs. Accepts a bare phrase or …#/group/<phrase>.
  */
 export function extractGroupPhrase(text: string): string | null {
-  let candidate = text.trim();
-  const urlMatch = candidate.match(/#\/group\/([A-Za-z-]+)/);
-  if (urlMatch) candidate = urlMatch[1];
-  const canonical = canonicalViewPhrase(candidate);
-  return isViewPhraseShaped(canonical) ? canonical : null;
+  return extractPhrase(text, 'group');
 }
 
 export function groupUrlFor(groupPhrase: string, baseUrl?: string): string {
-  const base = baseUrl ?? `${location.origin}${location.pathname}`;
-  return `${base}#/group/${canonicalViewPhrase(groupPhrase)}`;
+  return phraseUrlFor(groupPhrase, 'group', baseUrl);
 }

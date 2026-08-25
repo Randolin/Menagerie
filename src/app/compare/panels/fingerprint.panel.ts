@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { getSection, type ScaleItem } from '@moxy/core';
+import { SCALE_MAX, getSection, type ScaleItem } from '@moxy/core';
 import { PersonKeyComponent, RadarComponent, type RadarSeries } from '@moxy/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
@@ -17,8 +17,8 @@ import type { ComparePanelComponent } from '../compare-panels.token';
     <div class="card">
       <h2>Values fingerprint</h2>
       <p class="sub">
-        Each shape is one profile's values, drawn over the same axes — overlap is
-        alignment you can see. An axis points toward the trait it names.
+        Each shape is one profile's values, drawn over the same axes — overlap is alignment you can
+        see. An axis points toward the trait it names.
       </p>
       <moxy-person-key [names]="model().names" [emojis]="personaEmojis()" />
       <moxy-radar [axes]="axes()" [series]="series()" />
@@ -37,8 +37,7 @@ export class FingerprintPanel implements ComparePanelComponent {
     if (!values || payloads.length < 2) return [];
     return values.items.filter(
       (item): item is ScaleItem =>
-        item.type === 'scale' &&
-        payloads.every((p) => typeof p.a[item.id] === 'number'),
+        item.type === 'scale' && payloads.every((p) => typeof p.a[item.id] === 'number'),
     );
   });
 
@@ -47,7 +46,7 @@ export class FingerprintPanel implements ComparePanelComponent {
   protected readonly series = computed<RadarSeries[]>(() =>
     this.model().payloads.map((p, i) => ({
       name: this.model().names[i],
-      values: this.sharedScales().map((s) => (p.a[s.id] as number) / 6),
+      values: this.sharedScales().map((s) => (p.a[s.id] as number) / SCALE_MAX),
     })),
   );
 }

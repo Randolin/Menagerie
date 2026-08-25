@@ -24,7 +24,9 @@ describe('locationPattern', () => {
       for (let scale = 0; scale < 4; scale++) {
         for (let density = 0; density < 4; density++) {
           for (const shape of locationPattern(family, 999 * scale + density, scale, density)) {
-            expect(shape.d, `${family} s${scale} d${density}`).not.toMatch(/NaN|Infinity|undefined/);
+            expect(shape.d, `${family} s${scale} d${density}`).not.toMatch(
+              /NaN|Infinity|undefined/,
+            );
           }
         }
       }

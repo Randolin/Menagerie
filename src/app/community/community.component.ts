@@ -7,6 +7,7 @@ import {
   getSection,
   type MetricsRecord,
 } from '@moxy/core';
+import { errorText } from '@moxy/ui';
 import { DraftStore } from '../stores/draft.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
 import { ServerConfigStore } from '../stores/server-config.store';
@@ -15,7 +16,6 @@ interface RateRow {
   readonly label: string;
   readonly pct: number;
   readonly n: number;
-  readonly noisy: boolean;
 }
 
 /**
@@ -30,18 +30,18 @@ interface RateRow {
   template: `
     <h1>The community, counted anonymously</h1>
     <p class="sub" style="max-width:640px">
-      Opted-in profiles contribute coarse monthly counts — never identities, phrases,
-      or exact answers. Buckets with fewer than ten contributors stay hidden, and
-      desire counts carry deliberate random noise, so what you see here are honest
-      estimates about a crowd, never facts about a person.
+      Opted-in profiles contribute coarse monthly counts — never identities, phrases, or exact
+      answers. Buckets with fewer than ten contributors stay hidden, and desire counts carry
+      deliberate random noise, so what you see here are honest estimates about a crowd, never facts
+      about a person.
     </p>
 
     @if (view.value(); as v) {
       @if (bands().length === 0) {
         <div class="card">
           <p class="sub">
-            Nothing to show yet — the counters need at least ten contributors in a
-            bucket before it appears. Opt in from
+            Nothing to show yet — the counters need at least ten contributors in a bucket before it
+            appears. Opt in from
             <a routerLink="/me">your profile</a> and check back as the menagerie grows.
           </p>
         </div>
@@ -51,8 +51,11 @@ interface RateRow {
           @for (band of bands(); track band.label) {
             <div class="bar-row">
               <span class="bar-label">{{ band.label }}</span>
-              <div class="bar-track" role="img"
-                   [attr.aria-label]="band.label + ': ' + band.n + ' creatures'">
+              <div
+                class="bar-track"
+                role="img"
+                [attr.aria-label]="band.label + ': ' + band.n + ' creatures'"
+              >
                 <div class="bar-fill" [style.width.%]="band.widthPct"></div>
               </div>
               <span class="bar-value">{{ band.n }}</span>
@@ -69,7 +72,9 @@ interface RateRow {
                 @for (row of seekingRows(); track row.label) {
                   <div class="bar-row">
                     <span class="bar-label">{{ row.label }}</span>
-                    <div class="bar-track"><div class="bar-fill" [style.width.%]="row.pct"></div></div>
+                    <div class="bar-track">
+                      <div class="bar-fill" [style.width.%]="row.pct"></div>
+                    </div>
                     <span class="bar-value">{{ row.pct }}%</span>
                   </div>
                 }
@@ -79,7 +84,9 @@ interface RateRow {
                 @for (row of desireRows(); track row.label) {
                   <div class="bar-row">
                     <span class="bar-label">{{ row.label }}</span>
-                    <div class="bar-track"><div class="bar-fill" [style.width.%]="row.pct"></div></div>
+                    <div class="bar-track">
+                      <div class="bar-fill" [style.width.%]="row.pct"></div>
+                    </div>
                     <span class="bar-value">~{{ row.pct }}%</span>
                   </div>
                 }
@@ -89,25 +96,55 @@ interface RateRow {
         } @else {
           <div class="card">
             <p class="sub">
-              Answer your age band on <a routerLink="/me">your profile</a> to see how
-              creatures in your band answered — computed right here in your tab.
+              Answer your age band on <a routerLink="/me">your profile</a> to see how creatures in
+              your band answered — computed right here in your tab.
             </p>
           </div>
         }
       }
     } @else if (view.error()) {
-      <div class="card"><p class="sub">{{ errorMessage() }}</p></div>
+      <div class="card">
+        <p class="sub">{{ errorMessage() }}</p>
+      </div>
     } @else {
       <div class="card"><p class="sub">Counting the menagerie…</p></div>
     }
   `,
   styles: `
-    .bar-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
-    .bar-label { width: 220px; flex: none; text-align: right; font-size: 13px; color: var(--ink-2); }
-    .bar-track { flex: 1; height: 12px; border-radius: 6px; background: var(--border); overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 6px; background: var(--accent); }
-    .bar-value { width: 48px; flex: none; font-size: 12.5px; color: var(--muted); }
-    h3 { margin: 14px 0 6px; }
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 6px 0;
+    }
+    .bar-label {
+      width: 220px;
+      flex: none;
+      text-align: right;
+      font-size: 13px;
+      color: var(--ink-2);
+    }
+    .bar-track {
+      flex: 1;
+      height: 12px;
+      border-radius: 6px;
+      background: var(--border);
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      background: var(--accent);
+    }
+    .bar-value {
+      width: 48px;
+      flex: none;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+    h3 {
+      margin: 14px 0 6px;
+    }
   `,
 })
 export class CommunityComponent {
@@ -150,7 +187,7 @@ export class CommunityComponent {
 
   protected myBandLabel(): string | null {
     const band = this.myBand();
-    return band === null ? null : this.ageOptions[band] ?? null;
+    return band === null ? null : (this.ageOptions[band] ?? null);
   }
 
   protected readonly seekingRows = computed<RateRow[]>(() => {
@@ -164,7 +201,7 @@ export class CommunityComponent {
       const positive = buckets[`${band}|${item.id}|1`];
       if (!n || !positive) return [];
       const label = 'label' in item ? item.label : item.id;
-      return [{ label, pct: Math.round((100 * positive) / n), n, noisy: false }];
+      return [{ label, pct: Math.round((100 * positive) / n), n }];
     });
   });
 
@@ -181,12 +218,11 @@ export class CommunityComponent {
       const rate = debiasDesireRate(positive, n);
       if (rate === null) return [];
       const label = 'label' in item ? item.label : item.id;
-      return [{ label, pct: Math.round(rate * 100), n, noisy: true }];
+      return [{ label, pct: Math.round(rate * 100), n }];
     });
   });
 
   protected errorMessage(): string {
-    const err = this.view.error();
-    return err instanceof Error ? err.message : String(err ?? 'Unknown error');
+    return errorText(this.view.error());
   }
 }

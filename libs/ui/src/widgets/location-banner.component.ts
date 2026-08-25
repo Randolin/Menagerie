@@ -51,7 +51,9 @@ import { locationPattern, PATTERN_HEIGHT, PATTERN_WIDTH } from '../patterns/loca
     }
   `,
   styles: `
-    :host { display: block; }
+    :host {
+      display: block;
+    }
   `,
 })
 export class LocationBannerComponent {

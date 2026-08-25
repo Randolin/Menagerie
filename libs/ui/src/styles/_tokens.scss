@@ -23,23 +23,21 @@
   --muted: #898781;
   --hairline: #e1e0d9;
   --baseline: #c3c2b7;
-  --border: rgba(11, 11, 11, 0.10);
+  --border: rgba(11, 11, 11, 0.1);
 
   --accent: #4a3aa7;
   --accent-ink: #ffffff;
-  --accent-soft: rgba(74, 58, 167, 0.10);
+  --accent-soft: rgba(74, 58, 167, 0.1);
 
   --danger: #d03b3b;
   --danger-soft: rgba(208, 59, 59, 0.08);
   --warn-soft: rgba(236, 131, 90, 0.14);
-  --good: #006300;
 
   --series-1: #2a78d6;
   --series-2: #eb6834;
   --series-3: #1baf7a;
   --series-4: #eda100;
 
-  --ramp-0: transparent;
   --ramp-1: #86b6ef;
   --ramp-2: #2a78d6;
   --ramp-3: #104281;
@@ -47,11 +45,10 @@
 
   --radius: 16px;
   --radius-sm: 8px;
-  --radius-lg: 20px;
   --radius-pill: 999px;
   --shadow: 0 1px 2px rgba(11, 11, 11, 0.05), 0 4px 16px rgba(11, 11, 11, 0.05);
-  --font: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: 'Fredoka', system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Fredoka', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
 /* One definition of dark, applied through both theme mechanisms below. */
@@ -65,7 +62,7 @@
   --muted: #898781;
   --hairline: #2c2c2a;
   --baseline: #383835;
-  --border: rgba(255, 255, 255, 0.10);
+  --border: rgba(255, 255, 255, 0.1);
 
   --accent: #9085e9;
   --accent-ink: #14131c;
@@ -74,7 +71,6 @@
   --danger: #e66767;
   --danger-soft: rgba(230, 103, 103, 0.12);
   --warn-soft: rgba(236, 131, 90, 0.16);
-  --good: #0ca30c;
 
   --series-1: #3987e5;
   --series-2: #d95926;
@@ -88,11 +84,11 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme="light"])) {
+  :root:where(:not([data-theme='light'])) {
     @include dark-tokens;
   }
 }
 
-:root[data-theme="dark"] {
+:root[data-theme='dark'] {
   @include dark-tokens;
 }

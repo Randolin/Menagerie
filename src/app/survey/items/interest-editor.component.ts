@@ -7,12 +7,15 @@ import { INTEREST_LEVELS, type AnswerValue, type InterestItem } from '@moxy/core
   template: `
     <div class="pip-row" role="group" [attr.aria-label]="item().label">
       @for (level of levels; track level.value) {
-        <button type="button" class="pip pip-interest"
-                [class.selected]="value() === level.value"
-                [attr.aria-pressed]="value() === level.value"
-                [attr.aria-label]="item().label + ': ' + level.label"
-                [title]="level.label"
-                (click)="toggle(level.value)">
+        <button
+          type="button"
+          class="pip pip-interest"
+          [class.selected]="value() === level.value"
+          [attr.aria-pressed]="value() === level.value"
+          [attr.aria-label]="item().label + ': ' + level.label"
+          [title]="level.label"
+          (click)="toggle(level.value)"
+        >
           <span class="pip-text">{{ level.label }}</span>
         </button>
       }

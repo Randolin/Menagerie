@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { clamp01, seriesVar } from './series';
 
 export interface RadarSeries {
   readonly name: string;
@@ -16,33 +17,71 @@ export interface RadarSeries {
   selector: 'moxy-radar',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <svg [attr.viewBox]="'0 0 ' + W + ' ' + W" role="img"
-         [attr.aria-label]="'Fingerprint overlay across ' + axes().length + ' dimensions'">
+    <svg
+      [attr.viewBox]="'0 0 ' + W + ' ' + W"
+      role="img"
+      [attr.aria-label]="'Fingerprint overlay across ' + axes().length + ' dimensions'"
+    >
       @for (ring of rings; track $index) {
-        <polygon [attr.points]="ringPoints(ring)" fill="none"
-                 stroke="var(--border)" stroke-width="1" />
+        <polygon
+          [attr.points]="ringPoints(ring)"
+          fill="none"
+          stroke="var(--border)"
+          stroke-width="1"
+        />
       }
       @for (a of axes(); track $index; let i = $index) {
-        <line [attr.x1]="C" [attr.y1]="C" [attr.x2]="pt(i, 1)[0]" [attr.y2]="pt(i, 1)[1]"
-              stroke="var(--border)" stroke-width="1" />
-        <text [attr.x]="labelPt(i)[0]" [attr.y]="labelPt(i)[1]"
-              [attr.text-anchor]="anchor(i)" dominant-baseline="middle"
-              font-size="10" fill="var(--muted)">{{ a }}</text>
+        <line
+          [attr.x1]="C"
+          [attr.y1]="C"
+          [attr.x2]="pt(i, 1)[0]"
+          [attr.y2]="pt(i, 1)[1]"
+          stroke="var(--border)"
+          stroke-width="1"
+        />
+        <text
+          [attr.x]="labelPt(i)[0]"
+          [attr.y]="labelPt(i)[1]"
+          [attr.text-anchor]="anchor(i)"
+          dominant-baseline="middle"
+          font-size="10"
+          fill="var(--muted)"
+        >
+          {{ a }}
+        </text>
       }
       @for (s of series(); track s.name; let si = $index) {
-        <polygon [attr.points]="seriesPoints(s)" [attr.stroke]="color(si)"
-                 stroke-width="2" stroke-linejoin="round"
-                 [attr.fill]="color(si)" fill-opacity="0.12" />
+        <polygon
+          [attr.points]="seriesPoints(s)"
+          [attr.stroke]="color(si)"
+          stroke-width="2"
+          stroke-linejoin="round"
+          [attr.fill]="color(si)"
+          fill-opacity="0.12"
+        />
         @for (v of s.values; track $index; let ai = $index) {
-          <circle [attr.cx]="pt(ai, v)[0]" [attr.cy]="pt(ai, v)[1]" r="3"
-                  [attr.fill]="color(si)" stroke="var(--surface)" stroke-width="2" />
+          <circle
+            [attr.cx]="pt(ai, v)[0]"
+            [attr.cy]="pt(ai, v)[1]"
+            r="3"
+            [attr.fill]="color(si)"
+            stroke="var(--surface)"
+            stroke-width="2"
+          />
         }
       }
     </svg>
   `,
   styles: `
-    :host { display: block; max-width: 460px; margin-inline: auto; }
-    svg { width: 100%; height: auto; }
+    :host {
+      display: block;
+      max-width: 460px;
+      margin-inline: auto;
+    }
+    svg {
+      width: 100%;
+      height: auto;
+    }
   `,
 })
 export class RadarComponent {
@@ -83,10 +122,8 @@ export class RadarComponent {
   }
 
   protected seriesPoints(s: RadarSeries): string {
-    return s.values.map((v, i) => this.pt(i, Math.max(0, Math.min(1, v))).join(',')).join(' ');
+    return s.values.map((v, i) => this.pt(i, clamp01(v)).join(',')).join(' ');
   }
 
-  protected color(i: number): string {
-    return `var(--series-${(i % 4) + 1})`;
-  }
+  protected readonly color = seriesVar;
 }

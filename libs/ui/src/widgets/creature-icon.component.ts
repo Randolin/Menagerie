@@ -26,8 +26,14 @@ import { creaturePixelSvg } from '../creatures/pixel-art';
     }
   `,
   styles: `
-    :host { display: inline-flex; }
-    .creature-icon { display: inline-flex; align-items: center; line-height: 1; }
+    :host {
+      display: inline-flex;
+    }
+    .creature-icon {
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
+    }
   `,
 })
 export class CreatureIconComponent {

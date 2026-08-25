@@ -48,10 +48,8 @@ export const appConfig: ApplicationConfig = {
     provideComparePanel({
       id: 'interlock',
       order: 18,
-      loadComponent: () =>
-        import('./compare/panels/interlock.panel').then((m) => m.InterlockPanel),
-      visible: (model) =>
-        model.interlocks.some((row) => row.detailA || row.detailB),
+      loadComponent: () => import('./compare/panels/interlock.panel').then((m) => m.InterlockPanel),
+      visible: (model) => model.interlocks.some((row) => row.detailA || row.detailB),
     }),
     provideComparePanel({
       id: 'values-strips',
@@ -82,8 +80,7 @@ export const appConfig: ApplicationConfig = {
     provideComparePanel({
       id: 'agreement',
       order: 45,
-      loadComponent: () =>
-        import('./compare/panels/agreement.panel').then((m) => m.AgreementPanel),
+      loadComponent: () => import('./compare/panels/agreement.panel').then((m) => m.AgreementPanel),
       visible: (model) =>
         model.payloads.length === 2 &&
         model.grid.some((g) => g.rows.some((r) => r.sim !== null && r.answeredCount === 2)),
