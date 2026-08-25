@@ -110,7 +110,7 @@ export function createApp(opts: AppOptions) {
 
       sendError(res, 404, 'not_found');
     } catch {
-      sendError(res, 500, 'bad_request', { message: 'internal error' });
+      sendError(res, 500, 'internal', { message: 'internal error' });
     }
   };
 }

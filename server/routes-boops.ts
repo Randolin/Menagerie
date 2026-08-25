@@ -113,7 +113,7 @@ export async function handleBoops(
       return true;
     }
     const outcome = ctx.opts.boops.deleteKnock(knockDeleteMatch[1], hash, knockDeleteMatch[2]);
-    if (outcome === 'deleted') send(res, 200, { ok: true });
+    if (outcome === 'deleted') send(res, 204);
     else if (outcome === 'bad_token') sendError(res, 401, 'bad_token');
     else sendError(res, 404, 'not_found');
     return true;
@@ -141,7 +141,7 @@ export async function handleBoops(
   }
   if (method === 'DELETE') {
     const outcome = ctx.opts.boops.deleteInbox(boopMatch[1], hash);
-    if (outcome === 'deleted') send(res, 200, { ok: true });
+    if (outcome === 'deleted') send(res, 204);
     else if (outcome === 'bad_token') sendError(res, 401, 'bad_token');
     else sendError(res, 404, 'not_found');
     return true;

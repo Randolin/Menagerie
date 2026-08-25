@@ -14,7 +14,11 @@ export interface GroupRow {
 
 export type GroupCreateResult = 'created' | 'locator_taken';
 export type JoinResult = 'joined' | 'locator_taken' | 'group_not_found' | 'full';
-export type MemberPutResult = 'updated' | 'bad_token' | 'not_found' | 'conflict';
+export type MemberPutResult =
+  | { status: 'updated'; version: number }
+  | { status: 'conflict'; version: number; blob_member: string }
+  | { status: 'bad_token' }
+  | { status: 'not_found' };
 export type MemberDeleteResult = 'deleted' | 'bad_token' | 'not_found';
 export type GroupDeleteResult = 'deleted' | 'bad_token' | 'not_found';
 
@@ -182,18 +186,24 @@ export class GroupsDb {
     blobMember: string,
   ): MemberPutResult {
     const row = this.db
-      .prepare('SELECT member_token_hash, version FROM group_members WHERE member_locator = ?')
-      .get(memberLocator) as { member_token_hash: string; version: number } | undefined;
-    if (!row) return 'not_found';
-    if (!tokenMatches(row.member_token_hash, memberTokenHashHex)) return 'bad_token';
-    if (row.version !== ifVersion) return 'conflict';
+      .prepare(
+        'SELECT member_token_hash, version, blob_member FROM group_members WHERE member_locator = ?',
+      )
+      .get(memberLocator) as
+      { member_token_hash: string; version: number; blob_member: string } | undefined;
+    if (!row) return { status: 'not_found' };
+    if (!tokenMatches(row.member_token_hash, memberTokenHashHex)) return { status: 'bad_token' };
+    if (row.version !== ifVersion) {
+      // Lost CAS race: ship the current state so the client can merge.
+      return { status: 'conflict', version: row.version, blob_member: row.blob_member };
+    }
     this.db
       .prepare(
         `UPDATE group_members SET blob_member = ?, version = version + 1, updated_at = ?
           WHERE member_locator = ? AND version = ?`,
       )
       .run(blobMember, coarseNow(), memberLocator, ifVersion);
-    return 'updated';
+    return { status: 'updated', version: ifVersion + 1 };
   }
 
   /** Leave (member token) or kick (admin token of the deposit's group). */

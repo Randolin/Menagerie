@@ -49,7 +49,8 @@ export type HatchErrorCode =
   | 'locator_taken'
   | 'too_large'
   | 'rate_limited'
-  | 'at_capacity';
+  | 'at_capacity'
+  | 'internal';
 
 export interface HatchApiError {
   error: HatchErrorCode;
@@ -58,6 +59,10 @@ export interface HatchApiError {
   version?: number;
   blob_view?: string;
   blob_priv?: string;
+  /** Group PUT conflicts carry the current meta blob… */
+  blob_meta?: string;
+  /** …and member PUT conflicts the current deposit. */
+  blob_member?: string;
 }
 
 export const EDIT_TOKEN_HEADER = 'x-moxy-edit-token';

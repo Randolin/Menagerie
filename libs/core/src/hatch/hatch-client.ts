@@ -18,6 +18,8 @@ import {
   type GroupRecord,
   type JoinGroupRequest,
   type PutGroupRequest,
+  type PutGroupResponse,
+  type PutMemberResponse,
 } from '../group/group-api';
 import type { MetricsRecord, SubmitMetricsRequest } from '../metrics/metrics-api';
 import { BOOP_TOKEN_HEADER, type BoopInboxRecord, type BoopKnockRecord } from '../boop/boop-api';
@@ -31,7 +33,17 @@ export type HatchFailure =
   | { kind: 'not_found' }
   | { kind: 'bad_token' }
   /** CAS lost: the server's current state rides along for a client-side merge. */
-  | { kind: 'conflict'; remote: { blob_view: string; blob_priv: string; version: number } }
+  | {
+      kind: 'conflict';
+      remote: {
+        version: number;
+        blob_view: string;
+        blob_priv: string;
+        /** Present when the conflict was a group-meta or member-deposit PUT. */
+        blob_meta?: string;
+        blob_member?: string;
+      };
+    }
   /** The minted phrase's locator already names a row — remint and retry. */
   | { kind: 'locator_taken' }
   | { kind: 'too_large' }
@@ -164,7 +176,7 @@ export class HatchClient {
       body: JSON.stringify(request),
     });
     if (!res.ok) throw await this.toError(res);
-    return ((await res.json()) as PutProfileResponse).version;
+    return ((await res.json()) as PutGroupResponse).version;
   }
 
   /** Idempotent admin delete (cascades deposits). */
@@ -209,7 +221,7 @@ export class HatchClient {
       body: JSON.stringify({ blob_member: blobMember }),
     });
     if (!res.ok) throw await this.toError(res);
-    return ((await res.json()) as PutProfileResponse).version;
+    return ((await res.json()) as PutMemberResponse).version;
   }
 
   /** Leave (member token) or kick (admin token). Idempotent on 404. */
@@ -339,9 +351,11 @@ export class HatchClient {
         return new HatchError({
           kind: 'conflict',
           remote: {
+            version: body?.version ?? 0,
             blob_view: body?.blob_view ?? '',
             blob_priv: body?.blob_priv ?? '',
-            version: body?.version ?? 0,
+            blob_meta: body?.blob_meta,
+            blob_member: body?.blob_member,
           },
         });
       case 413:
