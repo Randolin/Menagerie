@@ -145,8 +145,11 @@ main {
 
    Same idiom as the habitat tints: one color-mix against --surface per family,
    so a single declaration is correct in light and dark. The mix PERCENTAGE
-   varies per family as well as the hue — twelve tints crowd where five didn't,
-   and highland/coastal/spring would otherwise read as one blue at a glance. */
+   varies per family as well as the hue, because twelve tints crowd where five
+   didn't. Checked against a rendered 12x8 grid in both themes: the pairs that
+   actually collided were lowland/woodland (both mid-green) and
+   stronghold/underground (both brown), so woodland was pushed blue-green and
+   underground plum-brown. Re-render that grid before touching these values. */
 .location-banner {
   --place-mix: 55%;
   --place-tint: color-mix(in srgb, var(--place-base) var(--place-mix), var(--surface));
@@ -185,17 +188,17 @@ main {
 .location-motif { font-size: 15px; opacity: 0.55; }
 
 /* 12 families — hue and mix percentage both vary. */
-.place-lowland { --place-base: #3e7d4a; --place-mix: 55%; }
+.place-lowland { --place-base: #5f9440; --place-mix: 52%; }
 .place-wetland { --place-base: #3f7d6e; --place-mix: 50%; }
 .place-highland { --place-base: #6b7280; --place-mix: 62%; }
 .place-coastal { --place-base: #2f7da8; --place-mix: 52%; }
-.place-woodland { --place-base: #2f6b3f; --place-mix: 66%; }
+.place-woodland { --place-base: #1f5c46; --place-mix: 70%; }
 .place-openland { --place-base: #94793f; --place-mix: 54%; }
-.place-threshold { --place-base: #7a6a8a; --place-mix: 58%; }
+.place-threshold { --place-base: #8560a8; --place-mix: 55%; }
 .place-stronghold { --place-base: #8a6f5a; --place-mix: 60%; }
-.place-underground { --place-base: #5d4a3f; --place-mix: 70%; }
+.place-underground { --place-base: #4a3b46; --place-mix: 74%; }
 .place-hearthside { --place-base: #a8622f; --place-mix: 48%; }
-.place-spring { --place-base: #4a86b8; --place-mix: 44%; }
+.place-spring { --place-base: #3fa8b8; --place-mix: 46%; }
 .place-tended { --place-base: #a3567f; --place-mix: 50%; }
 
 /* 8 variants — gradient angle and mottle position. HEAD-derived. */

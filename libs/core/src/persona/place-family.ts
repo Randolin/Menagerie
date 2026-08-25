@@ -95,17 +95,17 @@ export interface PlaceFamilyMeta {
 }
 
 export const PLACE_FAMILY_META: Record<PlaceFamily, PlaceFamilyMeta> = {
-  lowland: { label: 'somewhere green and sheltered', motif: '🌿', tint: '#3e7d4a' },
+  lowland: { label: 'somewhere green and sheltered', motif: '🌿', tint: '#5f9440' },
   wetland: { label: 'somewhere still and reedy', motif: '💧', tint: '#3f7d6e' },
   highland: { label: 'somewhere high and stony', motif: '⛰️', tint: '#6b7280' },
   coastal: { label: 'somewhere the water meets the land', motif: '🌊', tint: '#2f7da8' },
-  woodland: { label: 'somewhere under branches', motif: '🌲', tint: '#2f6b3f' },
+  woodland: { label: 'somewhere under branches', motif: '🌲', tint: '#1f5c46' },
   openland: { label: 'somewhere wide and windswept', motif: '🌾', tint: '#94793f' },
-  threshold: { label: 'somewhere on the way through', motif: '🌉', tint: '#7a6a8a' },
+  threshold: { label: 'somewhere on the way through', motif: '🌉', tint: '#8560a8' },
   stronghold: { label: 'somewhere built to last', motif: '🏛️', tint: '#8a6f5a' },
-  underground: { label: 'somewhere warm and hidden', motif: '🕳️', tint: '#5d4a3f' },
+  underground: { label: 'somewhere warm and hidden', motif: '🕳️', tint: '#4a3b46' },
   hearthside: { label: 'somewhere you can stop a while', motif: '🔥', tint: '#a8622f' },
-  spring: { label: 'somewhere fresh water rises', motif: '💦', tint: '#4a86b8' },
+  spring: { label: 'somewhere fresh water rises', motif: '💦', tint: '#3fa8b8' },
   tended: { label: 'somewhere someone cares for', motif: '🌸', tint: '#a3567f' },
 };
 
