@@ -143,6 +143,24 @@ const shot = async (page, name) => {
   if (SHOTS) await page.screenshot({ path: join(SHOTS, name), fullPage: true });
 };
 
+/** Hatch on a fresh page — click, then wait out the Argon2id derivation. */
+async function hatchProfile(serverUrl = main.url, options = {}) {
+  const page = await freshPage(serverUrl, options);
+  await page.click('text=Hatch a profile');
+  await page.waitForSelector('.passphrase-box', { timeout: 30000 });
+  return page;
+}
+
+/** The raw server DB bytes (main file plus WAL/SHM sidecars), as latin1. */
+function rawDbBytes(path) {
+  let bytes = '';
+  for (const suffix of ['', '-wal', '-shm']) {
+    const f = path + suffix;
+    if (existsSync(f)) bytes += readFileSync(f, 'latin1');
+  }
+  return bytes;
+}
+
 /**
  * Decode the dashboard's styled QR. Element screenshots capture the page
  * REGION, so the fixed toast is display:none'd (instant, transition-proof)
@@ -339,9 +357,7 @@ try {
 
   // --- a second profile to compare against ----------------------------------
   step = 'profile-b';
-  const pageB = await freshPage();
-  await pageB.click('text=Hatch a profile');
-  await pageB.waitForSelector('.passphrase-box', { timeout: 30000 });
+  const pageB = await hatchProfile();
   const viewPhraseB = (await pageB.textContent('.code-box')).trim();
   const personaNameB = (await pageB.textContent('.persona-name')).trim();
   await editCategory(pageB, 'Connections I’m open to', async (card) => {
@@ -485,9 +501,7 @@ try {
   await pageB.waitForSelector('text=📋 Copy invite link', { timeout: 45000 });
   await pageB.click('text=🐾 Join with a pseudonym');
   await pageB.waitForSelector('text=(you)', { timeout: 60000 });
-  if ((await pageB.textContent('body')).includes('Members (2)') === false) {
-    await pageB.waitForSelector('text=Members (2)', { timeout: 15000 });
-  }
+  await pageB.waitForSelector('text=Members (2)', { timeout: 15000 });
 
   step = 'group-roster';
   await page.reload();
@@ -552,11 +566,7 @@ try {
   // Mid-flight at-rest check: the knock sits on the server RIGHT NOW, and the
   // handle and intent text must already be unreadable in the raw DB.
   {
-    let liveBytes = '';
-    for (const suffix of ['', '-wal', '-shm']) {
-      const f = dbPath + suffix;
-      if (existsSync(f)) liveBytes += readFileSync(f, 'latin1');
-    }
+    const liveBytes = rawDbBytes(dbPath);
     if (liveBytes.includes('amber.fox.77')) fail('contact handle readable at rest');
     if (liveBytes.includes('Curious to connect')) fail('boop intent readable at rest');
   }
@@ -631,13 +641,9 @@ try {
 
   // --- garbage collection: empty profiles die, populated ones live ----------
   step = 'gc';
-  const gcEmpty = await freshPage(gc.url);
-  await gcEmpty.click('text=Hatch a profile');
-  await gcEmpty.waitForSelector('.passphrase-box', { timeout: 30000 });
+  const gcEmpty = await hatchProfile(gc.url);
   const gcEmptyPhrase = (await gcEmpty.textContent('.code-box')).trim();
-  const gcAlive = await freshPage(gc.url);
-  await gcAlive.click('text=Hatch a profile');
-  await gcAlive.waitForSelector('.passphrase-box', { timeout: 30000 });
+  const gcAlive = await hatchProfile(gc.url);
   const gcAlivePhrase = (await gcAlive.textContent('.code-box')).trim();
   const gcAlivePersona = (await gcAlive.textContent('.persona-name')).trim();
   await editCategory(gcAlive, 'About me', async (card) => {
@@ -664,9 +670,7 @@ try {
 
   // --- anonymous metrics: opt-in submit, k-floor, community page ------------
   step = 'metrics';
-  const mPage = await freshPage(metricsSrv.url);
-  await mPage.click('text=Hatch a profile');
-  await mPage.waitForSelector('.passphrase-box', { timeout: 30000 });
+  const mPage = await hatchProfile(metricsSrv.url);
   await editCategory(mPage, 'About me', async (card) => {
     await card
       .locator('.q-row', { hasText: 'Age range' })
@@ -723,11 +727,7 @@ try {
   step = 'zero-knowledge-at-rest';
   main.proc.kill('SIGTERM'); // clean close checkpoints WAL into the main file
   await new Promise((resolve) => main.proc.on('exit', resolve));
-  let dbBytes = '';
-  for (const suffix of ['', '-wal', '-shm']) {
-    const f = dbPath + suffix;
-    if (existsSync(f)) dbBytes += readFileSync(f, 'latin1');
-  }
+  const dbBytes = rawDbBytes(dbPath);
   // Markers are chosen so base64url ciphertext can't contain them by chance:
   // multi-word phrases with spaces/hyphens, quoted JSON keys, dotted item ids.
   for (const marker of [

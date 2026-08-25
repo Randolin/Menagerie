@@ -129,7 +129,10 @@ curl -s http://127.0.0.1:8787/v2/health
 ```
 
 `deploy/update.sh` is the same cycle with guard rails (build before swap, a
-health check, and a no-op when nothing changed):
+health check, and a no-op when nothing changed). Note it cycles the Docker
+container, so it — and both hands-free options below — apply to option A
+only; an option-B (systemd/bare-node) box updates with `git pull` +
+`systemctl restart moxy-sync` instead:
 
 ```sh
 MOXY_REPO_DIR=/opt/menagerie /opt/menagerie/deploy/update.sh --force

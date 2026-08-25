@@ -21,9 +21,12 @@ contributions may be fine to rewrite instead.
 
 ## Practical notes
 
-- The full verification ladder must stay green:
-  `npm run test:core` · `npm run test:server` · `npm run test:app` ·
-  `npm run build` · `npm run e2e` (build first).
+- The full verification ladder must stay green — it is exactly what CI runs:
+  `npm run format:check` · `npm run typecheck:server` · `npm test`
+  (core, ui, app, and server suites) · `npm run build` · `npm run e2e`
+  (build first).
+- Formatting is Prettier's; run `npm run format` before committing rather
+  than arguing with the checker.
 - Survey schema changes are append-only (ids are forever, options never
   reorder) — CI enforces this against the schema freeze fixture.
 - The frozen crypto vectors in `crypto/phrase-kdf.spec.ts` and
@@ -31,3 +34,15 @@ contributions may be fine to rewrite instead.
   breaks them, the change is wrong — never the fixtures.
 - Internal identifiers keep the historical `moxy` name (storage keys, env
   vars, headers, path aliases) — see the README's historical note.
+
+## Invariants that aren't obvious from the code you're editing
+
+- The wire-contract files (`libs/core/src/*/{hatch,group,metrics,boop}-api.ts`
+  and `hatch/constants.ts`) must stay **import-free**: the server loads them
+  by relative path, without npm installs or bundling.
+- Every `../libs` import in `server/` needs a matching `COPY` line in
+  `deploy/Dockerfile` — `server/deploy.spec.ts` fails if they drift.
+- Everything the server runs must stay **erasable-syntax-only** (no enums,
+  no parameter properties): Node executes the `.ts` files directly via type
+  stripping. `npm run typecheck:server` compiles with the flag that
+  enforces this.

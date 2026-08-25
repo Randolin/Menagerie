@@ -4,8 +4,8 @@
 
 Menagerie is a compatibility survey with no identity attached. **Hatch** a profile
 and it exists instantly — a creature name, a QR code, and two phrases — before
-you've answered a single question. Answer themed question packs one card at a
-time, share your **view phrase** (or its link/QR), and lay profiles side by
+you've answered a single question. Answer themed question categories at your
+own pace, share your **view phrase** (or its link/QR), and lay profiles side by
 side to see where you overlap, where you differ, and — for the optional
 desires section — what you _both_ said yes to, revealed only on a mutual
 match. Inspired by
@@ -111,9 +111,13 @@ Requires Node ≥ 22.22.3 (Node 24 LTS recommended) and npm.
 ```sh
 npm install
 npm start            # dev server on http://localhost:4200
+npm test             # all four unit suites (core, ui, app, server)
 npm run test:core    # domain-library tests (plain Node, no browser, no Angular)
+npm run test:ui      # UI-library pure-module tests (plain Node)
 npm run test:app     # Angular component tests (vitest + jsdom)
 npm run test:server  # profile-server integration tests (real HTTP, SQLite)
+npm run typecheck:server  # tsc over server/ (vitest strips types unchecked)
+npm run format       # prettier --write (format:check is what CI enforces)
 npm run build        # production build → dist/moxy/browser
 npm run e2e          # drives the PRODUCTION build in Chromium against a real
                      # spawned profile server (build first)
@@ -137,12 +141,12 @@ libs/ui     @moxy/ui — the design system: SCSS token/base partials and
             meters, styled QR…).
 src/app     The Angular app: hash routing (static-host friendly, QR-scan
             deep links), signal stores (session/draft/compare/config/theme),
-            landing → dashboard → pack card-stream + section review forms
-            (with per-item importance controls), view + compare.
+            landing → dashboard → add-and-edit category cards (with
+            per-item importance controls), view + compare.
 server      The profile server: plain TypeScript run directly by Node ≥ 24
             (native type stripping + node:sqlite), zero deps, GC sweeper.
 e2e         Playwright suite run against the production build via a dumb
-            static file server — hatch, sections, the pack card stream, a
+            static file server — hatch, the category cards, a
             dealbreaker round-trip, QR-scan bypass, edit-phrase recovery,
             compare with mutual/one-sided desires, regeneration, GC, and a
             zero-knowledge-at-rest scan of the raw database.
@@ -159,11 +163,11 @@ e2e         Playwright suite run against the production build via a dumb
 
 - **New survey question:** append an item to a section in
   `libs/core/src/schema/sections.ts` (options are append-only; ids are
-  forever — including retired ids, which are never reused), then add its id
-  to exactly one pack in `packs.ts` (a guard spec enforces the partition;
-  tag it `tier: 'core'` only if it belongs in the short first pass).
-  Existing profiles keep decoding — the schema freeze test
-  (`schema-v2.freeze.json`) enforces this in CI.
+  forever — including retired ids, which are never reused). Tag it
+  `tier: 'core'` only if it belongs in the short first pass, and add a gate
+  in `schema/gating.ts` if it should only be offered once earlier answers
+  make it meaningful. Existing profiles keep decoding — the schema freeze
+  test (`schema-v2.freeze.json`) enforces this in CI.
 - **New question _type_:** add it to the `Item` union, then the compiler
   walks you to the three registries (similarity, item editor, answer
   renderer) via exhaustiveness checks.
@@ -208,20 +212,24 @@ Hash routing means no server rewrites are needed anywhere, and a scanned QR
 node server/moxy-sync-server.ts     # Node >= 24; no npm install needed
 ```
 
-| Env                      | Default          | Meaning                                           |
-| ------------------------ | ---------------- | ------------------------------------------------- |
-| `PORT`                   | `8787`           | listen port (`0` = ephemeral, printed as JSON)    |
-| `MOXY_DB_PATH`           | `./moxy-sync.db` | SQLite file (`:memory:` for testing)              |
-| `MOXY_MAX_BLOB_BYTES`    | `262144`         | per-blob ciphertext size cap                      |
-| `MOXY_TRUST_PROXY`       | unset            | `1` to honor `X-Forwarded-For` for rate limits    |
-| `MOXY_MAX_PROFILES`      | `100000`         | circuit breaker: creates answer 503 beyond        |
-| `MOXY_MAX_GROUPS`        | `10000`          | group circuit breaker                             |
-| `MOXY_MAX_GROUP_MEMBERS` | `32`             | deposits per group                                |
-| `MOXY_MAX_BOOP_INBOXES`  | `200000`         | boop inbox circuit breaker                        |
-| `MOXY_METRICS_K`         | `10`             | k-floor: aggregate buckets under this stay hidden |
-| `MOXY_GC_EMPTY_MS`       | 7 days           | never-populated profiles die after this           |
-| `MOXY_GC_IDLE_MS`        | 365 days         | populated ones, after no edit _and_ no view       |
-| `MOXY_GC_SWEEP_MS`       | 1 hour           | GC sweep interval                                 |
+| Env                       | Default          | Meaning                                           |
+| ------------------------- | ---------------- | ------------------------------------------------- |
+| `PORT`                    | `8787`           | listen port (`0` = ephemeral, printed as JSON)    |
+| `MOXY_DB_PATH`            | `./moxy-sync.db` | SQLite file (`:memory:` for testing)              |
+| `MOXY_MAX_BLOB_BYTES`     | `262144`         | per-blob ciphertext size cap                      |
+| `MOXY_TRUST_PROXY`        | unset            | `1` to honor `X-Forwarded-For` for rate limits    |
+| `MOXY_MAX_PROFILES`       | `100000`         | circuit breaker: creates answer 503 beyond        |
+| `MOXY_MAX_GROUPS`         | `10000`          | group circuit breaker                             |
+| `MOXY_MAX_GROUP_MEMBERS`  | `32`             | deposits per group                                |
+| `MOXY_MAX_BOOP_INBOXES`   | `200000`         | boop inbox circuit breaker                        |
+| `MOXY_METRICS_K`          | `10`             | k-floor: aggregate buckets under this stay hidden |
+| `MOXY_READS_PER_MINUTE`   | `120`            | per-IP GET budget                                 |
+| `MOXY_WRITES_PER_MINUTE`  | `30`             | per-IP write budget                               |
+| `MOXY_BOOPS_PER_MINUTE`   | `5`              | per-IP knock-POST budget                          |
+| `MOXY_METRICS_PER_MINUTE` | `5`              | per-IP metrics-POST budget                        |
+| `MOXY_GC_EMPTY_MS`        | 7 days           | never-populated profiles die after this           |
+| `MOXY_GC_IDLE_MS`         | 365 days         | populated ones, after no edit _and_ no view       |
+| `MOXY_GC_SWEEP_MS`        | 1 hour           | GC sweep interval                                 |
 
 Run it behind a TLS reverse proxy. The API:
 `GET /v2/health` ·
