@@ -14,6 +14,7 @@ before you're done — CI runs exactly this:
 ```sh
 npm run format:check      # prettier (npm run format fixes)
 npm run typecheck:server  # tsc over server/ — vitest strips types unchecked
+npm run typecheck:scripts # tsc over scripts/ — no suite runs them
 npm run test:core         # libs/core, plain Node
 npm run test:ui           # libs/ui pure modules, plain Node
 npm run test:app          # Angular components, vitest + jsdom
