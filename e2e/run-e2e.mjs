@@ -413,8 +413,8 @@ try {
 
   // --- groups: create, join both tiers, compare, kick, re-mint --------------
   step = 'group-create';
-  await page.goto(`${BASE}#/me`);
-  await page.waitForSelector('.profile-head');
+  await page.goto(`${BASE}#/groups`);
+  await page.waitForSelector('text=My groups');
   await page.click('text=🐣 Create a group');
   await page.waitForSelector('text=Your group is hatched', { timeout: 60000 });
   const groupAdminPhrase = (await page.textContent('.notice .passphrase-box')).trim();
@@ -510,7 +510,7 @@ try {
   }
 
   step = 'boop-receive';
-  await page.goto(`${BASE}#/me`); // A's dashboard polls on load
+  await page.goto(`${BASE}#/menagerie`); // the shell polls; this page shows them
   await page.waitForSelector(`text=says it’s from`, { timeout: 30000 });
   const boopRow = await page.textContent('body');
   if (!boopRow.includes(personaNameB)) fail('boop does not show the claimed sender creature');
@@ -532,7 +532,7 @@ try {
   await page.waitForSelector('text=Reply sent', { timeout: 30000 });
 
   step = 'boop-answer';
-  await pageB.goto(`${BASE}#/me`);
+  await pageB.goto(`${BASE}#/menagerie`);
   await pageB.waitForSelector('text=↩️ replied', { timeout: 30000 });
   const answerBody = await pageB.textContent('body');
   if (!answerBody.includes('We seem compatible')) fail('reply intents missing');
@@ -624,6 +624,9 @@ try {
     await card.locator('.q-row', { hasText: 'Friendship' }).first()
       .locator('.pip', { hasText: 'Into it' }).click();
   });
+  // The opt-in moved to /settings with the rest of the set-once controls.
+  await mPage.goto(`${BASE}#/settings`);
+  await mPage.waitForSelector('text=Contribute anonymously');
   await mPage.locator('label:has-text("Count my answers") input').check();
   await mPage.waitForSelector('text=Counted — thank you', { timeout: 60000 });
 
