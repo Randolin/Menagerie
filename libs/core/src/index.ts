@@ -54,6 +54,7 @@ export {
   BANNER_VARIANTS,
   BANNER_TIMES,
   BANNER_DENSITIES,
+  BANNER_SCALES,
   type BannerStyle,
   type BannerPersonaLike,
 } from './persona/banner';

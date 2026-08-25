@@ -21,6 +21,14 @@ export { QrCodeComponent } from './widgets/qr-code.component';
 export { PersonaChipComponent } from './widgets/persona-chip.component';
 export { CreatureIconComponent } from './widgets/creature-icon.component';
 export { LocationBannerComponent } from './widgets/location-banner.component';
+export {
+  locationPattern,
+  PATTERN_WIDTH,
+  PATTERN_HEIGHT,
+  type PatternShape,
+} from './patterns/location-pattern';
+export { voronoiCells, shrinkPolygon, type Point } from './patterns/voronoi';
+export { mulberry32 } from './patterns/rng';
 export { habitatClass, habitatMotif, type HabitatMotif } from './widgets/persona-decor';
 export { CREATURE_SPRITES, type PixelSprite } from './creatures/pixel-grids';
 export { creaturePixelSvg, creatureSpriteRects, spriteSvg } from './creatures/pixel-art';

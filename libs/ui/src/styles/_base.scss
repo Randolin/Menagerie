@@ -158,7 +158,7 @@ main {
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
-  height: 44px;
+  height: 72px;
   margin: calc(-1 * clamp(18px, 3vw, 28px)) calc(-1 * clamp(18px, 3vw, 28px)) 16px;
   padding: 0 16px;
   border-top-left-radius: var(--radius);
@@ -182,6 +182,16 @@ main {
   position: absolute;
   inset: 0;
   background: var(--place-wash, transparent);
+  pointer-events: none;
+}
+.location-pattern {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* Shapes inherit currentColor, so the pattern's colour is set here and only
+     here — the generator emits geometry and opacity, never a colour. */
+  color: color-mix(in srgb, var(--place-base) 78%, var(--ink));
   pointer-events: none;
 }
 .location-motifs { display: inline-flex; gap: 6px; position: relative; }

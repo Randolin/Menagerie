@@ -22,6 +22,7 @@ import { ADJECTIVES_A, ADJECTIVES_B, ANIMALS } from './wordlists';
 export const BANNER_VARIANTS = 8;
 export const BANNER_TIMES = 4;
 export const BANNER_DENSITIES = 4;
+export const BANNER_SCALES = 4;
 
 export interface BannerStyle {
   readonly family: PlaceFamily;
@@ -33,6 +34,17 @@ export interface BannerStyle {
   readonly timeClass: string;
   /** 0..3 motif repetitions. Head-derived. */
   readonly density: number;
+  /**
+   * Seed for the banner's generated pattern geometry — cell positions, jitter,
+   * rotation, scatter. HEAD-derived, and that is not a detail: geometry is a
+   * side channel exactly like colour. If cell layout were seeded from the tail,
+   * an attacker could fingerprint the arrangement off a screenshot and recover
+   * the place word even with the palette held constant. The tail chooses WHICH
+   * pattern (via family); it never influences how that pattern is drawn.
+   */
+  readonly seed: number;
+  /** 0..3 pattern scale step, coarse → fine. Head-derived. */
+  readonly scale: number;
   /** Evocative family label; never names a word from the phrase. */
   readonly label: string;
   /** Abstract family motif. */
@@ -77,6 +89,11 @@ export function bannerStyleFor(
     variantClass: `place-v${(persona.colorIndex + aIndex) % BANNER_VARIANTS}`,
     timeClass: `place-t${animalIndex % BANNER_TIMES}`,
     density: bIndex % BANNER_DENSITIES,
+    // Mixed from all three head indices so different creatures get visibly
+    // different geometry; the multipliers are arbitrary odd-ish spreads, not
+    // a hash — this needs to be stable and cheap, not unpredictable.
+    seed: (aIndex * 2654435761 + bIndex * 40503 + animalIndex * 2246822519) >>> 0,
+    scale: (aIndex + animalIndex) % BANNER_SCALES,
     label: meta.label,
     motif: meta.motif,
   };

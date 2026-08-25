@@ -55,7 +55,7 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
         not a vault door. The creature’s accent color is computed from the public three
         words alone. One thing on screen does reflect the tail: the page’s location
         banner shows the <em>kind</em> of place your last word names — one of twelve
-        landscapes, never the word itself. That publishes about 3.5 bits to anyone
+        landscapes, drawn as its own pattern, never the word itself. That publishes about 3.5 bits to anyone
         holding the phrase already, which is why the lists grew to 4,096: the extra
         3 bits pay for it, leaving the tail’s effective secrecy where it was (~32.4
         bits) while giving you a place you can actually picture and remember. Your edit control
