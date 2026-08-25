@@ -1,47 +1,29 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import {
   boopPublicKey,
-  buildBoop,
-  buildDeposit,
   buildMatchTokens,
-  buildMetricsBuckets,
-  currentEpoch,
-  deriveMetricsToken,
   buildSharePayload,
   canonicalViewPhrase,
   decryptBlob,
   deriveEditKeys,
-  deriveGroupAdminToken,
-  deriveGroupReadKeys,
   deriveViewKeys,
-  emptyGroupMeta,
   emptyPrivData,
   encryptBlob,
   generateBoopKeyPair,
   HatchError,
-  migrateBoopContent,
   migratePrivData,
-  mintBoopBoxKey,
   mintEditPhrase,
-  mintPseudonym,
   mintViewPhrase,
-  openSealed,
-  openWithKey,
   personaFromViewPhrase,
   PROFILE_VERSION,
-  pseudonymEmoji,
   randomLocator,
   randomSalt,
   randomToken,
-  sealTo,
-  sealWithKey,
   viewUrlFor,
   type Acceptable,
   type Answers,
-  type BoopContact,
   type BoopContent,
   type BoopCreds,
-  type BoopReachability,
   type Weights,
   type EditKeys,
   type Persona,
@@ -94,8 +76,6 @@ export class ProfileSessionStore {
   readonly metricsOptIn = signal(false);
   readonly incomingBoops = signal<readonly IncomingBoop[]>([]);
   readonly sentBoops = signal<readonly SentBoop[]>([]);
-  /** Epochs this tab already submitted (server dedups for real). */
-  private readonly submittedEpochs = new Set<string>();
   readonly saveState = signal<SaveState>('idle');
   readonly remembered = signal(false);
 
@@ -367,165 +347,7 @@ export class ProfileSessionStore {
     await this.save();
   }
 
-  // ---- groups -------------------------------------------------------------
-
-  /**
-   * Mint and register a group. Returns both phrases; the admin phrase is
-   * shown once (and kept in PrivData so the creator's login recovers it).
-   */
-  async createGroup(): Promise<{ groupPhrase: string; adminPhrase: string }> {
-    const client = this.requireClient();
-    this.requireSession();
-    return this.withRemint(async () => {
-      const groupPhrase = await mintViewPhrase();
-      const adminPhrase = await mintEditPhrase();
-      const { groupLocator, groupKey } = await deriveGroupReadKeys(groupPhrase);
-      const adminToken = await deriveGroupAdminToken(adminPhrase);
-      const blobMeta = await encryptBlob(emptyGroupMeta(Date.now()), groupKey);
-      await client.createGroup({ group_locator: groupLocator, blob_meta: blobMeta }, adminToken);
-      this.mutateGroups((list) => [
-        ...list,
-        { id: crypto.randomUUID(), groupPhrase, adminPhrase, addedAt: Date.now() },
-      ]);
-      await this.save();
-      return { groupPhrase, adminPhrase };
-    });
-  }
-
-  /**
-   * Deposit into a group (join, change tier, or refresh a stale snapshot).
-   * Tier 1 shares an answer snapshot under a pseudonym; tier 2 adds the view
-   * phrase — creature identity and reach-back for every group-phrase holder.
-   */
-  async depositToGroup(rawGroupPhrase: string, tier: 1 | 2): Promise<void> {
-    const client = this.requireClient();
-    this.requireSession();
-    const groupPhrase = canonicalViewPhrase(rawGroupPhrase);
-    const { groupLocator, groupKey } = await deriveGroupReadKeys(groupPhrase);
-    const existing = this.groups().find((g) => g.groupPhrase === groupPhrase);
-    const pseudonym = existing?.pseudonym
-      ? {
-          pseudonym: existing.pseudonym,
-          emoji: existing.emoji ?? pseudonymEmoji(existing.pseudonym),
-        }
-      : mintPseudonym();
-    const deposit = buildDeposit(
-      tier,
-      this.draft.answers(),
-      this.draft.weights(),
-      this.draft.acceptable(),
-      tier === 2 ? (this.viewPhrase() ?? undefined) : undefined,
-      pseudonym,
-      Date.now(),
-    );
-    const blobMember = await encryptBlob(deposit, groupKey);
-
-    if (existing?.memberLocator && existing.memberToken) {
-      const roster = await client.getGroup(groupLocator);
-      const mine = roster?.members.find((m) => m.member_locator === existing.memberLocator);
-      if (mine) {
-        await client.putMember(
-          groupLocator,
-          existing.memberLocator,
-          existing.memberToken,
-          mine.version,
-          blobMember,
-        );
-        this.mutateGroups((list) =>
-          list.map((g) =>
-            g.id === existing.id
-              ? { ...g, tier, pseudonym: pseudonym.pseudonym, emoji: pseudonym.emoji }
-              : g,
-          ),
-        );
-        await this.save();
-        return;
-      }
-      // The old deposit is gone (kicked, or the group re-minted) — fresh join.
-    }
-
-    const memberLocator = randomLocator();
-    const memberToken = randomToken();
-    await client.joinGroup(groupLocator, memberToken, {
-      member_locator: memberLocator,
-      blob_member: blobMember,
-    });
-    this.mutateGroups((list) => {
-      const entry: SavedGroupMembership = {
-        id: existing?.id ?? crypto.randomUUID(),
-        groupPhrase,
-        adminPhrase: existing?.adminPhrase,
-        memberLocator,
-        memberToken,
-        pseudonym: pseudonym.pseudonym,
-        emoji: pseudonym.emoji,
-        tier,
-        addedAt: existing?.addedAt ?? Date.now(),
-      };
-      return existing ? list.map((g) => (g.id === existing.id ? entry : g)) : [...list, entry];
-    });
-    await this.save();
-  }
-
-  /** Remove my deposit (idempotent if already gone) and forget the group. */
-  async leaveGroup(id: string): Promise<void> {
-    const client = this.requireClient();
-    const entry = this.groups().find((g) => g.id === id);
-    if (!entry) return;
-    if (entry.memberLocator && entry.memberToken) {
-      const { groupLocator } = await deriveGroupReadKeys(entry.groupPhrase);
-      await client.removeMember(groupLocator, entry.memberLocator, entry.memberToken, 'member');
-    }
-    this.mutateGroups((list) => list.filter((g) => g.id !== id));
-    await this.save();
-  }
-
-  /**
-   * Re-mint a group I created: every old invite link, QR, and deposit dies;
-   * a fresh roster appears under new phrases. Old deposits are cleared first
-   * (they'd be sealed under the dead key anyway); my own is re-deposited.
-   * Returns the new group phrase.
-   */
-  async remintGroup(id: string): Promise<string> {
-    const client = this.requireClient();
-    const entry = this.groups().find((g) => g.id === id);
-    if (!entry?.adminPhrase) throw new Error('Only the group creator can re-mint.');
-    const oldAdminToken = await deriveGroupAdminToken(entry.adminPhrase);
-    const { groupLocator: oldLocator } = await deriveGroupReadKeys(entry.groupPhrase);
-    const roster = await client.getGroup(oldLocator);
-    if (!roster) throw new Error('This group no longer exists.');
-    for (const member of roster.members) {
-      await client.removeMember(oldLocator, member.member_locator, oldAdminToken, 'admin');
-    }
-    return this.withRemint(async () => {
-      const groupPhrase = await mintViewPhrase();
-      const adminPhrase = await mintEditPhrase();
-      const { groupLocator, groupKey } = await deriveGroupReadKeys(groupPhrase);
-      const adminToken = await deriveGroupAdminToken(adminPhrase);
-      const blobMeta = await encryptBlob(emptyGroupMeta(Date.now()), groupKey);
-      await client.putGroup(
-        oldLocator,
-        oldAdminToken,
-        roster.version,
-        { blob_meta: blobMeta, new_group_locator: groupLocator },
-        adminToken,
-      );
-      const hadDeposit = Boolean(entry.memberLocator);
-      const tier = entry.tier ?? 1;
-      this.mutateGroups((list) =>
-        list.map((g) =>
-          g.id === id
-            ? { ...g, groupPhrase, adminPhrase, memberLocator: undefined, memberToken: undefined }
-            : g,
-        ),
-      );
-      await this.save();
-      if (hadDeposit) await this.depositToGroup(groupPhrase, tier);
-      return groupPhrase;
-    });
-  }
-
-  // ---- boops --------------------------------------------------------------
+  // ---- boop inbox lifecycle (the messaging flows live in BoopStore) -------
 
   /**
    * Make this profile boopable: mint a sealed-box keypair and a random
@@ -569,261 +391,15 @@ export class ProfileSessionStore {
     }
   }
 
-  /**
-   * Stage a boop toward one recipient: the reply box is minted, persisted
-   * (see ensureBoopInbox for why persistence comes first), and registered
-   * now — at composer-open — so its creation never sits adjacent to the
-   * knock POST in the server's view of time; the human filling in the
-   * composer provides the jitter.
-   */
-  async prepareBoop(label: string, emoji: string): Promise<string> {
-    const client = this.requireClient();
-    this.requireSession();
-    const entry: SentBoop = {
-      id: crypto.randomUUID(),
-      label,
-      emoji,
-      replyBox: { locator: randomLocator(), token: randomToken(), key: mintBoopBoxKey() },
-      sentAt: Date.now(),
-      status: 'pending',
-    };
-    this.mutateSentBoops((list) => [...list, entry]);
-    await this.save();
-    await client.createBoopInbox(entry.replyBox.locator, entry.replyBox.token);
-    return entry.id;
-  }
-
-  /** Composer closed without sending: tear the staged reply box down. */
-  async discardBoop(id: string): Promise<void> {
-    const client = this.requireClient();
-    const entry = this.sentBoops().find((b) => b.id === id);
-    if (!entry || entry.status !== 'pending') return;
-    await client
-      .deleteBoopInbox(entry.replyBox.locator, entry.replyBox.token)
-      .catch(() => undefined);
-    this.mutateSentBoops((list) => list.filter((b) => b.id !== id));
-    await this.save();
-  }
-
-  /**
-   * Seal and deliver a staged boop. Everything inside is a claim the
-   * recipient can't verify — the advisory language in the composer owns
-   * that honesty. Throws HatchError not_found when the recipient rotated
-   * (no longer accepting), at_capacity when their inbox is full.
-   */
-  async sendBoop(
-    id: string,
-    target: BoopReachability,
-    intents: readonly number[],
-    attachments?: { viewPhrase?: string; contact?: BoopContact },
-  ): Promise<void> {
-    const client = this.requireClient();
-    this.requireSession();
-    const entry = this.sentBoops().find((b) => b.id === id);
-    if (!entry) throw new Error('This boop was discarded.');
-    const persona = this.persona();
-    const content = buildBoop(
-      'boop',
-      { label: persona?.name ?? 'a creature', emoji: persona?.emoji ?? '🥚' },
-      intents,
-      attachments,
-      entry.replyBox,
-    );
-    await client.postKnock(target.inbox, await sealTo(target.pub, content));
-    this.mutateSentBoops((list) =>
-      list.map((b) => (b.id === id ? { ...b, status: 'sent' as const } : b)),
-    );
-    await this.save();
-  }
-
-  /**
-   * Read my inbox. Knocks that don't open with my key are deleted on the
-   * spot — garbage cannot occupy the 16 pending slots for 30 days — and
-   * duplicate ciphertexts collapse to one.
-   */
-  async pollBoops(): Promise<void> {
-    const client = this.requireClient();
-    const { priv } = this.requireSession();
-    const creds = priv.boop;
-    if (!creds) return;
-    const knocks = await client.listKnocks(creds.inbox, creds.token);
-    if (knocks === null) {
-      // Rotated away or GC'd — self-heal with the stored credentials.
-      await client.createBoopInbox(creds.inbox, creds.token).catch(() => undefined);
-      this.incomingBoops.set([]);
-      return;
-    }
-    const seen = new Set<string>();
-    const opened: IncomingBoop[] = [];
-    for (const knock of knocks) {
-      if (seen.has(knock.blob)) {
-        void client.deleteKnock(creds.inbox, creds.token, knock.id).catch(() => undefined);
-        continue;
-      }
-      seen.add(knock.blob);
-      try {
-        const content = migrateBoopContent(await openSealed(creds.priv, knock.blob));
-        opened.push({ id: knock.id, created: knock.created, content });
-      } catch {
-        void client.deleteKnock(creds.inbox, creds.token, knock.id).catch(() => undefined);
-      }
-    }
-    this.incomingBoops.set(opened);
-  }
-
-  /**
-   * The one reply: sealed under the key that rode inside the knock, dropped
-   * into the sender's reply box, and the original knock is deleted — the
-   * exchange is complete on our side.
-   */
-  async replyToBoop(
-    boop: IncomingBoop,
-    intents: readonly number[],
-    attachments?: { viewPhrase?: string; contact?: BoopContact },
-  ): Promise<void> {
-    const client = this.requireClient();
-    this.requireSession();
-    const replyBox = boop.content.replyBox;
-    if (!replyBox) throw new Error('This boop carries no reply box.');
-    const persona = this.persona();
-    const content = buildBoop(
-      'reply',
-      { label: persona?.name ?? 'a creature', emoji: persona?.emoji ?? '🥚' },
-      intents,
-      attachments,
-    );
-    await client.postKnock(replyBox.locator, await sealWithKey(replyBox.key, content));
-    await this.dismissBoop(boop.id);
-  }
-
-  /** Silent decline — deletion is the whole gesture. */
-  async dismissBoop(knockId: string): Promise<void> {
-    const client = this.requireClient();
-    const { priv } = this.requireSession();
-    const creds = priv.boop;
-    if (creds) await client.deleteKnock(creds.inbox, creds.token, knockId).catch(() => undefined);
-    this.incomingBoops.set(this.incomingBoops().filter((b) => b.id !== knockId));
-  }
-
-  /**
-   * Check every outstanding reply box. A found reply is kept in PrivData
-   * and its box torn down; a missing box is re-created from stored creds
-   * (the knock may still have gone out — the reply must stay receivable).
-   */
-  async pollSentBoops(): Promise<void> {
-    const client = this.requireClient();
-    this.requireSession();
-    let changed = false;
-    for (const entry of this.sentBoops()) {
-      if (entry.status === 'answered') continue;
-      const knocks = await client
-        .listKnocks(entry.replyBox.locator, entry.replyBox.token)
-        .catch(() => null);
-      if (knocks === null) {
-        await client
-          .createBoopInbox(entry.replyBox.locator, entry.replyBox.token)
-          .catch(() => undefined);
-        continue;
-      }
-      for (const knock of knocks) {
-        try {
-          const reply = migrateBoopContent(await openWithKey(entry.replyBox.key, knock.blob));
-          this.mutateSentBoops((list) =>
-            list.map((b) => (b.id === entry.id ? { ...b, status: 'answered' as const, reply } : b)),
-          );
-          await client
-            .deleteBoopInbox(entry.replyBox.locator, entry.replyBox.token)
-            .catch(() => undefined);
-          changed = true;
-          break;
-        } catch {
-          void client
-            .deleteKnock(entry.replyBox.locator, entry.replyBox.token, knock.id)
-            .catch(() => undefined);
-        }
-      }
-    }
-    if (changed) await this.save();
-  }
-
-  /** Forget a sent boop; an unanswered reply box is torn down with it. */
-  async removeSentBoop(id: string): Promise<void> {
-    const client = this.requireClient();
-    const entry = this.sentBoops().find((b) => b.id === id);
-    if (!entry) return;
-    if (entry.status !== 'answered') {
-      await client
-        .deleteBoopInbox(entry.replyBox.locator, entry.replyBox.token)
-        .catch(() => undefined);
-    }
-    this.mutateSentBoops((list) => list.filter((b) => b.id !== id));
-    await this.save();
-  }
-
-  // ---- anonymous metrics --------------------------------------------------
-
-  /**
-   * Toggle the anonymous-counter opt-in. Opting IN submits immediately —
-   * the person is present and consenting right now, so instant feedback
-   * beats a stealth delay; only recurring monthly re-submissions are
-   * decoupled from other traffic (see maybeSubmitMetrics).
-   */
-  async setMetricsOptIn(on: boolean): Promise<void> {
-    const { priv } = this.requireSession();
-    priv.metricsOptIn = on;
-    this.metricsOptIn.set(on);
-    await this.save();
-    if (on) await this.submitMetricsNow();
-  }
-
-  /**
-   * Fire the current epoch's submission if opted in and not yet counted.
-   * Called on dashboard visits; recurring submissions ride a random 10–90 s
-   * delay so they never sit next to a profile save in the server's logs.
-   * `metricsLastEpoch` is only persisted by the NEXT organic save — a
-   * duplicate submission is rejected harmlessly server-side.
-   */
-  maybeSubmitMetrics(): void {
-    const priv = this.priv;
-    if (!priv?.metricsOptIn) return;
-    const epoch = currentEpoch(Date.now());
-    if (this.submittedEpochs.has(epoch) || priv.metricsLastEpoch === epoch) return;
-    const delay = 10_000 + Math.floor(Math.random() * 80_000);
-    setTimeout(() => {
-      void this.submitMetricsNow().catch(() => undefined);
-    }, delay);
-    this.submittedEpochs.add(epoch); // scheduled counts as handled for this tab
-  }
-
-  private async submitMetricsNow(): Promise<void> {
-    const client = this.requireClient();
-    const { priv } = this.requireSession();
-    const viewPhrase = this.viewPhrase();
-    if (!viewPhrase || !priv.metricsOptIn) return;
-    const epoch = currentEpoch(Date.now());
-    const buckets = buildMetricsBuckets(this.draft.answers());
-    if (buckets.length === 0) return; // no age band answered — nothing to say
-    try {
-      await client.submitMetrics({
-        epoch,
-        token: await deriveMetricsToken(viewPhrase),
-        buckets,
-      });
-    } catch (err) {
-      // Already counted this epoch — exactly the goal.
-      if (!(err instanceof HatchError && err.failure.kind === 'conflict')) throw err;
-    }
-    this.submittedEpochs.add(epoch);
-    priv.metricsLastEpoch = epoch; // rides the next organic save
-  }
-
-  // ---- internals ----------------------------------------------------------
+  // ---- internal API for the domain stores (groups/boops/metrics) ----------
+  // GroupMembershipStore, BoopStore, and MetricsStore build on these; they
+  // are not meant for components, which should call the domain stores.
 
   /**
    * Run a mint-and-register attempt, re-minting on the astronomically rare
    * locator collision (server 409 locator_taken), up to three retries.
    */
-  private async withRemint<T>(attempt: () => Promise<T>): Promise<T> {
+  async withRemint<T>(attempt: () => Promise<T>): Promise<T> {
     for (let tries = 0; ; tries++) {
       try {
         return await attempt();
@@ -835,6 +411,8 @@ export class ProfileSessionStore {
       }
     }
   }
+
+  // ---- internals ----------------------------------------------------------
 
   private async doSave(): Promise<void> {
     const client = this.requireClient();
@@ -961,27 +539,30 @@ export class ProfileSessionStore {
     this.connections.set(priv.connections);
   }
 
-  private mutateGroups(
-    fn: (list: readonly SavedGroupMembership[]) => SavedGroupMembership[],
-  ): void {
+  mutateGroups(fn: (list: readonly SavedGroupMembership[]) => SavedGroupMembership[]): void {
     const { priv } = this.requireSession();
     priv.groups = fn(priv.groups ?? []);
     this.groups.set(priv.groups);
   }
 
-  private mutateSentBoops(fn: (list: readonly SentBoop[]) => SentBoop[]): void {
+  mutateSentBoops(fn: (list: readonly SentBoop[]) => SentBoop[]): void {
     const { priv } = this.requireSession();
     priv.sentBoops = fn(priv.sentBoops ?? []);
     this.sentBoops.set(priv.sentBoops);
   }
 
-  private requireClient() {
+  requireClient() {
     const client = this.config.client();
     if (!client) throw new Error('No profile server is configured.');
     return client;
   }
 
-  private requireSession(): { editKeys: EditKeys; viewKeys: ViewKeys; priv: PrivData } {
+  /** The decrypted private data, or null when logged out. */
+  sessionPriv(): PrivData | null {
+    return this.priv;
+  }
+
+  requireSession(): { editKeys: EditKeys; viewKeys: ViewKeys; priv: PrivData } {
     if (!this.editKeys || !this.viewKeys || !this.priv) throw new Error('No active session.');
     return { editKeys: this.editKeys, viewKeys: this.viewKeys, priv: this.priv };
   }

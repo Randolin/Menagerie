@@ -3,6 +3,8 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { CreatureIconComponent, ToastComponent, ToastService } from '@moxy/ui';
 import { ThemeStore } from './stores/theme.store';
 import { ProfileSessionStore } from './stores/profile-session.store';
+import { BoopStore } from './stores/boop.store';
+import { MetricsStore } from './stores/metrics.store';
 
 @Component({
   selector: 'app-root',
@@ -14,6 +16,8 @@ export class App {
   private readonly theme = inject(ThemeStore);
   private readonly toast = inject(ToastService);
   protected readonly session = inject(ProfileSessionStore);
+  private readonly boops = inject(BoopStore);
+  private readonly metrics = inject(MetricsStore);
   private readonly router = inject(Router);
 
   /** Waiting boops, for the nav badge. */
@@ -46,9 +50,9 @@ export class App {
     effect(() => {
       if (!this.session.active() || polled) return;
       polled = true;
-      this.session.maybeSubmitMetrics();
-      void this.session.pollBoops().catch(() => undefined);
-      void this.session.pollSentBoops().catch(() => undefined);
+      this.metrics.maybeSubmitMetrics();
+      void this.boops.pollBoops().catch(() => undefined);
+      void this.boops.pollSentBoops().catch(() => undefined);
     });
   }
 

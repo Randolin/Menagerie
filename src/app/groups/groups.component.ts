@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { extractGroupPhrase } from '@moxy/core';
 import { ToastService } from '@moxy/ui';
 import { ProfileSessionStore } from '../stores/profile-session.store';
+import { GroupMembershipStore } from '../stores/group-membership.store';
 
 /** The groups you belong to, and the door into a new one. */
 @Component({
@@ -73,6 +74,7 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
 })
 export class GroupsComponent {
   protected readonly session = inject(ProfileSessionStore);
+  private readonly groupStore = inject(GroupMembershipStore);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
@@ -87,7 +89,7 @@ export class GroupsComponent {
   protected async createGroup(): Promise<void> {
     this.creatingGroup.set(true);
     try {
-      this.newGroup.set(await this.session.createGroup());
+      this.newGroup.set(await this.groupStore.createGroup());
       this.toast.show('Group hatched — save the admin phrase');
     } catch (err) {
       this.toast.error(err);
