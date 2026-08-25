@@ -3,7 +3,7 @@
 // hour-coarse lifecycle timestamps for garbage collection. The server can
 // never decrypt anything it stores.
 import { DatabaseSync } from 'node:sqlite';
-import { timingSafeEqual } from 'node:crypto';
+import { HOUR, coarseNow, tokenMatches } from './db-util.ts';
 
 export interface ProfileViewRow {
   blob_view: string;
@@ -36,18 +36,6 @@ export type PutResult =
   | { status: 'locator_taken' };
 
 export type DeleteResult = 'deleted' | 'bad_token' | 'not_found';
-
-const HOUR = 3_600_000;
-
-function coarseNow(): number {
-  return Math.floor(Date.now() / HOUR) * HOUR;
-}
-
-function tokenMatches(storedHex: string, presentedHex: string): boolean {
-  const a = Buffer.from(storedHex, 'hex');
-  const b = Buffer.from(presentedHex, 'hex');
-  return a.length === b.length && timingSafeEqual(a, b);
-}
 
 export class ProfilesDb {
   private readonly db: DatabaseSync;

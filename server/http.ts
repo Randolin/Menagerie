@@ -113,11 +113,25 @@ export function createApp(opts: AppOptions) {
     HATCH_BLOB_RE.test(blob) &&
     Buffer.byteLength(blob, 'utf8') <= opts.maxBlobBytes;
 
+  const sha256Hex = (token: string): string =>
+    createHash('sha256').update(token, 'utf8').digest('hex');
+
   /** Header token → SHA-256 hex, or null if missing/malformed. */
   const tokenHashFrom = (req: IncomingMessage, header: string): string | null => {
     const token = req.headers[header];
     if (typeof token !== 'string' || !HATCH_LOCATOR_RE.test(token)) return null;
-    return createHash('sha256').update(token, 'utf8').digest('hex');
+    return sha256Hex(token);
+  };
+
+  /** Positive-integer If-Match header, or null after answering 400 itself. */
+  const parseIfMatch = (req: IncomingMessage, res: ServerResponse): number | null => {
+    const raw = req.headers['if-match'];
+    const version = Number(raw);
+    if (typeof raw !== 'string' || !Number.isInteger(version) || version < 1) {
+      sendError(res, 400, 'bad_request', { message: 'If-Match must be a positive integer' });
+      return null;
+    }
+    return version;
   };
 
   /** Capped JSON body, or null after answering 413/400 itself. */
@@ -187,7 +201,7 @@ export function createApp(opts: AppOptions) {
           sendError(res, 400, 'bad_request', { message: 'malformed buckets' });
           return;
         }
-        const tokenHash = createHash('sha256').update(token, 'utf8').digest('hex');
+        const tokenHash = sha256Hex(token);
         const outcome = opts.metrics.submit(epoch, tokenHash, buckets as string[]);
         if (outcome === 'ok') send(res, 201, { ok: true });
         else sendError(res, 409, 'version_conflict', { message: 'already submitted this epoch' });
@@ -272,18 +286,8 @@ export function createApp(opts: AppOptions) {
           sendError(res, 400, 'bad_request', { message: 'missing or malformed edit token' });
           return;
         }
-        const raw = await readBody(req, bodyCap);
-        if (raw === null) {
-          sendError(res, 413, 'too_large');
-          return;
-        }
-        let body: Record<string, unknown>;
-        try {
-          body = JSON.parse(raw) as Record<string, unknown>;
-        } catch {
-          sendError(res, 400, 'bad_request', { message: 'body must be JSON' });
-          return;
-        }
+        const body = await readJson(req, res);
+        if (!body) return;
         const viewLocator = body['view_locator'];
         const editLocator = body['edit_locator'];
         if (
@@ -348,7 +352,7 @@ export function createApp(opts: AppOptions) {
           sendError(res, 400, 'bad_request', { message: 'malformed locator or token' });
           return;
         }
-        const tokenHash = createHash('sha256').update(token, 'utf8').digest('hex');
+        const tokenHash = sha256Hex(token);
         const outcome = opts.boops.createInbox(locator, tokenHash);
         if (outcome === 'created') send(res, 201, { ok: true });
         else sendError(res, 409, 'locator_taken');
@@ -501,11 +505,8 @@ export function createApp(opts: AppOptions) {
             sendError(res, 400, 'bad_request', { message: 'missing or malformed member token' });
             return;
           }
-          const ifVersion = Number(req.headers['if-match']);
-          if (!Number.isInteger(ifVersion) || ifVersion < 1) {
-            sendError(res, 400, 'bad_request', { message: 'If-Match must be a positive integer' });
-            return;
-          }
+          const ifVersion = parseIfMatch(req, res);
+          if (ifVersion === null) return;
           const body = await readJson(req, res);
           if (!body) return;
           if (!validBlob(body['blob_member'])) {
@@ -556,11 +557,8 @@ export function createApp(opts: AppOptions) {
           return;
         }
         if (method === 'PUT') {
-          const ifVersion = Number(req.headers['if-match']);
-          if (!Number.isInteger(ifVersion) || ifVersion < 1) {
-            sendError(res, 400, 'bad_request', { message: 'If-Match must be a positive integer' });
-            return;
-          }
+          const ifVersion = parseIfMatch(req, res);
+          if (ifVersion === null) return;
           const body = await readJson(req, res);
           if (!body) return;
           if (!validBlob(body['blob_meta'])) {
@@ -648,24 +646,10 @@ export function createApp(opts: AppOptions) {
       }
 
       if (method === 'PUT') {
-        const ifMatchRaw = req.headers['if-match'];
-        const ifVersion = Number(ifMatchRaw);
-        if (typeof ifMatchRaw !== 'string' || !Number.isInteger(ifVersion) || ifVersion < 1) {
-          sendError(res, 400, 'bad_request', { message: 'If-Match must be a positive integer' });
-          return;
-        }
-        const raw = await readBody(req, bodyCap);
-        if (raw === null) {
-          sendError(res, 413, 'too_large');
-          return;
-        }
-        let body: Record<string, unknown>;
-        try {
-          body = JSON.parse(raw) as Record<string, unknown>;
-        } catch {
-          sendError(res, 400, 'bad_request', { message: 'body must be JSON' });
-          return;
-        }
+        const ifVersion = parseIfMatch(req, res);
+        if (ifVersion === null) return;
+        const body = await readJson(req, res);
+        if (!body) return;
         if (!validBlob(body['blob_view']) || !validBlob(body['blob_priv'])) {
           sendError(res, 400, 'bad_request', { message: 'blobs must be base64url' });
           return;

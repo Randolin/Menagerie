@@ -4,7 +4,7 @@
 // server never sees; what the server unavoidably learns in this model is
 // how many deposits each group holds.
 import { DatabaseSync } from 'node:sqlite';
-import { timingSafeEqual } from 'node:crypto';
+import { HOUR, coarseNow, tokenMatches } from './db-util.ts';
 
 export interface GroupRow {
   blob_meta: string;
@@ -30,18 +30,6 @@ export type GroupPutResult =
   | { status: 'bad_token' }
   | { status: 'not_found' }
   | { status: 'locator_taken' };
-
-const HOUR = 3_600_000;
-
-function coarseNow(): number {
-  return Math.floor(Date.now() / HOUR) * HOUR;
-}
-
-function tokenMatches(storedHex: string, presentedHex: string): boolean {
-  const a = Buffer.from(storedHex, 'hex');
-  const b = Buffer.from(presentedHex, 'hex');
-  return a.length === b.length && timingSafeEqual(a, b);
-}
 
 export class GroupsDb {
   private readonly db: DatabaseSync;

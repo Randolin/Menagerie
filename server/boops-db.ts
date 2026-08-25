@@ -6,7 +6,8 @@
 // then knocks moments later from the same address, a timing correlation the
 // client softens with jitter but the model cannot erase.
 import { DatabaseSync } from 'node:sqlite';
-import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { HOUR, coarseNow, tokenMatches } from './db-util.ts';
+import { randomBytes } from 'node:crypto';
 
 export type InboxCreateResult = 'created' | 'locator_taken';
 export type KnockAddResult = 'added' | 'not_found' | 'full' | 'throttled';
@@ -16,18 +17,6 @@ export type InboxListResult =
   | { status: 'ok'; knocks: { id: string; blob: string; created: number }[] }
   | { status: 'bad_token' }
   | { status: 'not_found' };
-
-const HOUR = 3_600_000;
-
-function coarseNow(now = Date.now()): number {
-  return Math.floor(now / HOUR) * HOUR;
-}
-
-function tokenMatches(storedHex: string, presentedHex: string): boolean {
-  const a = Buffer.from(storedHex, 'hex');
-  const b = Buffer.from(presentedHex, 'hex');
-  return a.length === b.length && timingSafeEqual(a, b);
-}
 
 export class BoopsDb {
   private readonly db: DatabaseSync;
