@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { clamp01 } from './series';
 
 /**
  * Completion ring: a single-accent progress donut on a recessive track.
@@ -71,7 +72,7 @@ export class RingComponent {
   protected readonly viewBox = computed(() => `0 0 ${this.size()} ${this.size()}`);
   protected readonly dash = computed(() => {
     const circumference = 2 * Math.PI * this.r();
-    const filled = Math.max(0, Math.min(1, this.fraction())) * circumference;
+    const filled = clamp01(this.fraction()) * circumference;
     return `${filled} ${circumference - filled}`;
   });
 }

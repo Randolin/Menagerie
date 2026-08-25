@@ -7,7 +7,7 @@ import {
   validContactHandle,
   type BoopReachability,
 } from '@moxy/core';
-import { ToastService } from '@moxy/ui';
+import { ToastService, errorText } from '@moxy/ui';
 import { ProfileSessionStore, type IncomingBoop } from '../stores/profile-session.store';
 
 type Phase = 'idle' | 'staging' | 'composing' | 'sending' | 'done';
@@ -221,7 +221,7 @@ export class BoopComposerComponent {
       this.phase.set('composing');
     } catch (err) {
       this.phase.set('idle');
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     }
   }
 
@@ -266,7 +266,7 @@ export class BoopComposerComponent {
       } else if (err instanceof HatchError && err.failure.kind === 'rate_limited') {
         this.error.set('This hatch has heard a lot of knocking lately — try again later.');
       } else {
-        this.error.set(err instanceof Error ? err.message : String(err));
+        this.error.set(errorText(err));
       }
     }
   }

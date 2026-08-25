@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { clamp01, pct, seriesVar } from './series';
 
 /**
  * Directional-fit dumbbell: two values on one 0–100 track, dots in person
@@ -36,7 +37,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
         [attr.cx]="x(pctA())"
         [attr.cy]="TRACK_Y"
         r="7"
-        fill="var(--series-1)"
+        [attr.fill]="color(0)"
         stroke="var(--surface)"
         stroke-width="2"
       />
@@ -44,13 +45,13 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
         [attr.cx]="x(pctB())"
         [attr.cy]="TRACK_Y"
         r="7"
-        fill="var(--series-2)"
+        [attr.fill]="color(1)"
         stroke="var(--surface)"
         stroke-width="2"
       />
       <text
         [attr.x]="x(pctA())"
-        [attr.y]="labelYA()"
+        [attr.y]="LABEL_Y"
         text-anchor="middle"
         font-size="11"
         fill="var(--ink-2)"
@@ -95,23 +96,23 @@ export class DumbbellComponent {
   protected readonly PAD = 16;
   protected readonly TRACK_Y = 34;
 
+  protected readonly color = seriesVar;
+
   protected pctA(): number {
-    return Math.round(this.scoreA() * 100);
+    return pct(clamp01(this.scoreA()));
   }
   protected pctB(): number {
-    return Math.round(this.scoreB() * 100);
+    return pct(clamp01(this.scoreB()));
   }
 
-  protected x(pct: number): number {
-    return this.PAD + ((this.W - 2 * this.PAD) * Math.max(0, Math.min(100, pct))) / 100;
+  protected x(p: number): number {
+    return this.PAD + ((this.W - 2 * this.PAD) * p) / 100;
   }
 
-  /** When the dots crowd, the labels split above/below; else both sit above. */
+  protected readonly LABEL_Y = 16;
+  /** When the dots crowd, the B label drops below; else both sit above. */
   private crowded = computed(() => Math.abs(this.pctA() - this.pctB()) < 18);
-  protected labelYA(): number {
-    return 16;
-  }
   protected labelYB(): number {
-    return this.crowded() ? 58 : 16;
+    return this.crowded() ? 58 : this.LABEL_Y;
   }
 }

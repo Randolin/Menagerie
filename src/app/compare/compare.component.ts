@@ -174,7 +174,7 @@ export class CompareComponent {
       }
       input.value = '';
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     }
   }
 

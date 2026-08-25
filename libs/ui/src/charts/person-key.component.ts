@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { CreatureIconComponent } from '../widgets/creature-icon.component';
 import { seriesVar } from './series';
 
 /**
@@ -9,13 +10,14 @@ import { seriesVar } from './series';
 @Component({
   selector: 'moxy-person-key',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CreatureIconComponent],
   template: `
     <div class="person-key" role="list">
       @for (name of names(); track $index) {
         <span class="person-chip" role="listitem">
           <span class="person-dot" [style.background]="color($index)"></span>
           @if (emojis()?.[$index]; as emoji) {
-            <span aria-hidden="true">{{ emoji }}</span>
+            <moxy-creature-icon [emoji]="emoji" [size]="14" aria-hidden="true" />
           }
           <span class="person-name">{{ name }}</span>
         </span>

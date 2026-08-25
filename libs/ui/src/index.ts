@@ -21,6 +21,8 @@ export { QrCodeComponent } from './widgets/qr-code.component';
 export { PersonaChipComponent } from './widgets/persona-chip.component';
 export { CreatureIconComponent } from './widgets/creature-icon.component';
 export { LocationBannerComponent } from './widgets/location-banner.component';
+export { SubjectCardComponent } from './widgets/subject-card.component';
 export { habitatClass, habitatMotif, type HabitatMotif } from './widgets/persona-decor';
 
 export { copyText } from './util/clipboard';
+export { errorText } from './util/errors';

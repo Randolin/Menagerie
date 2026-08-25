@@ -226,7 +226,7 @@ export class MenagerieComponent {
       phraseInput.value = '';
       this.toast.show('Saved');
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     }
   }
 
@@ -234,7 +234,7 @@ export class MenagerieComponent {
     try {
       await this.session.removeConnection(id);
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     }
   }
 
@@ -243,7 +243,7 @@ export class MenagerieComponent {
       await this.session.dismissBoop(id);
       this.toast.show('Dismissed — they are not notified.');
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     }
   }
 
@@ -251,7 +251,7 @@ export class MenagerieComponent {
     try {
       await this.session.removeSentBoop(id);
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     }
   }
 

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { seriesVar } from './series';
+import { pct, seriesVar } from './series';
 
 /** Pairwise overall-affinity table for 3+ people. Scores are 0..1 or null. */
 @Component({
@@ -30,7 +30,7 @@ import { seriesVar } from './series';
                 } @else if (scores()[i][j] === null) {
                   <td class="cell">—</td>
                 } @else {
-                  <td class="cell">{{ Math.round(scores()[i][j]! * 100) }}%</td>
+                  <td class="cell">{{ pct(scores()[i][j]!) }}%</td>
                 }
               }
             </tr>
@@ -44,5 +44,5 @@ export class PairMatrixComponent {
   readonly names = input.required<readonly string[]>();
   readonly scores = input.required<readonly (readonly (number | null)[])[]>();
   protected readonly color = seriesVar;
-  protected readonly Math = Math;
+  protected readonly pct = pct;
 }

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { pct } from './series';
 
 /**
  * Small similarity indicator on grid rows: bucketed sequential hue.
@@ -12,16 +13,13 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
     @if (sim() === null) {
       <span class="sim-dot sim-none" title="Not comparable"></span>
     } @else {
-      <span
-        class="sim-dot sim-{{ bucket() }}"
-        [title]="Math.round(sim()! * 100) + '% similar'"
-      ></span>
+      <span class="sim-dot sim-{{ bucket() }}" [title]="pct(sim()!) + '% similar'"></span>
     }
   `,
 })
 export class SimDotComponent {
   readonly sim = input.required<number | null>();
-  protected readonly Math = Math;
+  protected readonly pct = pct;
   protected readonly bucket = computed(() => {
     const s = this.sim();
     if (s === null) return 0;

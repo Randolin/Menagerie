@@ -90,7 +90,7 @@ export class GroupsComponent {
       this.newGroup.set(await this.session.createGroup());
       this.toast.show('Group hatched — save the admin phrase');
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     } finally {
       this.creatingGroup.set(false);
     }

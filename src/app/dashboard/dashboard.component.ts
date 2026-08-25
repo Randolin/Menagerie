@@ -1,22 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN, SECTIONS, coreItems } from '@moxy/core';
 import {
-  GC_EMPTY_HUMAN,
-  GC_IDLE_HUMAN,
-  SECTIONS,
-  coreItems,
-  bannerStyleFor,
-  tailPlaceOf,
-  type Persona,
-} from '@moxy/core';
-import {
-  LocationBannerComponent,
-  PersonaChipComponent,
   QrCodeComponent,
   RingComponent,
+  SubjectCardComponent,
   ToastService,
   copyText,
-  habitatClass,
-  habitatMotif,
 } from '@moxy/ui';
 import { CategoryCardComponent } from '../profile/category-card.component';
 import { AddCategoryComponent } from '../profile/add-category.component';
@@ -32,8 +21,7 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
     CategoryCardComponent,
     AddCategoryComponent,
     SaveBarComponent,
-    LocationBannerComponent,
-    PersonaChipComponent,
+    SubjectCardComponent,
     QrCodeComponent,
     RingComponent,
   ],
@@ -64,20 +52,14 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
       </div>
     }
 
-    <div class="card habitat-accent" [class]="habitatClass(session.persona())">
-      <moxy-location-banner [banner]="bannerFor(session.persona(), session.viewPhrase())" />
-      <h2 style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        My profile
-        @if (session.persona(); as persona) {
-          <moxy-persona-chip [persona]="persona" />
-        }
-        @if (habitatMotif(session.persona()); as motif) {
-          <span class="habitat-motif" [title]="motif.title" aria-hidden="true">{{
-            motif.glyph
-          }}</span>
-        }
-        <button class="btn btn-ghost btn-small" (click)="regenerate()">🎲 New creature</button>
-      </h2>
+    <moxy-subject-card
+      [persona]="session.persona()"
+      [phrase]="session.viewPhrase()"
+      title="My profile"
+    >
+      <button subject-head class="btn btn-ghost btn-small" (click)="regenerate()">
+        🎲 New creature
+      </button>
       <p class="sub">
         Share the phrase, the link, or the QR code — all three carry the same view-only credential.
         Your creature is its first three words; anyone who can see your profile can recognize it. A
@@ -106,7 +88,7 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
           <moxy-qr-code [text]="url" [persona]="session.persona()" />
         }
       </div>
-    </div>
+    </moxy-subject-card>
 
     <div class="profile-head">
       <h2>My answers</h2>
@@ -151,22 +133,8 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
   `,
 })
 export class DashboardComponent {
-  /**
-   * The banner renders only on this top card — the subject whose phrase the
-   * viewer is holding. Never on member rows or compare panels: those carry a
-   * random pseudonym and a null persona, and bannerStyleFor returns null for
-   * them, but the structural rule is what actually keeps the tail off screens
-   * whose viewer has no phrase.
-   */
-  protected bannerFor(persona: Persona | null | undefined, phrase: string | null | undefined) {
-    return bannerStyleFor(persona, tailPlaceOf(phrase));
-  }
-
   protected readonly gcEmpty = GC_EMPTY_HUMAN;
   protected readonly gcIdle = GC_IDLE_HUMAN;
-
-  protected readonly habitatClass = habitatClass;
-  protected readonly habitatMotif = habitatMotif;
 
   protected readonly session = inject(ProfileSessionStore);
   protected readonly draft = inject(DraftStore);
@@ -226,7 +194,7 @@ export class DashboardComponent {
       await this.session.regenerateViewPhrase();
       this.toast.show('New creature hatched — old links are dead');
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     }
   }
 }

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { clamp01 } from './series';
 
 export interface AgreementRow {
   readonly label: string;
@@ -90,7 +91,7 @@ export class AgreementStripComponent {
   protected readonly PAD = 8;
 
   protected x(sim: number): number {
-    return this.PAD + (this.W - 2 * this.PAD) * Math.max(0, Math.min(1, sim));
+    return this.PAD + (this.W - 2 * this.PAD) * clamp01(sim);
   }
 
   /** Slight deterministic vertical stagger so identical scores stay visible. */

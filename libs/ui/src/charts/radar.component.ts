@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { clamp01, seriesVar } from './series';
 
 export interface RadarSeries {
   readonly name: string;
@@ -121,10 +122,8 @@ export class RadarComponent {
   }
 
   protected seriesPoints(s: RadarSeries): string {
-    return s.values.map((v, i) => this.pt(i, Math.max(0, Math.min(1, v))).join(',')).join(' ');
+    return s.values.map((v, i) => this.pt(i, clamp01(v)).join(',')).join(' ');
   }
 
-  protected color(i: number): string {
-    return `var(--series-${(i % 4) + 1})`;
-  }
+  protected readonly color = seriesVar;
 }

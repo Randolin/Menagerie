@@ -7,6 +7,7 @@ import {
   getSection,
   type MetricsRecord,
 } from '@moxy/core';
+import { errorText } from '@moxy/ui';
 import { DraftStore } from '../stores/draft.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
 import { ServerConfigStore } from '../stores/server-config.store';
@@ -222,7 +223,6 @@ export class CommunityComponent {
   });
 
   protected errorMessage(): string {
-    const err = this.view.error();
-    return err instanceof Error ? err.message : String(err ?? 'Unknown error');
+    return errorText(this.view.error());
   }
 }

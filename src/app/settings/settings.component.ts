@@ -74,7 +74,7 @@ export class SettingsComponent {
       this.newEditPhrase.set(await this.session.changeEditPhrase());
       this.toast.show('Edit phrase changed — save the new one now');
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     }
   }
 
@@ -94,7 +94,7 @@ export class SettingsComponent {
           : 'Opted out — no further submissions.',
       );
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     }
   }
 
@@ -113,7 +113,7 @@ export class SettingsComponent {
       this.toast.show('Profile deleted');
       void this.router.navigate(['/']);
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     }
   }
 }

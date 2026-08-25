@@ -7,7 +7,7 @@ import {
   personaFromViewPhrase,
   type ProfilePayload,
 } from '@moxy/core';
-import { MAX_COMPARE } from '@moxy/ui';
+import { MAX_COMPARE, errorText } from '@moxy/ui';
 import { buildCompareModel, type CompareModel, type CompareSlot } from '../compare/compare-model';
 import { ServerConfigStore } from './server-config.store';
 
@@ -106,7 +106,7 @@ export class CompareStore {
       const payload = migrateToCurrent(await decryptBlob(record.blob_view, viewKey));
       return { ref: phrase, payload, persona: await personaFromViewPhrase(phrase) };
     } catch (err) {
-      return { ref: phrase, error: err instanceof Error ? err.message : String(err) };
+      return { ref: phrase, error: errorText(err) };
     }
   }
 }

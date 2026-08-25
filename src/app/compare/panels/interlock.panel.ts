@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { FlowComponent, seriesVar } from '@moxy/ui';
+import { FlowComponent } from '@moxy/ui';
 import type { CompareModel, InterlockDetail } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
 
@@ -7,8 +7,8 @@ interface FlowView {
   readonly heading: string;
   readonly pct: number | null;
   readonly detail: InterlockDetail;
-  /** Ribbon color: the receiver's series color. */
-  readonly color: string;
+  /** The receiver's person index — the flow derives its series color. */
+  readonly person: number;
 }
 
 /** The care interlock, drawn as a mechanism: offers meeting needs. */
@@ -36,7 +36,7 @@ interface FlowView {
             [gives]="flow.detail.gives"
             [needs]="flow.detail.needs"
             [matched]="flow.detail.matched"
-            [color]="flow.color"
+            [person]="flow.person"
           />
         </div>
       }
@@ -55,7 +55,7 @@ export class InterlockPanel implements ComparePanelComponent {
               heading: `${m.names[1]} → ${m.names[0]}'s needs`,
               pct: row.forA === null ? null : Math.round(row.forA * 100),
               detail: row.detailA,
-              color: seriesVar(0),
+              person: 0,
             },
           ]
         : []),
@@ -65,7 +65,7 @@ export class InterlockPanel implements ComparePanelComponent {
               heading: `${m.names[0]} → ${m.names[1]}'s needs`,
               pct: row.forB === null ? null : Math.round(row.forB * 100),
               detail: row.detailB,
-              color: seriesVar(1),
+              person: 1,
             },
           ]
         : []),

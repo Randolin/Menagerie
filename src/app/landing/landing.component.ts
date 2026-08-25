@@ -120,7 +120,7 @@ export class LandingComponent {
       await this.session.hatch();
       await this.router.navigate(['/me']);
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     } finally {
       this.hatching.set(false);
     }
@@ -135,7 +135,7 @@ export class LandingComponent {
         this.toast.show('No profile answers to that phrase.', 'error');
       }
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     }
   }
 

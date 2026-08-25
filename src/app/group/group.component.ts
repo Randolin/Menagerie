@@ -20,21 +20,17 @@ import {
   migrateGroupMeta,
   pairScores,
   personaFromViewPhrase,
-  bannerStyleFor,
-  tailPlaceOf,
   type GroupDeposit,
   type Persona,
   type ProfilePayload,
 } from '@moxy/core';
 import {
   CreatureIconComponent,
-  LocationBannerComponent,
-  PersonaChipComponent,
   QrCodeComponent,
+  SubjectCardComponent,
   ToastService,
   copyText,
-  habitatClass,
-  habitatMotif,
+  errorText,
 } from '@moxy/ui';
 import { CompareStore } from '../stores/compare.store';
 import { DraftStore } from '../stores/draft.store';
@@ -64,13 +60,7 @@ interface LoadedGroup {
 @Component({
   selector: 'moxy-group',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    RouterLink,
-    CreatureIconComponent,
-    LocationBannerComponent,
-    PersonaChipComponent,
-    QrCodeComponent,
-  ],
+  imports: [RouterLink, CreatureIconComponent, QrCodeComponent, SubjectCardComponent],
   template: `
     @if (view.error()) {
       <div class="card">
@@ -79,20 +69,12 @@ interface LoadedGroup {
         <a class="btn" routerLink="/">Go to the start</a>
       </div>
     } @else if (view.value(); as g) {
-      <div class="card habitat-accent" [class]="habitatClass(g.persona)">
-        <moxy-location-banner [banner]="bannerFor(g.persona, g.phrase)" />
-        <h2 style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          {{ g.persona?.name ?? 'A group' }}
-          @if (g.persona; as persona) {
-            <moxy-persona-chip [persona]="persona" />
-          }
-          @if (habitatMotif(g.persona); as motif) {
-            <span class="habitat-motif" [title]="motif.title" aria-hidden="true">{{
-              motif.glyph
-            }}</span>
-          }
-          <span class="fine">group</span>
-        </h2>
+      <moxy-subject-card
+        [persona]="g.persona"
+        [phrase]="g.phrase"
+        [title]="g.persona?.name ?? 'A group'"
+      >
+        <span subject-head class="fine">group</span>
         <p class="sub">
           A shared roster, stored only as ciphertext. Everyone holding this group’s phrase sees the
           same members: open members as their creature, others as a group-local pseudonym with an
@@ -109,7 +91,7 @@ interface LoadedGroup {
           </div>
           <moxy-qr-code [text]="inviteUrl(g)" [persona]="g.persona" />
         </div>
-      </div>
+      </moxy-subject-card>
 
       <div class="card">
         <h2>Members ({{ g.members.length }})</h2>
@@ -250,20 +232,6 @@ interface LoadedGroup {
   `,
 })
 export class GroupComponent {
-  /**
-   * The banner renders only on this top card — the subject whose phrase the
-   * viewer is holding. Never on member rows or compare panels: those carry a
-   * random pseudonym and a null persona, and bannerStyleFor returns null for
-   * them, but the structural rule is what actually keeps the tail off screens
-   * whose viewer has no phrase.
-   */
-  protected bannerFor(persona: Persona | null | undefined, phrase: string | null | undefined) {
-    return bannerStyleFor(persona, tailPlaceOf(phrase));
-  }
-
-  protected readonly habitatClass = habitatClass;
-  protected readonly habitatMotif = habitatMotif;
-
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly config = inject(ServerConfigStore);
@@ -364,8 +332,7 @@ export class GroupComponent {
   });
 
   protected errorMessage(): string {
-    const err = this.view.error();
-    return err instanceof Error ? err.message : String(err ?? 'Unknown error');
+    return errorText(this.view.error());
   }
 
   protected inviteUrl(g: LoadedGroup): string {
@@ -414,7 +381,7 @@ export class GroupComponent {
       this.toast.show(tier === 1 ? 'Deposited under your pseudonym' : 'Deposited openly');
       this.reload.update((n) => n + 1);
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     } finally {
       this.busy.set(false);
     }
@@ -429,7 +396,7 @@ export class GroupComponent {
       this.toast.show('Left the group — your deposit is gone');
       this.reload.update((n) => n + 1);
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     } finally {
       this.busy.set(false);
     }
@@ -449,7 +416,7 @@ export class GroupComponent {
       this.toast.show(`${m.name} removed`);
       this.reload.update((n) => n + 1);
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     } finally {
       this.busy.set(false);
     }
@@ -470,7 +437,7 @@ export class GroupComponent {
       this.toast.show('Group re-minted — share the new invite');
       await this.router.navigate(['/group', newPhrase]);
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     } finally {
       this.busy.set(false);
     }
@@ -491,7 +458,7 @@ export class GroupComponent {
       this.toast.show('Group deleted');
       await this.router.navigate(['/me']);
     } catch (err) {
-      this.toast.show(err instanceof Error ? err.message : String(err), 'error');
+      this.toast.error(err);
     } finally {
       this.busy.set(false);
     }
