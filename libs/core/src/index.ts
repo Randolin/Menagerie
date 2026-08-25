@@ -59,6 +59,6 @@ export * from './hatch/phrases';
 export { encryptBlob, decryptBlob } from './hatch/blob';
 export * from './hatch/priv-data';
 export * from './hatch/hatch-api';
-export { HatchClient, HatchError, type HatchFailure } from './hatch/hatch-client';
+export { HatchClient, HatchError, fetchViewPayload, type HatchFailure } from './hatch/hatch-client';
 
 export * from './storage/storage';

@@ -26,10 +26,10 @@ import {
 } from '@moxy/core';
 import {
   CreatureIconComponent,
+  MAX_COMPARE,
   QrCodeComponent,
   SubjectCardComponent,
   ToastService,
-  copyText,
   errorText,
 } from '@moxy/ui';
 import { CompareStore } from '../stores/compare.store';
@@ -354,7 +354,8 @@ export class GroupComponent {
     this.selected.update((set) => {
       const next = new Set(set);
       if (next.has(memberLocator)) next.delete(memberLocator);
-      else if (next.size < 3) next.add(memberLocator);
+      // Me plus the selection must fit the comparison cap.
+      else if (next.size < MAX_COMPARE - 1) next.add(memberLocator);
       return next;
     });
   }
@@ -464,7 +465,7 @@ export class GroupComponent {
     }
   }
 
-  protected async copy(text: string, okMessage: string): Promise<void> {
-    this.toast.show((await copyText(text)) ? okMessage : 'Copy failed — select it manually');
+  protected copy(text: string, okMessage: string): Promise<void> {
+    return this.toast.copy(text, okMessage);
   }
 }

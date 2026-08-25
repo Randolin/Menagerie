@@ -21,6 +21,10 @@ import {
 } from '../group/group-api';
 import type { MetricsRecord, SubmitMetricsRequest } from '../metrics/metrics-api';
 import { BOOP_TOKEN_HEADER, type BoopInboxRecord, type BoopKnockRecord } from '../boop/boop-api';
+import { deriveViewKeys } from './keys';
+import { decryptBlob } from './blob';
+import { migrateToCurrent } from '../codec/migrate';
+import type { ProfilePayload } from '../schema/types';
 
 export type HatchFailure =
   | { kind: 'network'; cause: unknown }
@@ -350,4 +354,19 @@ export class HatchClient {
         return new HatchError({ kind: 'server', status: res.status });
     }
   }
+}
+
+/**
+ * Fetch and decrypt the open payload a view phrase points at — the one
+ * derive→fetch→decrypt→migrate pipeline every viewer shares. Null when the
+ * server has no record (deleted, expired, or re-minted).
+ */
+export async function fetchViewPayload(
+  client: HatchClient,
+  viewPhrase: string,
+): Promise<ProfilePayload | null> {
+  const { viewLocator, viewKey } = await deriveViewKeys(viewPhrase);
+  const record = await client.getView(viewLocator);
+  if (!record) return null;
+  return migrateToCurrent(await decryptBlob(record.blob_view, viewKey));
 }

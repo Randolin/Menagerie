@@ -1,12 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN, SECTIONS, coreItems } from '@moxy/core';
-import {
-  QrCodeComponent,
-  RingComponent,
-  SubjectCardComponent,
-  ToastService,
-  copyText,
-} from '@moxy/ui';
+import { QrCodeComponent, RingComponent, SubjectCardComponent, ToastService } from '@moxy/ui';
 import { CategoryCardComponent } from '../profile/category-card.component';
 import { AddCategoryComponent } from '../profile/add-category.component';
 import { SaveBarComponent } from '../profile/save-bar.component';
@@ -180,8 +174,8 @@ export class DashboardComponent {
     return `moxy.hatch.notice.${personaName}`;
   }
 
-  protected async copy(text: string, okMessage: string): Promise<void> {
-    this.toast.show((await copyText(text)) ? okMessage : 'Copy failed — select it manually');
+  protected copy(text: string, okMessage: string): Promise<void> {
+    return this.toast.copy(text, okMessage);
   }
 
   protected async regenerate(): Promise<void> {

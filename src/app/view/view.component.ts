@@ -2,12 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, inject, resource } from '
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
-  decryptBlob,
-  deriveViewKeys,
+  fetchViewPayload,
   extractViewPhrase,
   hasDesiresTokens,
   importanceLabel,
-  migrateToCurrent,
   personaFromViewPhrase,
   SECTIONS,
   type AnswerValue,
@@ -160,14 +158,12 @@ export class ViewComponent {
       if (!phrase) throw new Error('That’s not a valid Menagerie view phrase.');
       const client = this.config.client();
       if (!client) throw new Error('No profile server is configured.');
-      const { viewLocator, viewKey } = await deriveViewKeys(phrase);
-      const record = await client.getView(viewLocator);
-      if (!record) {
+      const payload = await fetchViewPayload(client, phrase);
+      if (!payload) {
         throw new Error(
           'No profile answers to that phrase. It may have been deleted, expired, or replaced by a new creature.',
         );
       }
-      const payload = migrateToCurrent(await decryptBlob(record.blob_view, viewKey));
       const sections = SECTIONS.filter((s) => s.privacy === 'open')
         .map((s) => ({
           title: s.title,

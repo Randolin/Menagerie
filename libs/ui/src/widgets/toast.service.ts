@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { copyText } from '../util/clipboard';
 import { errorText } from '../util/errors';
 
 export type ToastKind = 'info' | 'error';
@@ -19,5 +20,10 @@ export class ToastService {
   /** The catch-block idiom: surface any thrown value as an error toast. */
   error(err: unknown): void {
     this.show(errorText(err), 'error');
+  }
+
+  /** Copy to the clipboard and toast the outcome. */
+  async copy(text: string, okMessage: string): Promise<void> {
+    this.show((await copyText(text)) ? okMessage : 'Copy failed — select it manually');
   }
 }

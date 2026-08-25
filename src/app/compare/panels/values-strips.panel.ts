@@ -12,7 +12,7 @@ import type { ComparePanelComponent } from '../compare-panels.token';
     <div class="card">
       <h2>Values, side by side</h2>
       <p class="sub">Each dot is a person. Distance between dots is the actual gap.</p>
-      <moxy-person-key [names]="model().names" [emojis]="personaEmojis()" />
+      <moxy-person-key [names]="model().names" [emojis]="model().emojis" />
       @for (row of rows(); track row.item.id) {
         <moxy-scale-strip
           [item]="asScale(row.item)"
@@ -25,10 +25,6 @@ import type { ComparePanelComponent } from '../compare-panels.token';
 })
 export class ValuesStripsPanel implements ComparePanelComponent {
   readonly model = input.required<CompareModel>();
-
-  protected readonly personaEmojis = computed(() =>
-    this.model().personas.map((p) => p?.emoji ?? null),
-  );
 
   protected readonly rows = computed(() => {
     const grid = this.model().grid.find((g) => g.section.id === 'values');

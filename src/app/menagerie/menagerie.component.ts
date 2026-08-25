@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { BOOP_INTENTS, CONTACT_PLATFORMS, extractViewPhrase } from '@moxy/core';
-import { CreatureIconComponent, ToastService, copyText } from '@moxy/ui';
+import { CreatureIconComponent, ToastService } from '@moxy/ui';
 import { BoopComposerComponent } from '../boop/boop-composer.component';
 import { CompareStore } from '../stores/compare.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
@@ -205,8 +205,8 @@ export class MenagerieComponent {
     return CONTACT_PLATFORMS[i] ?? 'Elsewhere';
   }
 
-  protected async copy(text: string, okMessage: string): Promise<void> {
-    this.toast.show((await copyText(text)) ? okMessage : 'Copy failed — select it manually');
+  protected copy(text: string, okMessage: string): Promise<void> {
+    return this.toast.copy(text, okMessage);
   }
 
   protected async addConnection(

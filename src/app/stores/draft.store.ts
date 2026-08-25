@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { clone } from './clone';
 import type {
   Acceptable,
   Answers,
@@ -129,9 +130,9 @@ export class DraftStore {
   }
 
   loadFrom(answers: Answers, weights?: Weights, acceptable?: Acceptable): void {
-    this.answers.set(structuredClone(answers) as Answers);
-    this.weights.set(structuredClone(weights ?? {}) as Weights);
-    this.acceptable.set(structuredClone(acceptable ?? {}) as Acceptable);
+    this.answers.set(clone(answers));
+    this.weights.set(clone(weights ?? {}));
+    this.acceptable.set(clone(acceptable ?? {}));
   }
 
   clear(): void {

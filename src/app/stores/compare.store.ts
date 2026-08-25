@@ -1,9 +1,7 @@
 import { inject, Injectable, resource, signal } from '@angular/core';
 import {
-  decryptBlob,
-  deriveViewKeys,
+  fetchViewPayload,
   extractViewPhrase,
-  migrateToCurrent,
   personaFromViewPhrase,
   type ProfilePayload,
 } from '@moxy/core';
@@ -100,10 +98,8 @@ export class CompareStore {
     try {
       const client = this.config.client();
       if (!client) throw new Error('No profile server is configured.');
-      const { viewLocator, viewKey } = await deriveViewKeys(phrase);
-      const record = await client.getView(viewLocator);
-      if (!record) throw new Error('No profile answers to this phrase (deleted or replaced?).');
-      const payload = migrateToCurrent(await decryptBlob(record.blob_view, viewKey));
+      const payload = await fetchViewPayload(client, phrase);
+      if (!payload) throw new Error('No profile answers to this phrase (deleted or replaced?).');
       return { ref: phrase, payload, persona: await personaFromViewPhrase(phrase) };
     } catch (err) {
       return { ref: phrase, error: errorText(err) };
