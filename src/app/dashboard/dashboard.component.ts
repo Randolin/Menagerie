@@ -11,11 +11,12 @@ import {
   tailPlaceOf,
   extractGroupPhrase,
   extractViewPhrase,
-  visiblePacks,
-  type Pack,
   type Persona,
 } from '@moxy/core';
 import { CreatureIconComponent, LocationBannerComponent, PersonaChipComponent, QrCodeComponent, RingComponent, ToastService, copyText, habitatClass, habitatMotif } from '@moxy/ui';
+import { CategoryCardComponent } from '../profile/category-card.component';
+import { AddCategoryComponent } from '../profile/add-category.component';
+import { SaveBarComponent } from '../profile/save-bar.component';
 import { APP_STORAGE } from '../stores/storage.token';
 import { DraftStore } from '../stores/draft.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
@@ -25,7 +26,7 @@ import { BoopComposerComponent } from '../boop/boop-composer.component';
 @Component({
   selector: 'moxy-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, BoopComposerComponent, CreatureIconComponent, LocationBannerComponent, PersonaChipComponent, QrCodeComponent, RingComponent],
+  imports: [RouterLink, BoopComposerComponent, CategoryCardComponent, AddCategoryComponent, SaveBarComponent, CreatureIconComponent, LocationBannerComponent, PersonaChipComponent, QrCodeComponent, RingComponent],
   template: `
     @if (!noticeDismissed()) {
       <div class="card" style="border-color:var(--accent)">
@@ -88,8 +89,8 @@ import { BoopComposerComponent } from '../boop/boop-composer.component';
       </div>
     </div>
 
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 4px 10px">
-      <h2 style="margin:0">Question packs</h2>
+    <div class="profile-head">
+      <h2>My answers</h2>
       <span class="fine core-marker" [class.core-done]="coreDone()">
         <moxy-ring [fraction]="coreFraction()" [size]="20" label="core completion" />
         {{ coreDone()
@@ -97,41 +98,21 @@ import { BoopComposerComponent } from '../boop/boop-composer.component';
             : 'Core ' + coreAnswered() + ' of ' + coreTotal + ' — comparisons work best from a full core' }}
       </span>
     </div>
-    <div class="section-grid">
-      @for (p of packs(); track p.id) {
-        <a class="card section-card" [routerLink]="['/me/pack', p.id]">
-          <h3 style="display:flex;align-items:center;gap:8px">
-            <span>{{ p.emoji }} {{ p.title }}</span>
-            <span style="margin-left:auto">
-              <moxy-ring [fraction]="packFraction(p)" [size]="26"
-                         [label]="p.title + ' completion'" />
-            </span>
-          </h3>
-          <p class="sub">{{ p.blurb }}</p>
-          <span class="fine">
-            {{ draft.answeredAmong(p.itemIds) }} of {{ p.itemIds.length }} answered — run →
-          </span>
-        </a>
-      }
-    </div>
-    @if (session.dirty()) {
-      <p class="fine" style="margin:8px 4px">
-        You have unsaved edits — finish a pack or hit “Save” in a section to publish them.
+
+    @for (s of addedSections(); track s.id) {
+      <moxy-category-card [section]="s" />
+    }
+
+    <moxy-add-category />
+
+    <moxy-save-bar />
+
+    @if (!addedSections().length) {
+      <p class="fine" style="margin:10px 4px">
+        Nothing here yet. Add a category above — every question is optional, and only
+        what you answer is ever shown.
       </p>
     }
-    <details style="margin:4px">
-      <summary class="fine" style="cursor:pointer">Review all answers by section (and set importance)</summary>
-      <div class="section-grid" style="margin-top:10px">
-        @for (s of sections; track s.id) {
-          <a class="card section-card" [routerLink]="['/me/section', s.id]">
-            <h3>{{ s.title }} @if (s.privacy === 'match') { <span class="fine">🔒 mutual-only</span> }</h3>
-            <span class="fine">
-              {{ draft.answeredIn(s) }} of {{ s.items.length }} answered — review →
-            </span>
-          </a>
-        }
-      </div>
-    </details>
 
     <div class="card">
       <h2>My menagerie</h2>
@@ -369,7 +350,10 @@ export class DashboardComponent {
   protected readonly newGroup = signal<{ groupPhrase: string; adminPhrase: string } | null>(null);
   protected readonly creatingGroup = signal(false);
 
-  protected readonly packs = computed(() => visiblePacks(this.draft.answers()));
+  /** Only the categories on the profile — the rest live behind “Add”. */
+  protected readonly addedSections = computed(() =>
+    SECTIONS.filter((sec) => this.draft.isAdded(sec)),
+  );
   private readonly coreIds = coreItems().map(({ item }) => item.id);
   protected readonly coreTotal = this.coreIds.length;
   protected readonly coreAnswered = computed(() => this.draft.answeredAmong(this.coreIds));
@@ -377,10 +361,6 @@ export class DashboardComponent {
     this.coreTotal === 0 ? 0 : this.coreAnswered() / this.coreTotal,
   );
   protected readonly coreDone = computed(() => this.coreAnswered() === this.coreTotal);
-
-  protected packFraction(p: Pack): number {
-    return p.itemIds.length === 0 ? 0 : this.draft.answeredAmong(p.itemIds) / p.itemIds.length;
-  }
 
   private readonly dismissalSeen = signal(0);
   protected readonly noticeDismissed = computed(() => {

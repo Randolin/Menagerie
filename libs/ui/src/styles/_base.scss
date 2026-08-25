@@ -356,8 +356,150 @@ textarea { min-height: 84px; resize: vertical; }
 .survey-step.active { background: var(--accent); color: var(--accent-ink); }
 .survey-step.done { color: var(--accent); background: var(--accent-soft); }
 
-.item-block { padding: 16px 0; border-bottom: 1px solid var(--hairline); }
-.item-block:last-of-type { border-bottom: none; }
+.item-block { padding: 0; }
+
+/* ---------- profile categories: the scannable survey table ----------
+
+   Every question is a row of label + control, and the controls line up in a
+   column across the whole card. That alignment is the entire point: it is what
+   lets a 25-question category be read down in one pass instead of clicked
+   through one card at a time. */
+
+.profile-head {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin: 18px 4px 10px;
+}
+.profile-head h2 { margin: 0; }
+
+.category-card { padding: 0; overflow: hidden; }
+.category-head {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 14px clamp(14px, 2.4vw, 20px);
+  border-bottom: 1px solid var(--hairline);
+}
+.category-head h2 { margin: 0; font-size: 19px; }
+.category-count { margin-left: auto; }
+.category-remove:hover { border-color: var(--danger, #a03535); color: var(--danger, #a03535); }
+.category-card .notice { margin: 12px clamp(14px, 2.4vw, 20px); }
+.category-card > .fine { display: block; padding: 10px clamp(14px, 2.4vw, 20px) 0; }
+
+.q-table { padding: 4px clamp(14px, 2.4vw, 20px) 14px; }
+
+.q-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 16px;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.q-row:last-child { border-bottom: none; }
+/* min-height reserves the importance marker's space on every row, answered or
+   not, so answering a question doesn't nudge the grid taller and break the
+   column rhythm that makes the card scannable. */
+.q-label { display: flex; align-items: center; gap: 6px; min-width: 0; min-height: 30px; }
+.q-text { font-size: 15px; line-height: 1.35; }
+.q-control { justify-self: end; }
+.q-weight { grid-column: 1 / -1; }
+
+/* Importance marker: a quiet dot until it carries a mark. */
+.q-mark {
+  flex: none;
+  width: 22px; height: 22px;
+  display: grid; place-items: center;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0;
+}
+.q-row:hover .q-mark, .q-mark:focus-visible, .q-mark.on { opacity: 1; }
+.q-mark:hover { border-color: var(--border); color: var(--ink-2); }
+.q-mark.on { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+
+/* Pips — the fixed columns. Interest carries its label; scale is numeric and
+   reads from the anchors either side, so its pips are unlabelled dots. */
+.pip-row { display: flex; gap: 6px; align-items: center; }
+.pip {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+.pip:hover { border-color: var(--ink-2); color: var(--ink); }
+.pip.selected {
+  background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
+}
+.pip-interest { width: 84px; height: 30px; font-size: 12.5px; padding: 0 4px; }
+.pip-interest .pip-text { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pip-scale { width: 26px; height: 26px; }
+
+/* Mixed categories: chips wrap under a narrower label column. */
+.q-table:not(.q-interest):not(.q-scale) .q-row { grid-template-columns: minmax(0, 22ch) minmax(0, 1fr); }
+.q-table:not(.q-interest):not(.q-scale) .q-control { justify-self: stretch; }
+.q-table:not(.q-interest):not(.q-scale) .q-row { align-items: start; padding: 11px 0; }
+.q-table:not(.q-interest):not(.q-scale) .q-label { padding-top: 5px; }
+
+/* Scale rows keep their anchors either side of the pips; the row label would
+   just repeat them, so it stays for screen readers and leaves the layout. */
+.q-row.is-scale .q-text {
+  position: absolute; width: 1px; height: 1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+.q-row.is-scale { grid-template-columns: minmax(0, 1fr); }
+.q-row.is-scale .q-control { justify-self: stretch; }
+.q-row.is-scale .q-label { justify-content: flex-end; }
+.q-scale .q-row { grid-template-columns: minmax(0, 1fr); }
+.q-scale .q-control { justify-self: stretch; }
+.q-scale .q-label { grid-row: 1; justify-content: flex-end; }
+.q-scale .scale-input { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+
+/* Add card */
+.add-card { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.add-head { display: flex; align-items: center; gap: 12px; width: 100%; }
+.add-head h2 { margin: 0; font-size: 19px; }
+.add-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+}
+.add-option {
+  display: flex; flex-direction: column; gap: 4px; text-align: left;
+  padding: 12px 14px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); color: inherit; font: inherit; cursor: pointer;
+}
+.add-option:hover { border-color: var(--accent); }
+.add-option-title { font-weight: 650; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.add-option-blurb { flex: 1; }
+
+/* Save bar — present only while there is something to save. */
+.save-bar {
+  position: sticky; bottom: 12px; z-index: 15;
+  display: flex; align-items: center; gap: 12px;
+  width: fit-content; margin: 12px auto 0;
+  padding: 8px 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow);
+}
+
+@media (max-width: 640px) {
+  .q-row, .q-table:not(.q-interest):not(.q-scale) .q-row {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+  .q-control { justify-self: stretch; }
+  .pip-row { flex-wrap: wrap; }
+  .pip-interest, .pip-head { width: auto; flex: 1 1 68px; }
+}
 
 .optin-gate { text-align: center; padding: 28px 16px; }
 

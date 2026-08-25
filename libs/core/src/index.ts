@@ -4,7 +4,7 @@
 export * from './schema/types';
 export { SECTIONS, RETIRED_ITEM_IDS, RETIRED_SECTION_IDS } from './schema/sections';
 export * from './schema/schema';
-export * from './schema/packs';
+export * from './schema/gating';
 export * from './group/group-api';
 export * from './group/group-data';
 export * from './metrics/metrics-api';
