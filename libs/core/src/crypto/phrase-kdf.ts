@@ -1,7 +1,7 @@
 // The one passphrase KDF: phrase → { locator, AES-GCM key, bearer token }.
 //
 // Argon2id (memory-hard: 64 MiB × 3 passes) — chosen over PBKDF2 because the
-// view phrase's secret tail is 33 bits of curated-list words, and memory
+// view phrase's secret tail is 36 bits of curated-list words, and memory
 // hardness is what makes each attacker guess expensive on GPUs. One
 // derivation yields all three outputs from disjoint slices, so none is
 // cheaper to brute-force than another. The salt is a fixed domain constant

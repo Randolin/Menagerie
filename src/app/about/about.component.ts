@@ -50,10 +50,15 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
       <p class="sub">
         The flip side, honestly: those three words are public-by-design, so the secret
         part of a view phrase is really the poetic tail — the last three words, drawn
-        from curated lists of 2,048 each (33 bits). Argon2id’s memory cost prices a
+        from curated lists of 4,096 each (36 bits). Argon2id’s memory cost prices a
         targeted brute-force of that tail in GPU-months to a GPU-year — a real curtain,
         not a vault door. The creature’s accent color is computed from the public three
-        words alone, so nothing shown on screen hints at the tail. Your edit control
+        words alone. One thing on screen does reflect the tail: the page’s location
+        banner shows the <em>kind</em> of place your last word names — one of twelve
+        landscapes, never the word itself. That publishes about 3.5 bits to anyone
+        holding the phrase already, which is why the lists grew to 4,096: the extra
+        3 bits pay for it, leaving the tail’s effective secrecy where it was (~32.4
+        bits) while giving you a place you can actually picture and remember. Your edit control
         never rests on any of this. “New creature” re-mints the whole view phrase: every
         old link, QR code, and desire fingerprint dies instantly, and that is the
         unlink lever.

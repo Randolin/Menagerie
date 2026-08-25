@@ -38,13 +38,18 @@ Node file.
   profile's persona — name, first-party pixel-art portrait, and QR styling
   (blob-merged modules in a two-hue gradient: the persona color plus a hue
   from the color-word slot) — so everyone you share with recognizes the same
-  creature. All 64 portraits live at `/creatures`. Honest arithmetic: those words are public by
+  creature. All portraits live at `/creatures`. Honest arithmetic: those words are public by
   design, so a view phrase's secret is its poetic 3-word tail, drawn from
-  curated 2,048-entry lists (exactly 33 bits ≈ GPU-months-to-a-year to
+  curated 4,096-entry lists (exactly 36 bits ≈ GPU-months-to-a-year to
   brute-force at Argon2id's memory cost) — a curtain for casual reading,
   while edit control rests on the full-strength edit phrase. The persona's
-  accent color derives from the public head words only, so nothing displayed
-  leaks tail bits. "New creature" re-mints the view phrase; every old link,
+  accent color derives from the public head words only. The location banner is
+  the one thing that reflects the tail: it renders the landform *family* of the
+  final word (1 of 12, ~3.55 bits) and never the word, to viewers who already
+  hold the phrase. Growing the lists from 2,048 bought +3 bits to pay for that,
+  so effective tail secrecy is ~32.4 bits against ~33 before — near-neutral, in
+  exchange for a place you can picture. The ledger lives in `hatch/phrases.ts`
+  and must be recomputed before anything else derives from the tail. "New creature" re-mints the view phrase; every old link,
   QR, and desire fingerprint dies with it.
 - **Weights instead of essays.** Anything that would have been a "must-have"
   paragraph is a per-item importance mark — *matters*, *matters a lot*, or

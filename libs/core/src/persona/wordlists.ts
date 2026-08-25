@@ -1,13 +1,23 @@
 // Persona wordlists and colors.
 //
-// COMPATIBILITY CONTRACT: indexes 0..63 (and colors 0..15) are FROZEN once
-// shipped — a persona derives deterministically from a seed carried in share
-// links, so reordering or replacing entries would silently rename everyone's
-// creature. Appending is meaningless (indexes above 63 are unreachable);
-// fixing a typo in place is the only acceptable edit, and only if the word
-// stays recognizably the same. persona.spec.ts pins a frozen fixture.
+// COMPATIBILITY CONTRACT: every index that has shipped is FROZEN — a persona
+// derives deterministically from a seed carried in share links, so reordering,
+// removing, or replacing an entry would silently rename everyone's creature.
+// Fixing a typo in place is the only acceptable edit, and only if the word
+// stays recognizably the same.
+//
+// APPENDING IS SAFE, and is how these lists grow. Nothing indexes into them to
+// validate or derive: `isViewPhraseShaped` tests membership (.includes/Set.has)
+// and `personaFromViewPhrase` hashes the literal phrase string. A longer list
+// therefore widens the mint space without touching a single existing phrase —
+// proven by the vectors in hatch/phrase-compat.spec.ts.
+//
+// Grown 64 → 128 (ANIMALS → 108; see the note on that list). Every table that
+// is index-ALIGNED with one of these must grow in the same commit: ADJ_B_HUES
+// (adjb-hues.ts) with ADJECTIVES_B, ANIMAL_HABITATS (habitat.ts) with ANIMALS.
+// The lockstep is asserted by length-equality tests, not by magic numbers.
 
-/** 64 entries — first adjective slot. */
+/** 128 entries — first adjective slot. Disjoint from ADJECTIVES_B. */
 export const ADJECTIVES_A: readonly string[] = [
   'amber', 'brave', 'calm', 'clever', 'cosmic', 'crisp', 'daring', 'deft',
   'dusky', 'eager', 'fabled', 'fierce', 'gentle', 'gilded', 'golden', 'happy',
@@ -17,9 +27,23 @@ export const ADJECTIVES_A: readonly string[] = [
   'sage', 'sandy', 'silent', 'silver', 'sleek', 'solar', 'spry', 'stellar',
   'stoic', 'sunny', 'swift', 'tidal', 'tranquil', 'true', 'velvet', 'vivid',
   'wandering', 'warm', 'wild', 'winter', 'witty', 'zealous', 'zesty', 'bold',
+  // --- appended (64 → 128) ---
+  'adept', 'agile', 'airy', 'ancient', 'ardent', 'artful', 'bashful', 'blithe',
+  'boundless', 'buoyant', 'canny', 'careful', 'chipper', 'civil', 'clement', 'cordial',
+  'courtly', 'crafty', 'dauntless', 'dazzling', 'devoted', 'diligent', 'dogged', 'doughty',
+  'dulcet', 'earnest', 'easy', 'elegant', 'endless', 'fearless', 'fleet', 'fond',
+  'free', 'frisky', 'gallant', 'genial', 'gladsome', 'grand', 'hallowed', 'hearty',
+  'heedful', 'honest', 'hopeful', 'intrepid', 'jovial', 'joyous', 'jubilant', 'lanky',
+  'limpid', 'lofty', 'lucky', 'mirthful', 'modest', 'nifty', 'nomadic', 'patient',
+  'peerless', 'pensive', 'placid', 'prime', 'pristine', 'prudent', 'rapid', 'restless',
 ];
 
-/** 64 entries — second adjective slot (distinct list: no "brave-brave"). */
+/**
+ * 128 entries — second adjective slot (distinct list: no "brave-brave").
+ * Every entry is color-adjacent, because each needs an index-aligned hue in
+ * ADJ_B_HUES; light-sounding words (ivory, seafoam) still get a dark hue "in
+ * their spirit", exactly as `snowy` already does.
+ */
 export const ADJECTIVES_B: readonly string[] = [
   'azure', 'blazing', 'breezy', 'bright', 'bubbly', 'candid', 'cheerful', 'chill',
   'coral', 'cozy', 'crimson', 'curious', 'dapper', 'dreamy', 'electric', 'emerald',
@@ -29,6 +53,15 @@ export const ADJECTIVES_B: readonly string[] = [
   'peachy', 'pearly', 'peppy', 'perky', 'plum', 'prancing', 'rosy', 'ruby',
   'saffron', 'sapphire', 'scarlet', 'snappy', 'snowy', 'sparkling', 'spiffy', 'spotted',
   'starry', 'striped', 'tangy', 'twilight', 'umber', 'verdant', 'violet', 'wavy',
+  // --- appended (64 → 128) ---
+  'alabaster', 'almond', 'amethyst', 'apricot', 'aquamarine', 'auburn', 'basalt', 'beryl',
+  'bistre', 'bronze', 'burgundy', 'cerulean', 'chartreuse', 'cherry', 'chocolate', 'cinnabar',
+  'citrine', 'clay', 'cobalt', 'copper', 'cornflower', 'cranberry', 'damson', 'denim',
+  'ebony', 'flaxen', 'garnet', 'ginger', 'glacial', 'gunmetal', 'hazelnut', 'heliotrope',
+  'iris', 'ivory', 'kelp', 'lapis', 'lilac', 'magenta', 'mahogany', 'malachite',
+  'mauve', 'mulberry', 'mustard', 'nutmeg', 'obsidian', 'oxblood', 'paprika', 'periwinkle',
+  'pewter', 'pistachio', 'porphyry', 'quartz', 'russet', 'seafoam', 'sepia', 'sienna',
+  'slate', 'spruce', 'tawny', 'teal', 'terracotta', 'topaz', 'turquoise', 'vermilion',
 ];
 
 export interface AnimalEntry {
@@ -36,7 +69,17 @@ export interface AnimalEntry {
   readonly emoji: string;
 }
 
-/** 64 entries, each with a single-codepoint-friendly emoji (no VS16 sequences). */
+/**
+ * 108 entries, each with a single-codepoint emoji (no VS16 sequences, and no
+ * default-text-presentation codepoints like U+1F54A DOVE, which render as a
+ * monochrome glyph without VS16). Asserted in persona.spec.ts.
+ *
+ * 108, not 128: the supply of emoji meeting that rule is genuinely exhausted
+ * around here. Padding the list with near-duplicates (a second cat, a second
+ * baby chick) would buy fractions of a bit at the cost of a creature identity
+ * you can't tell apart from another — so the list stops where the good entries
+ * stop, and the head-bit accounting is stated honestly rather than rounded up.
+ */
 export const ANIMALS: readonly AnimalEntry[] = [
   { name: 'fox', emoji: '🦊' }, { name: 'otter', emoji: '🦦' },
   { name: 'owl', emoji: '🦉' }, { name: 'wolf', emoji: '🐺' },
@@ -70,6 +113,29 @@ export const ANIMALS: readonly AnimalEntry[] = [
   { name: 'skunk', emoji: '🦨' }, { name: 'raccoon', emoji: '🦝' },
   { name: 'monkey', emoji: '🐵' }, { name: 'gorilla', emoji: '🦍' },
   { name: 'goat', emoji: '🐐' }, { name: 'sheep', emoji: '🐑' },
+  // --- appended (64 → 108) ---
+  { name: 'orangutan', emoji: '🦧' }, { name: 'mammoth', emoji: '🦣' },
+  { name: 'bison', emoji: '🦬' }, { name: 'dodo', emoji: '🦤' },
+  { name: 'crocodile', emoji: '🐊' }, { name: 'snake', emoji: '🐍' },
+  { name: 'scorpion', emoji: '🦂' }, { name: 'ant', emoji: '🐜' },
+  { name: 'beetle', emoji: '🪲' }, { name: 'caterpillar', emoji: '🐛' },
+  { name: 'cricket', emoji: '🦗' }, { name: 'worm', emoji: '🪱' },
+  { name: 'turkey', emoji: '🦃' }, { name: 'songbird', emoji: '🐦' },
+  { name: 'hatchling', emoji: '🐣' }, { name: 'chicken', emoji: '🐔' },
+  { name: 'pig', emoji: '🐖' }, { name: 'boar', emoji: '🐗' },
+  { name: 'cow', emoji: '🐄' }, { name: 'ox', emoji: '🐂' },
+  { name: 'buffalo', emoji: '🐃' }, { name: 'stallion', emoji: '🐎' },
+  { name: 'ram', emoji: '🐏' }, { name: 'hound', emoji: '🐕' },
+  { name: 'retriever', emoji: '🦮' }, { name: 'poodle', emoji: '🐩' },
+  { name: 'tabby', emoji: '🐈' }, { name: 'leopard', emoji: '🐆' },
+  { name: 'jaguar', emoji: '🐅' }, { name: 'macaque', emoji: '🐒' },
+  { name: 'bactrian', emoji: '🐫' }, { name: 'sauropod', emoji: '🦕' },
+  { name: 'raptor', emoji: '🦖' }, { name: 'wyvern', emoji: '🐲' },
+  { name: 'vole', emoji: '🐁' }, { name: 'rat', emoji: '🐀' },
+  { name: 'hare', emoji: '🐇' }, { name: 'humpback', emoji: '🐋' },
+  { name: 'minnow', emoji: '🐟' }, { name: 'jellyfish', emoji: '🪼' },
+  { name: 'goose', emoji: '🪿' }, { name: 'moose', emoji: '🫎' },
+  { name: 'donkey', emoji: '🫏' }, { name: 'nautilus', emoji: '🐚' },
 ];
 
 /**

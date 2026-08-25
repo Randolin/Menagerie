@@ -13,9 +13,13 @@ function relativeLuminance(hex: string): number {
 }
 
 describe('ADJ_B_HUES', () => {
-  test('covers the frozen index space exactly, entries unique', () => {
-    expect(ADJ_B_HUES).toHaveLength(64);
-    expect(new Set(ADJ_B_HUES).size).toBe(64);
+  // Length-EQUALITY, not a magic number: this is the lockstep guard. A hue
+  // table shorter than its word list silently hands `undefined` to the QR
+  // gradient for every appended word, which fails as a blank second stop
+  // rather than an exception. Asserting equality survives the next growth.
+  test('stays index-aligned with ADJECTIVES_B, entries unique', () => {
+    expect(ADJ_B_HUES).toHaveLength(ADJECTIVES_B.length);
+    expect(new Set(ADJ_B_HUES).size).toBe(ADJ_B_HUES.length);
   });
 
   test('every hue keeps QR-safe contrast (relative luminance <= 0.20)', () => {
@@ -29,6 +33,8 @@ describe('ADJ_B_HUES', () => {
   test('lookup by word; unknown word is null', () => {
     expect(adjBHue(ADJECTIVES_B[0])).toBe(ADJ_B_HUES[0]);
     expect(adjBHue(ADJECTIVES_B[63])).toBe(ADJ_B_HUES[63]);
+    const last = ADJECTIVES_B.length - 1;
+    expect(adjBHue(ADJECTIVES_B[last])).toBe(ADJ_B_HUES[last]);
     expect(adjBHue('nope')).toBeNull();
   });
 });
@@ -36,8 +42,8 @@ describe('ADJ_B_HUES', () => {
 describe('ANIMAL_HABITATS', () => {
   const habitats: readonly Habitat[] = ['forest', 'water', 'sky', 'meadow', 'mythic'];
 
-  test('covers all 64 animals with valid habitats; meta covers all habitats', () => {
-    expect(ANIMAL_HABITATS).toHaveLength(64);
+  test('covers every animal with a valid habitat; meta covers all habitats', () => {
+    expect(ANIMAL_HABITATS).toHaveLength(ANIMALS.length);
     for (const h of ANIMAL_HABITATS) expect(habitats).toContain(h);
     for (const h of habitats) {
       expect(HABITAT_META[h].motif.length).toBeGreaterThan(0);
