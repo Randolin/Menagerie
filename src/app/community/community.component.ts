@@ -15,7 +15,6 @@ interface RateRow {
   readonly label: string;
   readonly pct: number;
   readonly n: number;
-  readonly noisy: boolean;
 }
 
 /**
@@ -201,7 +200,7 @@ export class CommunityComponent {
       const positive = buckets[`${band}|${item.id}|1`];
       if (!n || !positive) return [];
       const label = 'label' in item ? item.label : item.id;
-      return [{ label, pct: Math.round((100 * positive) / n), n, noisy: false }];
+      return [{ label, pct: Math.round((100 * positive) / n), n }];
     });
   });
 
@@ -218,7 +217,7 @@ export class CommunityComponent {
       const rate = debiasDesireRate(positive, n);
       if (rate === null) return [];
       const label = 'label' in item ? item.label : item.id;
-      return [{ label, pct: Math.round(rate * 100), n, noisy: true }];
+      return [{ label, pct: Math.round(rate * 100), n }];
     });
   });
 

@@ -44,7 +44,6 @@ export class CompareStore {
 
   /** Null while (re)computing — views hold the previous render via this. */
   readonly model = this.modelResource.value;
-  readonly loading = this.modelResource.isLoading;
 
   get full(): boolean {
     return this.entries().length >= MAX_COMPARE;
@@ -85,11 +84,6 @@ export class CompareStore {
 
   clear(): void {
     this.entries.set([]);
-  }
-
-  /** Latest computed model, for callers outside templates. */
-  current(): CompareModel | undefined {
-    return this.model();
   }
 
   private async load(entry: CompareEntry): Promise<CompareSlot> {

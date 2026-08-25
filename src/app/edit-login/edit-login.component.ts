@@ -15,7 +15,10 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
         Enter the 5-word edit phrase you were given when you hatched. It’s the only key — there is
         no account and no reset.
       </p>
-      <form style="display:flex;flex-direction:column;gap:10px" (submit)="login($event)">
+      <form
+        style="display:flex;flex-direction:column;gap:10px"
+        (submit)="login($event, phraseInput.value, rememberBox.checked)"
+      >
         <input
           #phraseInput
           type="text"
@@ -48,11 +51,8 @@ export class EditLoginComponent {
 
   protected readonly busy = signal(false);
 
-  protected async login(event: Event): Promise<void> {
+  protected async login(event: Event, phrase: string, remember: boolean): Promise<void> {
     event.preventDefault();
-    const form = event.target as HTMLFormElement;
-    const phrase = (form.querySelector('input[type=text]') as HTMLInputElement).value;
-    const remember = (form.querySelector('input[type=checkbox]') as HTMLInputElement).checked;
     this.busy.set(true);
     try {
       if (await this.session.login(phrase)) {

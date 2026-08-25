@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
 import {
   GC_EMPTY_HUMAN,
   GC_IDLE_HUMAN,
@@ -30,7 +29,6 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
   selector: 'moxy-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    RouterLink,
     CategoryCardComponent,
     AddCategoryComponent,
     SaveBarComponent,
@@ -142,31 +140,6 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
     }
   `,
   styles: `
-    .section-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-      gap: 14px;
-      margin-bottom: 16px;
-    }
-    .section-card {
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      text-decoration: none;
-      color: inherit;
-    }
-    .section-card:hover {
-      border-color: var(--accent);
-    }
-    .section-card h3 {
-      margin: 0;
-      font-size: 17px;
-    }
-    .section-card .sub {
-      flex: 1;
-      margin: 0;
-    }
     .core-marker {
       display: inline-flex;
       align-items: center;
@@ -198,7 +171,6 @@ export class DashboardComponent {
   protected readonly session = inject(ProfileSessionStore);
   protected readonly draft = inject(DraftStore);
   private readonly storage = inject(APP_STORAGE);
-  private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
   /** Only the categories on the profile — the rest live behind “Add”. */

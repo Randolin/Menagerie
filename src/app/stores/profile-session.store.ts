@@ -612,7 +612,7 @@ export class ProfileSessionStore {
    */
   async prepareBoop(label: string, emoji: string): Promise<string> {
     const client = this.requireClient();
-    const { priv } = this.requireSession();
+    this.requireSession();
     const entry: SentBoop = {
       id: crypto.randomUUID(),
       label,
@@ -849,18 +849,6 @@ export class ProfileSessionStore {
     }
     this.submittedEpochs.add(epoch);
     priv.metricsLastEpoch = epoch; // rides the next organic save
-  }
-
-  /** Track a group without depositing (opened someone's invite link). */
-  async rememberGroup(rawGroupPhrase: string): Promise<void> {
-    this.requireSession();
-    const groupPhrase = canonicalViewPhrase(rawGroupPhrase);
-    if (this.groups().some((g) => g.groupPhrase === groupPhrase)) return;
-    this.mutateGroups((list) => [
-      ...list,
-      { id: crypto.randomUUID(), groupPhrase, addedAt: Date.now() },
-    ]);
-    await this.save();
   }
 
   // ---- internals ----------------------------------------------------------

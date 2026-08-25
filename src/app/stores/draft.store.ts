@@ -1,4 +1,4 @@
-import { computed, Injectable, signal } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import type {
   Acceptable,
   Answers,
@@ -22,11 +22,6 @@ export class DraftStore {
   readonly answers = signal<Answers>({});
   readonly weights = signal<Weights>({});
   readonly acceptable = signal<Acceptable>({});
-  readonly hasAnswers = computed(() => Object.keys(this.answers()).length > 0);
-
-  get(id: ItemId): AnswerValue | undefined {
-    return this.answers()[id];
-  }
 
   set(id: ItemId, value: AnswerValue | undefined): void {
     this.answers.update((a) => {
@@ -40,14 +35,6 @@ export class DraftStore {
       // An unanswered item can't carry a weight.
       this.setWeight(id, undefined);
     }
-  }
-
-  weightOf(id: ItemId): ImportanceWeight | undefined {
-    return this.weights()[id];
-  }
-
-  acceptableOf(id: ItemId): readonly number[] | undefined {
-    return this.acceptable()[id];
   }
 
   setWeight(id: ItemId, weight: ImportanceWeight | undefined): void {

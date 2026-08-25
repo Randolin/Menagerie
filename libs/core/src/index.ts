@@ -2,7 +2,7 @@
 // (no-angular.spec.ts enforces that claim.)
 
 export * from './schema/types';
-export { SECTIONS, RETIRED_ITEM_IDS, RETIRED_SECTION_IDS } from './schema/sections';
+export { SECTIONS } from './schema/sections';
 export * from './schema/schema';
 export * from './schema/gating';
 export * from './group/group-api';
@@ -12,7 +12,6 @@ export * from './metrics/buckets';
 export * from './boop/boop-api';
 export * from './boop/boop-data';
 export {
-  SEAL_PAD_BYTES,
   generateBoopKeyPair,
   boopPublicKey,
   sealTo,
@@ -23,15 +22,12 @@ export {
   type BoopKeyPair,
 } from './boop/sealed-box';
 
-export { bytesToB64url, b64urlToBytes } from './codec/base64url';
-export { deflate, inflate } from './codec/compress';
 export { buildSharePayload } from './codec/codec';
 export { migrateToCurrent } from './codec/migrate';
 
 export { randomBytes, randomIndex, randomLocator, randomSalt, randomToken } from './crypto/random';
 export * from './crypto/match-tokens';
 export * from './crypto/phrase-kdf';
-export { generatePassphrase } from './crypto/passphrase';
 
 export { itemSimilarity } from './match/similarity';
 export * from './match/scores';
@@ -39,8 +35,7 @@ export * from './match/complement';
 export * from './match/reveal';
 
 export * from './persona/persona';
-export { ADJECTIVES_A, ADJECTIVES_B, ANIMALS, PERSONA_COLORS } from './persona/wordlists';
-export { ADJ_B_HUES, adjBHue } from './persona/adjb-hues';
+export { ANIMALS } from './persona/wordlists';
 export {
   ANIMAL_HABITATS,
   HABITAT_META,
@@ -56,15 +51,7 @@ export {
   type PlaceFamily,
   type PlaceFamilyMeta,
 } from './persona/place-family';
-export {
-  bannerStyleFor,
-  BANNER_VARIANTS,
-  BANNER_TIMES,
-  BANNER_DENSITIES,
-  BANNER_SCALES,
-  type BannerStyle,
-  type BannerPersonaLike,
-} from './persona/banner';
+export { bannerStyleFor, type BannerStyle, type BannerPersonaLike } from './persona/banner';
 
 export * from './hatch/constants';
 export * from './hatch/keys';

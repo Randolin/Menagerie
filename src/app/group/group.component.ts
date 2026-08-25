@@ -152,7 +152,7 @@ interface LoadedGroup {
               @if (m.deposit && !m.isMe && matchPct(m); as pct) {
                 <span class="fine">{{ pct }}% overall match with you</span>
               }
-              @if (m.deposit?.tier === 2 && m.deposit?.viewPhrase) {
+              @if (m.deposit?.tier === 2 && m.deposit!.viewPhrase) {
                 <a class="btn btn-ghost btn-small" [routerLink]="['/view', m.deposit!.viewPhrase]"
                   >View</a
                 >
