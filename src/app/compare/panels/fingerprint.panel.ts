@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { getSection, type ScaleItem } from '@moxy/core';
+import { SCALE_MAX, getSection, type ScaleItem } from '@moxy/core';
 import { PersonKeyComponent, RadarComponent, type RadarSeries } from '@moxy/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
@@ -46,7 +46,7 @@ export class FingerprintPanel implements ComparePanelComponent {
   protected readonly series = computed<RadarSeries[]>(() =>
     this.model().payloads.map((p, i) => ({
       name: this.model().names[i],
-      values: this.sharedScales().map((s) => (p.a[s.id] as number) / 6),
+      values: this.sharedScales().map((s) => (p.a[s.id] as number) / SCALE_MAX),
     })),
   );
 }

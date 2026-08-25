@@ -3,7 +3,7 @@
 //
 // Adding a new item TYPE requires an entry here — the exhaustive switch makes
 // forgetting it a compile error.
-import type { AnswerValue, Item } from '../schema/types';
+import { SCALE_MAX, type AnswerValue, type Item } from '../schema/types';
 
 export function itemSimilarity(
   item: Item,
@@ -13,7 +13,7 @@ export function itemSimilarity(
   if (a === undefined || b === undefined || a === null || b === null) return null;
   switch (item.type) {
     case 'scale':
-      return 1 - Math.abs((a as number) - (b as number)) / 6;
+      return 1 - Math.abs((a as number) - (b as number)) / SCALE_MAX;
     case 'interest':
       // Agreement, not mutual enthusiasm: two people who both answered
       // "not for me" agree perfectly. Mutual-interest highlighting is a

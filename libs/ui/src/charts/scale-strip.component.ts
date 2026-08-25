@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import type { AnswerValue, ScaleItem } from '@moxy/core';
+import { SCALE_MAX, type AnswerValue, type ScaleItem } from '@moxy/core';
 import { seriesVar } from './series';
 
 interface StripDot {
@@ -34,10 +34,10 @@ interface StripDot {
         @for (dot of dots(); track dot.personIdx) {
           <span
             class="strip-dot"
-            [style.left.%]="(dot.value / 6) * 100"
+            [style.left.%]="(dot.value / max) * 100"
             [style.background]="color(dot.personIdx)"
             [style.transform]="'translate(-50%, calc(-50% + ' + dot.offsetPx + 'px))'"
-            [title]="names()[dot.personIdx] + ': ' + dot.value + '/6'"
+            [title]="names()[dot.personIdx] + ': ' + dot.value + '/' + max"
           ></span>
         }
       </div>
@@ -45,6 +45,7 @@ interface StripDot {
   `,
 })
 export class ScaleStripComponent {
+  protected readonly max = SCALE_MAX;
   readonly item = input.required<ScaleItem>();
   readonly answers = input.required<readonly (AnswerValue | null)[]>();
   readonly names = input.required<readonly string[]>();

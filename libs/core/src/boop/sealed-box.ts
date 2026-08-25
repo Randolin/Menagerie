@@ -124,12 +124,7 @@ export async function openSealed<T>(priv: string, sealed: string): Promise<T> {
   const privKey = await subtle.importKey('jwk', jwk, P256, false, ['deriveBits']);
   // The recipient's own raw public point, rebuilt from the JWK coordinates —
   // needed to reproduce the HKDF info binding.
-  const x = b64urlToBytes(jwk.x ?? '');
-  const y = b64urlToBytes(jwk.y ?? '');
-  const recipientPubRaw = new Uint8Array(1 + x.length + y.length);
-  recipientPubRaw[0] = 0x04;
-  recipientPubRaw.set(x, 1);
-  recipientPubRaw.set(y, 1 + x.length);
+  const recipientPubRaw = rawPointFromJwk(jwk);
 
   const bytes = b64urlToBytes(sealed);
   if (bytes.length <= PUB_RAW_BYTES + IV_BYTES) throw new Error('Malformed sealed box.');
@@ -144,17 +139,22 @@ export async function openSealed<T>(priv: string, sealed: string): Promise<T> {
   return unpadPlaintext(plain) as T;
 }
 
-/** The b64url raw public point, rebuilt from a stored private key — so
- *  PrivData needs to hold only the private half. */
-export function boopPublicKey(priv: string): string {
-  const jwk = JSON.parse(new TextDecoder().decode(b64urlToBytes(priv))) as JsonWebKey;
+/** The uncompressed SEC1 point (0x04‖x‖y) from a P-256 JWK's coordinates. */
+function rawPointFromJwk(jwk: JsonWebKey): Uint8Array {
   const x = b64urlToBytes(jwk.x ?? '');
   const y = b64urlToBytes(jwk.y ?? '');
   const raw = new Uint8Array(1 + x.length + y.length);
   raw[0] = 0x04;
   raw.set(x, 1);
   raw.set(y, 1 + x.length);
-  return bytesToB64url(raw);
+  return raw;
+}
+
+/** The b64url raw public point, rebuilt from a stored private key — so
+ *  PrivData needs to hold only the private half. */
+export function boopPublicKey(priv: string): string {
+  const jwk = JSON.parse(new TextDecoder().decode(b64urlToBytes(priv))) as JsonWebKey;
+  return bytesToB64url(rawPointFromJwk(jwk));
 }
 
 /** Mint the symmetric key a reply box rides on (32 raw AES-GCM bytes, b64url). */

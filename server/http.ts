@@ -20,6 +20,7 @@ import {
   METRICS_DEFAULT_K,
   METRICS_EPOCH_RE,
   METRICS_MAX_BUCKETS,
+  currentEpoch,
 } from '../libs/core/src/metrics/metrics-api.ts';
 import { BOOP_MAX_KNOCK_BYTES, BOOP_TOKEN_HEADER } from '../libs/core/src/boop/boop-api.ts';
 import type { ProfilesDb } from './profiles-db.ts';
@@ -98,12 +99,6 @@ async function readBody(req: IncomingMessage, cap: number): Promise<string | nul
   return Buffer.concat(chunks).toString('utf8');
 }
 
-/** UTC year-month, e.g. "2026-08" — the current metrics epoch. */
-function serverEpoch(): string {
-  const d = new Date();
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-}
-
 export function createApp(opts: AppOptions) {
   const profiles = opts.profiles;
   const readLimiter = new RateLimiter(opts.readsPerMinute ?? 120);
@@ -175,7 +170,7 @@ export function createApp(opts: AppOptions) {
         const epoch = body['epoch'];
         const token = body['token'];
         const buckets = body['buckets'];
-        if (typeof epoch !== 'string' || epoch !== serverEpoch()) {
+        if (typeof epoch !== 'string' || epoch !== currentEpoch(Date.now())) {
           sendError(res, 400, 'bad_request', { message: 'epoch must be the current UTC month' });
           return;
         }

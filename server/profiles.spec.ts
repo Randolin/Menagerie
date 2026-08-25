@@ -20,6 +20,7 @@ import {
   NEW_ADMIN_TOKEN_HEADER,
 } from '../libs/core/src/group/group-api.ts';
 import { BOOP_TOKEN_HEADER } from '../libs/core/src/boop/boop-api.ts';
+import { currentEpoch } from '../libs/core/src/metrics/metrics-api.ts';
 
 const DAY = 86_400_000;
 
@@ -530,10 +531,7 @@ describe('v2 groups: rosters and deposits', () => {
 });
 
 describe('v2 metrics: epoch counters', () => {
-  const epoch = (() => {
-    const d = new Date();
-    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-  })();
+  const epoch = currentEpoch(Date.now());
 
   const submit = (token: string, buckets: string[], ep = epoch) =>
     fetch(`${base}/v2/metrics`, {

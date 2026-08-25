@@ -41,11 +41,6 @@ export const METRICS_ITEMS: readonly string[] = [
   ...SECTIONS.find((s) => s.id === 'desires')!.items.map((i) => i.id),
 ];
 
-export function currentEpoch(now: number): string {
-  const d = new Date(now);
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-}
-
 /** True with probability 3/4 (crypto randomness). */
 function keepTruth(): boolean {
   return randomBytes(1)[0] >= 64;

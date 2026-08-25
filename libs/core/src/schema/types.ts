@@ -74,7 +74,10 @@ export interface MultiItem extends ItemBase {
   readonly options: readonly string[]; // APPEND-ONLY
 }
 
-/** 0..6 slider between two anchor phrases; scored by closeness. */
+/** Upper bound of the scale slider — scale answers run 0..SCALE_MAX inclusive. */
+export const SCALE_MAX = 6;
+
+/** 0..SCALE_MAX slider between two anchor phrases; scored by closeness. */
 export interface ScaleItem extends ItemBase {
   readonly type: 'scale';
   readonly left: string;

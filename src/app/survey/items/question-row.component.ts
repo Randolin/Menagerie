@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import { IMPORTANCE_WEIGHTS, type Item } from '@moxy/core';
+import { importanceLabel, type Item } from '@moxy/core';
 import { DraftStore } from '../../stores/draft.store';
 import { ItemEditorComponent } from './item-editor.component';
 import { WeightControlComponent } from './weight-control.component';
@@ -80,7 +80,7 @@ export class QuestionRowComponent {
 
   protected readonly markLabel = computed(() => {
     const w = this.weight();
-    const def = IMPORTANCE_WEIGHTS.find((d) => d.value === w);
-    return def ? `Importance: ${def.label}` : 'Set importance';
+    const label = importanceLabel(w);
+    return label ? `Importance: ${label}` : 'Set importance';
   });
 }

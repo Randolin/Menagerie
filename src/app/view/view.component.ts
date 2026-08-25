@@ -6,7 +6,7 @@ import {
   deriveViewKeys,
   extractViewPhrase,
   hasDesiresTokens,
-  IMPORTANCE_WEIGHTS,
+  importanceLabel,
   migrateToCurrent,
   personaFromViewPhrase,
   bannerStyleFor,
@@ -233,7 +233,7 @@ export class ViewComponent {
   }
 
   protected weightLabel(w: ImportanceWeight): string {
-    return IMPORTANCE_WEIGHTS.find((d) => d.value === w)?.label ?? '';
+    return importanceLabel(w) ?? '';
   }
 
   protected compareWith(v: LoadedProfile): void {

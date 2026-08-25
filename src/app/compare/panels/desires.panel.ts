@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { interestLevelLabel } from '@moxy/core';
+import { interestLabel } from '@moxy/core';
 import { seriesVar } from '@moxy/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
@@ -55,5 +55,5 @@ import type { ComparePanelComponent } from '../compare-panels.token';
 export class DesiresPanel implements ComparePanelComponent {
   readonly model = input.required<CompareModel>();
   protected readonly color = seriesVar;
-  protected readonly levelLabel = interestLevelLabel;
+  protected readonly levelLabel = interestLabel;
 }

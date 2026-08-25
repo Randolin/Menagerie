@@ -1,20 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { interestLabel, type AnswerValue, type Item } from '@moxy/core';
+import { answerChips, type AnswerValue, type Item } from '@moxy/core';
 import { AgreementStripComponent, type AgreementRow } from '@moxy/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
 
 function answerText(item: Item, v: AnswerValue): string {
-  switch (item.type) {
-    case 'choice':
-      return item.options[v as number] ?? '?';
-    case 'multi':
-      return (Array.isArray(v) ? v : []).map((i) => item.options[i] ?? '?').join(', ');
-    case 'scale':
-      return `${v}/6`;
-    case 'interest':
-      return interestLabel(v as number);
-  }
+  return answerChips(item, v)?.join(', ') ?? '?';
 }
 
 /** The shape of the agreement: every shared answer as a dot by similarity. */
