@@ -1,8 +1,4 @@
-export function downloadText(
-  filename: string,
-  text: string,
-  mime = 'application/json',
-): void {
+export function downloadText(filename: string, text: string, mime = 'application/json'): void {
   const url = URL.createObjectURL(new Blob([text], { type: mime }));
   const a = document.createElement('a');
   a.href = url;

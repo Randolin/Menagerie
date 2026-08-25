@@ -12,7 +12,10 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
     @if (sim() === null) {
       <span class="sim-dot sim-none" title="Not comparable"></span>
     } @else {
-      <span class="sim-dot sim-{{ bucket() }}" [title]="Math.round(sim()! * 100) + '% similar'"></span>
+      <span
+        class="sim-dot sim-{{ bucket() }}"
+        [title]="Math.round(sim()! * 100) + '% similar'"
+      ></span>
     }
   `,
 })

@@ -26,8 +26,8 @@ function answerText(item: Item, v: AnswerValue): string {
     <div class="card">
       <h2>Agreement, item by item</h2>
       <p class="sub">
-        Every question you both answered, placed by how closely your answers sit.
-        Hover a dot to see the question and both answers.
+        Every question you both answered, placed by how closely your answers sit. Hover a dot to see
+        the question and both answers.
       </p>
       <moxy-agreement-strip [rows]="rows()" />
     </div>

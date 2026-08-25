@@ -7,8 +7,9 @@ import type { AnswerValue, MultiItem } from '@moxy/core';
   template: `
     <div class="opt-grid" role="group" [attr.aria-label]="item().label">
       @for (opt of item().options; track $index) {
-        <button class="opt" [attr.aria-pressed]="selected().has($index)"
-                (click)="toggle($index)">{{ opt }}</button>
+        <button class="opt" [attr.aria-pressed]="selected().has($index)" (click)="toggle($index)">
+          {{ opt }}
+        </button>
       }
     </div>
   `,

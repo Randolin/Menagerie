@@ -14,8 +14,11 @@ import type { ComparePanelComponent } from '../compare-panels.token';
       <p class="sub">Each dot is a person. Distance between dots is the actual gap.</p>
       <moxy-person-key [names]="model().names" [emojis]="personaEmojis()" />
       @for (row of rows(); track row.item.id) {
-        <moxy-scale-strip [item]="asScale(row.item)" [answers]="row.answers"
-                          [names]="model().names" />
+        <moxy-scale-strip
+          [item]="asScale(row.item)"
+          [answers]="row.answers"
+          [names]="model().names"
+        />
       }
     </div>
   `,

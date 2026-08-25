@@ -22,9 +22,19 @@ export const METRICS_ITEMS: readonly string[] = [
   // values: scales coarsened to lo (0-1) / mid (2-4) / hi (5-6)
   ...SECTIONS.find((s) => s.id === 'values')!.items.map((i) => i.id),
   // lifestyle + plans: single-choice items, raw option index
-  'ls.alcohol', 'ls.smoke', 'ls.cannabis', 'ls.diet', 'ls.exercise',
-  'ls.kids', 'ls.sleep', 'ls.tidy', 'ls.setting', 'ls.travel',
-  'pl.move', 'pl.money', 'pl.cohabit',
+  'ls.alcohol',
+  'ls.smoke',
+  'ls.cannabis',
+  'ls.diet',
+  'ls.exercise',
+  'ls.kids',
+  'ls.sleep',
+  'ls.tidy',
+  'ls.setting',
+  'ls.travel',
+  'pl.move',
+  'pl.money',
+  'pl.cohabit',
   // structure: relationship shapes, one bucket per selected option
   'st.ideal',
   // desires: positive/not, randomized-response noised

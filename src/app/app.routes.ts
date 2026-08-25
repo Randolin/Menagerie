@@ -25,7 +25,8 @@ export const routes: Routes = [
   {
     path: 'me',
     canActivate: [hatchSessionGuard],
-    loadComponent: () => import('./dashboard/dashboard.component').then((m) => m.DashboardComponent),
+    loadComponent: () =>
+      import('./dashboard/dashboard.component').then((m) => m.DashboardComponent),
   },
   {
     path: 'menagerie',
@@ -41,8 +42,7 @@ export const routes: Routes = [
   {
     path: 'settings',
     canActivate: [hatchSessionGuard],
-    loadComponent: () =>
-      import('./settings/settings.component').then((m) => m.SettingsComponent),
+    loadComponent: () => import('./settings/settings.component').then((m) => m.SettingsComponent),
   },
   {
     path: 'compare',

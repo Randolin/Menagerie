@@ -73,17 +73,21 @@ interface LoadedProfile {
         <moxy-location-banner [banner]="bannerFor(v.persona, v.phrase)" />
         <h2 style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           {{ v.name }}’s profile
-          @if (v.persona; as persona) { <moxy-persona-chip [persona]="persona" /> }
+          @if (v.persona; as persona) {
+            <moxy-persona-chip [persona]="persona" />
+          }
           @if (habitatMotif(v.persona); as motif) {
-            <span class="habitat-motif" [title]="motif.title" aria-hidden="true">{{ motif.glyph }}</span>
+            <span class="habitat-motif" [title]="motif.title" aria-hidden="true">{{
+              motif.glyph
+            }}</span>
           }
         </h2>
         <p class="sub">
-          A Menagerie profile — anonymous by design, stored only as ciphertext the server
-          can’t read.
+          A Menagerie profile — anonymous by design, stored only as ciphertext the server can’t
+          read.
           @if (v.hasDesires) {
-            It includes a private desires section that only unlocks against a profile
-            with mutual answers.
+            It includes a private desires section that only unlocks against a profile with mutual
+            answers.
           }
         </p>
         <div class="btn-row" style="margin-top:16px">
@@ -97,8 +101,11 @@ interface LoadedProfile {
         @if (session.active()) {
           @if (v.payload.k; as reach) {
             <div style="margin-top:12px">
-              <moxy-boop-composer [target]="reach" [label]="v.name"
-                                  [emoji]="v.persona?.emoji ?? '🥚'" />
+              <moxy-boop-composer
+                [target]="reach"
+                [label]="v.name"
+                [emoji]="v.persona?.emoji ?? '🥚'"
+              />
             </div>
           } @else {
             <p class="fine" style="margin-top:12px">
@@ -118,8 +125,11 @@ interface LoadedProfile {
           <h2>{{ section.title }}</h2>
           @for (entry of section.items; track entry.item.id) {
             @if (entry.item.type === 'scale') {
-              <moxy-scale-strip [item]="asScale(entry.item)" [answers]="[$any(entry.value)]"
-                                [names]="[v.name]" />
+              <moxy-scale-strip
+                [item]="asScale(entry.item)"
+                [answers]="[$any(entry.value)]"
+                [names]="[v.name]"
+              />
             } @else {
               <div class="grid-row">
                 <div class="grid-item-label">
@@ -144,7 +154,6 @@ interface LoadedProfile {
   `,
 })
 export class ViewComponent {
-
   /**
    * The banner renders only on this top card — the subject whose phrase the
    * viewer is holding. Never on member rows or compare panels: those carry a

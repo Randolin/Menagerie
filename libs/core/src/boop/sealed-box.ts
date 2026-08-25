@@ -163,10 +163,13 @@ export function mintBoopBoxKey(): string {
 }
 
 async function importBoopBoxKey(keyB64: string): Promise<CryptoKey> {
-  return subtle.importKey('raw', b64urlToBytes(keyB64) as BufferSource, { name: 'AES-GCM' }, false, [
-    'encrypt',
-    'decrypt',
-  ]);
+  return subtle.importKey(
+    'raw',
+    b64urlToBytes(keyB64) as BufferSource,
+    { name: 'AES-GCM' },
+    false,
+    ['encrypt', 'decrypt'],
+  );
 }
 
 /**

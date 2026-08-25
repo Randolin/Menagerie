@@ -465,7 +465,12 @@ export function createApp(opts: AppOptions) {
           sendError(res, 400, 'bad_request', { message: 'blob_member must be base64url' });
           return;
         }
-        const outcome = opts.groups.join(joinMatch[1], memberLocator, memberHash, body['blob_member']);
+        const outcome = opts.groups.join(
+          joinMatch[1],
+          memberLocator,
+          memberHash,
+          body['blob_member'],
+        );
         if (outcome === 'joined') send(res, 201, { version: 1 });
         else if (outcome === 'group_not_found') sendError(res, 404, 'not_found');
         else if (outcome === 'full') sendError(res, 503, 'at_capacity');
@@ -512,7 +517,12 @@ export function createApp(opts: AppOptions) {
             sendError(res, 400, 'bad_request', { message: 'blob_member must be base64url' });
             return;
           }
-          const outcome = opts.groups.putMember(memberLocator, memberHash, ifVersion, body['blob_member']);
+          const outcome = opts.groups.putMember(
+            memberLocator,
+            memberHash,
+            ifVersion,
+            body['blob_member'],
+          );
           if (outcome === 'updated') send(res, 200, { version: ifVersion + 1 });
           else if (outcome === 'bad_token') sendError(res, 401, 'bad_token');
           else if (outcome === 'conflict') sendError(res, 409, 'version_conflict');

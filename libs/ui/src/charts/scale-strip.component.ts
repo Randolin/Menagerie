@@ -21,18 +21,24 @@ interface StripDot {
       <div class="strip-anchors">
         <span class="anchor">{{ item().left }}</span>
         @if (gapBadge(); as badge) {
-          <span class="badge" [class.badge-close]="badge === 'in sync'"
-                [class.badge-gap]="badge === 'big gap'">{{ badge }}</span>
+          <span
+            class="badge"
+            [class.badge-close]="badge === 'in sync'"
+            [class.badge-gap]="badge === 'big gap'"
+            >{{ badge }}</span
+          >
         }
         <span class="anchor anchor-right">{{ item().right }}</span>
       </div>
       <div class="strip-track">
         @for (dot of dots(); track dot.personIdx) {
-          <span class="strip-dot"
-                [style.left.%]="(dot.value / 6) * 100"
-                [style.background]="color(dot.personIdx)"
-                [style.transform]="'translate(-50%, calc(-50% + ' + dot.offsetPx + 'px))'"
-                [title]="names()[dot.personIdx] + ': ' + dot.value + '/6'"></span>
+          <span
+            class="strip-dot"
+            [style.left.%]="(dot.value / 6) * 100"
+            [style.background]="color(dot.personIdx)"
+            [style.transform]="'translate(-50%, calc(-50% + ' + dot.offsetPx + 'px))'"
+            [title]="names()[dot.personIdx] + ': ' + dot.value + '/6'"
+          ></span>
         }
       </div>
     </div>

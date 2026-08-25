@@ -120,8 +120,7 @@ export class GroupsDb {
     const row = this.db
       .prepare('SELECT admin_token_hash, blob_meta, version FROM groups WHERE group_locator = ?')
       .get(groupLocator) as
-      | { admin_token_hash: string; blob_meta: string; version: number }
-      | undefined;
+      { admin_token_hash: string; blob_meta: string; version: number } | undefined;
     if (!row) return { status: 'not_found' };
     if (!tokenMatches(row.admin_token_hash, adminTokenHashHex)) return { status: 'bad_token' };
     if (row.version !== ifVersion) {
@@ -169,9 +168,7 @@ export class GroupsDb {
     memberTokenHash: string,
     blobMember: string,
   ): JoinResult {
-    const group = this.db
-      .prepare('SELECT 1 FROM groups WHERE group_locator = ?')
-      .get(groupLocator);
+    const group = this.db.prepare('SELECT 1 FROM groups WHERE group_locator = ?').get(groupLocator);
     if (!group) return 'group_not_found';
     const count = this.db
       .prepare('SELECT COUNT(*) AS n FROM group_members WHERE group_locator = ?')
@@ -219,9 +216,7 @@ export class GroupsDb {
            FROM group_members m JOIN groups g ON g.group_locator = m.group_locator
           WHERE m.member_locator = ?`,
       )
-      .get(memberLocator) as
-      | { member_token_hash: string; admin_token_hash: string }
-      | undefined;
+      .get(memberLocator) as { member_token_hash: string; admin_token_hash: string } | undefined;
     if (!row) return 'not_found';
     if (
       !tokenMatches(row.member_token_hash, tokenHashHex) &&

@@ -7,7 +7,9 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     <div class="stat-tile">
       <div class="stat-label">{{ label() }}</div>
       <div class="stat-value">{{ value() }}</div>
-      @if (sub(); as s) { <div class="stat-sub">{{ s }}</div> }
+      @if (sub(); as s) {
+        <div class="stat-sub">{{ s }}</div>
+      }
     </div>
   `,
 })

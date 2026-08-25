@@ -11,38 +11,82 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
   selector: 'moxy-flow',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <svg [attr.viewBox]="'0 0 ' + W + ' ' + height()" role="img"
-         [attr.aria-label]="matchedCount() + ' of ' + needs().length + ' needs covered'">
-      <text [attr.x]="LEFT_X" [attr.y]="12" text-anchor="end"
-            font-size="10" fill="var(--muted)">gives</text>
-      <text [attr.x]="RIGHT_X" [attr.y]="12" text-anchor="start"
-            font-size="10" fill="var(--muted)">needs</text>
+    <svg
+      [attr.viewBox]="'0 0 ' + W + ' ' + height()"
+      role="img"
+      [attr.aria-label]="matchedCount() + ' of ' + needs().length + ' needs covered'"
+    >
+      <text [attr.x]="LEFT_X" [attr.y]="12" text-anchor="end" font-size="10" fill="var(--muted)">
+        gives
+      </text>
+      <text [attr.x]="RIGHT_X" [attr.y]="12" text-anchor="start" font-size="10" fill="var(--muted)">
+        needs
+      </text>
       @for (g of gives(); track g; let i = $index) {
-        <text [attr.x]="LEFT_X" [attr.y]="rowY(i)" text-anchor="end"
-              dominant-baseline="middle" font-size="11.5"
-              fill="var(--ink)">{{ label(g) }}</text>
+        <text
+          [attr.x]="LEFT_X"
+          [attr.y]="rowY(i)"
+          text-anchor="end"
+          dominant-baseline="middle"
+          font-size="11.5"
+          fill="var(--ink)"
+        >
+          {{ label(g) }}
+        </text>
       }
       @for (n of needs(); track n; let i = $index) {
-        <text [attr.x]="RIGHT_X" [attr.y]="rowY(i)" text-anchor="start"
-              dominant-baseline="middle" font-size="11.5"
-              [attr.fill]="isMatched(n) ? 'var(--ink)' : 'var(--muted)'">{{ label(n) }}</text>
+        <text
+          [attr.x]="RIGHT_X"
+          [attr.y]="rowY(i)"
+          text-anchor="start"
+          dominant-baseline="middle"
+          font-size="11.5"
+          [attr.fill]="isMatched(n) ? 'var(--ink)' : 'var(--muted)'"
+        >
+          {{ label(n) }}
+        </text>
         @if (!isMatched(n)) {
-          <text [attr.x]="RIGHT_X" [attr.y]="rowY(i) + 11" text-anchor="start"
-                font-size="9" fill="var(--muted)">unmet</text>
-          <line [attr.x1]="RIGHT_X - 34" [attr.y1]="rowY(i)"
-                [attr.x2]="RIGHT_X - 6" [attr.y2]="rowY(i)"
-                stroke="var(--border)" stroke-width="2" stroke-dasharray="3 4" />
+          <text
+            [attr.x]="RIGHT_X"
+            [attr.y]="rowY(i) + 11"
+            text-anchor="start"
+            font-size="9"
+            fill="var(--muted)"
+          >
+            unmet
+          </text>
+          <line
+            [attr.x1]="RIGHT_X - 34"
+            [attr.y1]="rowY(i)"
+            [attr.x2]="RIGHT_X - 6"
+            [attr.y2]="rowY(i)"
+            stroke="var(--border)"
+            stroke-width="2"
+            stroke-dasharray="3 4"
+          />
         }
       }
       @for (ribbon of ribbons(); track ribbon.option) {
-        <path [attr.d]="ribbon.d" fill="none" [attr.stroke]="color()"
-              stroke-width="2.5" stroke-linecap="round" opacity="0.85" />
+        <path
+          [attr.d]="ribbon.d"
+          fill="none"
+          [attr.stroke]="color()"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          opacity="0.85"
+        />
       }
     </svg>
   `,
   styles: `
-    :host { display: block; max-width: 440px; }
-    svg { width: 100%; height: auto; }
+    :host {
+      display: block;
+      max-width: 440px;
+    }
+    svg {
+      width: 100%;
+      height: auto;
+    }
   `,
 })
 export class FlowComponent {

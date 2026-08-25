@@ -12,10 +12,14 @@ import { interestLabel, type AnswerValue, type Item } from '@moxy/core';
   template: `
     @if (display(); as d) {
       @switch (d.kind) {
-        @case ('empty') { <span class="answer-empty">—</span> }
+        @case ('empty') {
+          <span class="answer-empty">—</span>
+        }
         @case ('chips') {
           <span class="answer-chips">
-            @for (chip of d.chips; track $index) { <span class="answer-chip">{{ chip }}</span> }
+            @for (chip of d.chips; track $index) {
+              <span class="answer-chip">{{ chip }}</span>
+            }
           </span>
         }
       }

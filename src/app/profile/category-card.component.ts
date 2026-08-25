@@ -45,8 +45,8 @@ import { QuestionRowComponent } from '../survey/items/question-row.component';
       @if (!collapsed()) {
         @if (section().privacy === 'match') {
           <p class="fine">
-            🔒 Mutual-only — these travel as scrambled fingerprints and surface only when
-            you both marked the same thing. “Not for me” is never shared in any form.
+            🔒 Mutual-only — these travel as scrambled fingerprints and surface only when you both
+            marked the same thing. “Not for me” is never shared in any form.
           </p>
         }
 

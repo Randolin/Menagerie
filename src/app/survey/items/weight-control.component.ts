@@ -14,12 +14,21 @@ import { DraftStore } from '../../stores/draft.store';
   template: `
     <div class="weight-row">
       <span class="fine">Importance:</span>
-      <button type="button" class="btn btn-ghost btn-small" [class.weight-on]="!weight()"
-              (click)="setWeight(undefined)">Default</button>
+      <button
+        type="button"
+        class="btn btn-ghost btn-small"
+        [class.weight-on]="!weight()"
+        (click)="setWeight(undefined)"
+      >
+        Default
+      </button>
       @for (def of tiers(); track def.value) {
-        <button type="button" class="btn btn-ghost btn-small"
-                [class.weight-on]="weight() === def.value"
-                (click)="setWeight(def.value)">
+        <button
+          type="button"
+          class="btn btn-ghost btn-small"
+          [class.weight-on]="weight() === def.value"
+          (click)="setWeight(def.value)"
+        >
           {{ def.value === 3 ? '⛔ ' + def.label : def.label }}
         </button>
       }
@@ -28,8 +37,14 @@ import { DraftStore } from '../../stores/draft.store';
       <div class="weight-accept">
         <span class="fine">I could match with:</span>
         @for (opt of acceptOptions(); track $index) {
-          <button type="button" class="opt" [class.selected]="isAcceptable($index)"
-                  (click)="toggleAcceptable($index)">{{ opt }}</button>
+          <button
+            type="button"
+            class="opt"
+            [class.selected]="isAcceptable($index)"
+            (click)="toggleAcceptable($index)"
+          >
+            {{ opt }}
+          </button>
         }
         @if (!hasAcceptable()) {
           <span class="fine">— pick at least one, or this stays a soft weight</span>
@@ -39,12 +54,21 @@ import { DraftStore } from '../../stores/draft.store';
   `,
   styles: `
     .weight-row {
-      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
       margin-top: 8px;
     }
-    .weight-on { border-color: var(--accent); color: var(--accent); }
+    .weight-on {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
     .weight-accept {
-      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
       margin-top: 6px;
     }
   `,

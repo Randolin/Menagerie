@@ -36,8 +36,18 @@ export type PlaceFamily =
   | 'tended';
 
 export const PLACE_FAMILIES: readonly PlaceFamily[] = [
-  'lowland', 'wetland', 'highland', 'coastal', 'woodland', 'openland',
-  'threshold', 'stronghold', 'underground', 'hearthside', 'spring', 'tended',
+  'lowland',
+  'wetland',
+  'highland',
+  'coastal',
+  'woodland',
+  'openland',
+  'threshold',
+  'stronghold',
+  'underground',
+  'hearthside',
+  'spring',
+  'tended',
 ];
 
 /**

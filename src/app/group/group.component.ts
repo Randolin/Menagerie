@@ -26,7 +26,16 @@ import {
   type Persona,
   type ProfilePayload,
 } from '@moxy/core';
-import { CreatureIconComponent, LocationBannerComponent, PersonaChipComponent, QrCodeComponent, ToastService, copyText, habitatClass, habitatMotif } from '@moxy/ui';
+import {
+  CreatureIconComponent,
+  LocationBannerComponent,
+  PersonaChipComponent,
+  QrCodeComponent,
+  ToastService,
+  copyText,
+  habitatClass,
+  habitatMotif,
+} from '@moxy/ui';
 import { CompareStore } from '../stores/compare.store';
 import { DraftStore } from '../stores/draft.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
@@ -55,7 +64,13 @@ interface LoadedGroup {
 @Component({
   selector: 'moxy-group',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, CreatureIconComponent, LocationBannerComponent, PersonaChipComponent, QrCodeComponent],
+  imports: [
+    RouterLink,
+    CreatureIconComponent,
+    LocationBannerComponent,
+    PersonaChipComponent,
+    QrCodeComponent,
+  ],
   template: `
     @if (view.error()) {
       <div class="card">
@@ -68,16 +83,20 @@ interface LoadedGroup {
         <moxy-location-banner [banner]="bannerFor(g.persona, g.phrase)" />
         <h2 style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           {{ g.persona?.name ?? 'A group' }}
-          @if (g.persona; as persona) { <moxy-persona-chip [persona]="persona" /> }
+          @if (g.persona; as persona) {
+            <moxy-persona-chip [persona]="persona" />
+          }
           @if (habitatMotif(g.persona); as motif) {
-            <span class="habitat-motif" [title]="motif.title" aria-hidden="true">{{ motif.glyph }}</span>
+            <span class="habitat-motif" [title]="motif.title" aria-hidden="true">{{
+              motif.glyph
+            }}</span>
           }
           <span class="fine">group</span>
         </h2>
         <p class="sub">
-          A shared roster, stored only as ciphertext. Everyone holding this group’s
-          phrase sees the same members: open members as their creature, others as a
-          group-local pseudonym with an answer snapshot.
+          A shared roster, stored only as ciphertext. Everyone holding this group’s phrase sees the
+          same members: open members as their creature, others as a group-local pseudonym with an
+          answer snapshot.
         </p>
         <div class="share-grid">
           <div>
@@ -103,27 +122,47 @@ interface LoadedGroup {
               @if (m.deposit) {
                 <label style="display:flex;gap:8px;align-items:center">
                   @if (!m.isMe) {
-                    <input type="checkbox" [checked]="selected().has(m.memberLocator)"
-                           (change)="toggleSelect(m.memberLocator)"
-                           [attr.aria-label]="'Select ' + m.name">
+                    <input
+                      type="checkbox"
+                      [checked]="selected().has(m.memberLocator)"
+                      (change)="toggleSelect(m.memberLocator)"
+                      [attr.aria-label]="'Select ' + m.name"
+                    />
                   }
-                  <span style="display:inline-flex;align-items:center;gap:5px"><moxy-creature-icon [emoji]="m.emoji ?? '🥚'" [size]="18" /> {{ m.name }}</span>
-                  @if (m.isMe) { <span class="fine">(you)</span> }
-                  @if (m.deposit.tier === 1) { <span class="fine">pseudonym</span> }
+                  <span style="display:inline-flex;align-items:center;gap:5px"
+                    ><moxy-creature-icon [emoji]="m.emoji ?? '🥚'" [size]="18" /> {{ m.name }}</span
+                  >
+                  @if (m.isMe) {
+                    <span class="fine">(you)</span>
+                  }
+                  @if (m.deposit.tier === 1) {
+                    <span class="fine">pseudonym</span>
+                  }
                 </label>
               } @else {
-                <span class="fine">🥀 sealed deposit — from before a re-mint; ask them to rejoin</span>
+                <span class="fine"
+                  >🥀 sealed deposit — from before a re-mint; ask them to rejoin</span
+                >
               }
             </div>
-            <div class="grid-answers" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <div
+              class="grid-answers"
+              style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"
+            >
               @if (m.deposit && !m.isMe && matchPct(m); as pct) {
                 <span class="fine">{{ pct }}% overall match with you</span>
               }
               @if (m.deposit?.tier === 2 && m.deposit?.viewPhrase) {
-                <a class="btn btn-ghost btn-small" [routerLink]="['/view', m.deposit!.viewPhrase]">View</a>
+                <a class="btn btn-ghost btn-small" [routerLink]="['/view', m.deposit!.viewPhrase]"
+                  >View</a
+                >
                 @if (session.active() && !m.isMe) {
-                  <a class="btn btn-ghost btn-small" [routerLink]="['/view', m.deposit!.viewPhrase]"
-                     title="Boop from their profile page">👉 Boop</a>
+                  <a
+                    class="btn btn-ghost btn-small"
+                    [routerLink]="['/view', m.deposit!.viewPhrase]"
+                    title="Boop from their profile page"
+                    >👉 Boop</a
+                  >
                 }
               } @else if (m.deposit?.tier === 1 && !m.isMe) {
                 <span class="fine" title="Pseudonymous members can’t be reached in this version">
@@ -149,32 +188,42 @@ interface LoadedGroup {
         <div class="card">
           <h2>{{ myMembership()?.memberLocator ? 'My membership' : 'Join this group' }}</h2>
           <p class="sub">
-            Joining deposits a copy of your open answers into the roster — desires never,
-            in any form. Pseudonymous keeps your creature and view link out of it; open
-            shares both with everyone who ever holds this group’s phrase. Deposits are
-            snapshots: refresh after you change answers.
+            Joining deposits a copy of your open answers into the roster — desires never, in any
+            form. Pseudonymous keeps your creature and view link out of it; open shares both with
+            everyone who ever holds this group’s phrase. Deposits are snapshots: refresh after you
+            change answers.
           </p>
           <div class="btn-row">
             <button class="btn" [disabled]="busy()" (click)="deposit(g, 1)">
-              {{ myMembership()?.memberLocator
-                  ? (myMembership()?.tier === 1 ? '↻ Refresh (pseudonymous)' : 'Switch to pseudonymous')
-                  : '🐾 Join with a pseudonym' }}
+              {{
+                myMembership()?.memberLocator
+                  ? myMembership()?.tier === 1
+                    ? '↻ Refresh (pseudonymous)'
+                    : 'Switch to pseudonymous'
+                  : '🐾 Join with a pseudonym'
+              }}
             </button>
             <button class="btn" [disabled]="busy()" (click)="deposit(g, 2)">
-              {{ myMembership()?.memberLocator
-                  ? (myMembership()?.tier === 2 ? '↻ Refresh (open)' : 'Open up — share my creature')
-                  : '🦊 Join openly' }}
+              {{
+                myMembership()?.memberLocator
+                  ? myMembership()?.tier === 2
+                    ? '↻ Refresh (open)'
+                    : 'Open up — share my creature'
+                  : '🦊 Join openly'
+              }}
             </button>
             @if (myMembership()?.memberLocator) {
-              <button class="btn btn-ghost" [disabled]="busy()" (click)="leave()">Leave group</button>
+              <button class="btn btn-ghost" [disabled]="busy()" (click)="leave()">
+                Leave group
+              </button>
             }
           </div>
         </div>
       } @else {
         <div class="card">
           <p class="sub">
-            <a routerLink="/">Hatch or log in</a> to join this group and see how you match
-            its members.
+            <a routerLink="/">Hatch or log in</a> to join this group and see how you match its
+            members.
           </p>
         </div>
       }
@@ -183,9 +232,9 @@ interface LoadedGroup {
         <div class="card">
           <h2>Group admin</h2>
           <p class="sub">
-            You hold this group’s admin phrase. Kicking removes a deposit; it does NOT
-            revoke the group phrase — someone who has it can still read the roster until
-            you re-mint. Re-minting kills every old link, QR, and deposit.
+            You hold this group’s admin phrase. Kicking removes a deposit; it does NOT revoke the
+            group phrase — someone who has it can still read the roster until you re-mint.
+            Re-minting kills every old link, QR, and deposit.
           </p>
           <div class="btn-row">
             <button class="btn" [disabled]="busy()" (click)="remint()">🎲 Re-mint group</button>
@@ -201,7 +250,6 @@ interface LoadedGroup {
   `,
 })
 export class GroupComponent {
-
   /**
    * The banner renders only on this top card — the subject whose phrase the
    * viewer is holding. Never on member rows or compare panels: those carry a
@@ -410,7 +458,12 @@ export class GroupComponent {
   protected async remint(): Promise<void> {
     const entry = this.myMembership();
     if (!entry) return;
-    if (!confirm('Re-mint this group? Every shared link, QR, and deposit dies; members must rejoin via the new invite.')) return;
+    if (
+      !confirm(
+        'Re-mint this group? Every shared link, QR, and deposit dies; members must rejoin via the new invite.',
+      )
+    )
+      return;
     this.busy.set(true);
     try {
       const newPhrase = await this.session.remintGroup(entry.id);

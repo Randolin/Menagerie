@@ -9,7 +9,16 @@ import {
   tailPlaceOf,
   type Persona,
 } from '@moxy/core';
-import { LocationBannerComponent, PersonaChipComponent, QrCodeComponent, RingComponent, ToastService, copyText, habitatClass, habitatMotif } from '@moxy/ui';
+import {
+  LocationBannerComponent,
+  PersonaChipComponent,
+  QrCodeComponent,
+  RingComponent,
+  ToastService,
+  copyText,
+  habitatClass,
+  habitatMotif,
+} from '@moxy/ui';
 import { CategoryCardComponent } from '../profile/category-card.component';
 import { AddCategoryComponent } from '../profile/add-category.component';
 import { SaveBarComponent } from '../profile/save-bar.component';
@@ -20,24 +29,36 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
 @Component({
   selector: 'moxy-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, CategoryCardComponent, AddCategoryComponent, SaveBarComponent, LocationBannerComponent, PersonaChipComponent, QrCodeComponent, RingComponent],
+  imports: [
+    RouterLink,
+    CategoryCardComponent,
+    AddCategoryComponent,
+    SaveBarComponent,
+    LocationBannerComponent,
+    PersonaChipComponent,
+    QrCodeComponent,
+    RingComponent,
+  ],
   template: `
     @if (!noticeDismissed()) {
       <div class="card" style="border-color:var(--accent)">
         <h2>🔑 Your edit phrase — save it now</h2>
         <p class="sub">
-          This phrase is the <strong>only</strong> way to edit this profile. It’s shown
-          here until you dismiss this notice, and after that only lives wherever you put it.
-          No account, no email, no reset — if it’s lost, the profile can never be edited again.
+          This phrase is the <strong>only</strong> way to edit this profile. It’s shown here until
+          you dismiss this notice, and after that only lives wherever you put it. No account, no
+          email, no reset — if it’s lost, the profile can never be edited again.
         </p>
         <div class="passphrase-box">{{ session.editPhrase() }}</div>
         <p class="fine">
           Housekeeping: profiles with no saved answers are deleted after
-          {{ gcEmpty }}; profiles untouched and unviewed for {{ gcIdle }} are deleted too.
-          Saving anything, or anyone viewing you, keeps yours alive.
+          {{ gcEmpty }}; profiles untouched and unviewed for {{ gcIdle }} are deleted too. Saving
+          anything, or anyone viewing you, keeps yours alive.
         </p>
         <div class="btn-row">
-          <button class="btn" (click)="copy(session.editPhrase()!, 'Copied — store it somewhere safe')">
+          <button
+            class="btn"
+            (click)="copy(session.editPhrase()!, 'Copied — store it somewhere safe')"
+          >
             📋 Copy edit phrase
           </button>
           <button class="btn btn-primary" (click)="dismissNotice()">I’ve saved it</button>
@@ -49,17 +70,20 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
       <moxy-location-banner [banner]="bannerFor(session.persona(), session.viewPhrase())" />
       <h2 style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         My profile
-        @if (session.persona(); as persona) { <moxy-persona-chip [persona]="persona" /> }
+        @if (session.persona(); as persona) {
+          <moxy-persona-chip [persona]="persona" />
+        }
         @if (habitatMotif(session.persona()); as motif) {
-          <span class="habitat-motif" [title]="motif.title" aria-hidden="true">{{ motif.glyph }}</span>
+          <span class="habitat-motif" [title]="motif.title" aria-hidden="true">{{
+            motif.glyph
+          }}</span>
         }
         <button class="btn btn-ghost btn-small" (click)="regenerate()">🎲 New creature</button>
       </h2>
       <p class="sub">
-        Share the phrase, the link, or the QR code — all three carry the same view-only
-        credential. Your creature is its first three words; anyone who can see your
-        profile can recognize it. A new creature is a whole new phrase: every previously
-        shared link and QR stops working.
+        Share the phrase, the link, or the QR code — all three carry the same view-only credential.
+        Your creature is its first three words; anyone who can see your profile can recognize it. A
+        new creature is a whole new phrase: every previously shared link and QR stops working.
       </p>
       <div class="share-grid">
         <div>
@@ -73,8 +97,11 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
             </button>
           </div>
           <p class="fine" style="margin-top:10px">
-            {{ session.populated() ? 'Viewers see only the sections you’ve saved.'
-               : 'Nothing is filled in yet — viewers would see an empty profile.' }}
+            {{
+              session.populated()
+                ? 'Viewers see only the sections you’ve saved.'
+                : 'Nothing is filled in yet — viewers would see an empty profile.'
+            }}
           </p>
         </div>
         @if (session.viewUrl(); as url) {
@@ -87,9 +114,15 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
       <h2>My answers</h2>
       <span class="fine core-marker" [class.core-done]="coreDone()">
         <moxy-ring [fraction]="coreFraction()" [size]="20" label="core completion" />
-        {{ coreDone()
+        {{
+          coreDone()
             ? 'Core complete — comparisons have their footing'
-            : 'Core ' + coreAnswered() + ' of ' + coreTotal + ' — comparisons work best from a full core' }}
+            : 'Core ' +
+              coreAnswered() +
+              ' of ' +
+              coreTotal +
+              ' — comparisons work best from a full core'
+        }}
       </span>
     </div>
 
@@ -103,11 +136,10 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
 
     @if (!addedSections().length) {
       <p class="fine" style="margin:10px 4px">
-        Nothing here yet. Add a category above — every question is optional, and only
-        what you answer is ever shown.
+        Nothing here yet. Add a category above — every question is optional, and only what you
+        answer is ever shown.
       </p>
     }
-
   `,
   styles: `
     .section-grid {
@@ -116,16 +148,36 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
       gap: 14px;
       margin-bottom: 16px;
     }
-    .section-card { margin: 0; display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: inherit; }
-    .section-card:hover { border-color: var(--accent); }
-    .section-card h3 { margin: 0; font-size: 17px; }
-    .section-card .sub { flex: 1; margin: 0; }
-    .core-marker { display: inline-flex; align-items: center; gap: 6px; }
-    .core-done { color: var(--accent); }
+    .section-card {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      text-decoration: none;
+      color: inherit;
+    }
+    .section-card:hover {
+      border-color: var(--accent);
+    }
+    .section-card h3 {
+      margin: 0;
+      font-size: 17px;
+    }
+    .section-card .sub {
+      flex: 1;
+      margin: 0;
+    }
+    .core-marker {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .core-done {
+      color: var(--accent);
+    }
   `,
 })
 export class DashboardComponent {
-
   /**
    * The banner renders only on this top card — the subject whose phrase the
    * viewer is holding. Never on member rows or compare panels: those carry a
@@ -148,7 +200,6 @@ export class DashboardComponent {
   private readonly storage = inject(APP_STORAGE);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
-
 
   /** Only the categories on the profile — the rest live behind “Add”. */
   protected readonly addedSections = computed(() =>
@@ -206,21 +257,4 @@ export class DashboardComponent {
       this.toast.show(err instanceof Error ? err.message : String(err), 'error');
     }
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }

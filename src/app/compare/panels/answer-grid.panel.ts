@@ -24,8 +24,11 @@ const GRID_SECTIONS = ['about', 'lifestyle', 'connection', 'structure', 'plans']
             <div class="grid-answers">
               @for (v of row.answers; track $index) {
                 <div class="grid-answer">
-                  <span class="person-dot" [style.background]="color($index)"
-                        [title]="model().names[$index]"></span>
+                  <span
+                    class="person-dot"
+                    [style.background]="color($index)"
+                    [title]="model().names[$index]"
+                  ></span>
                   <moxy-answer-text [item]="row.item" [value]="v" />
                 </div>
               }

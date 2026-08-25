@@ -11,9 +11,7 @@ import { PNG } from 'pngjs';
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
-import {
-  createReadStream, existsSync, statSync, readFileSync, mkdirSync, rmSync,
-} from 'node:fs';
+import { createReadStream, existsSync, statSync, readFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -30,8 +28,11 @@ if (!existsSync(join(DIST, 'index.html'))) {
 
 // --- dumb static server (no rewrites: hash routing must need none) ---------
 const MIME = {
-  '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
-  '.ico': 'image/x-icon', '.json': 'application/json',
+  '.html': 'text/html',
+  '.js': 'text/javascript',
+  '.css': 'text/css',
+  '.ico': 'image/x-icon',
+  '.json': 'application/json',
 };
 const server = createServer((req, res) => {
   const path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
@@ -76,7 +77,9 @@ const spawnMoxyServer = async (env) => {
   for (let i = 0; ; i++) {
     try {
       if ((await fetch(`${url}/v2/health`)).ok) break;
-    } catch { /* not up yet */ }
+    } catch {
+      /* not up yet */
+    }
     if (i > 50) throw new Error('profile server health never came up');
     await new Promise((r) => setTimeout(r, 100));
   }
@@ -108,7 +111,9 @@ const metricsSrv = await spawnMoxyServer({
 const browser = await chromium.launch({ executablePath: CHROMIUM });
 const errors = [];
 let step = '';
-const fail = (msg) => { throw new Error(`[${step}] ${msg}`); };
+const fail = (msg) => {
+  throw new Error(`[${step}] ${msg}`);
+};
 
 const contexts = [];
 /** Fresh browser context with the profile server seeded via localStorage. */
@@ -160,10 +165,13 @@ async function decodeQr(page, expected) {
       png.width,
       png.height,
     );
-    await page.locator('.qr-svg > svg').evaluate((el) => {
-      el.style.width = '';
-      el.style.height = '';
-    }).catch(() => {});
+    await page
+      .locator('.qr-svg > svg')
+      .evaluate((el) => {
+        el.style.width = '';
+        el.style.height = '';
+      })
+      .catch(() => {});
     if (hit?.data === expected) {
       await page.evaluate(() => {
         const toast = document.getElementById('toast');
@@ -271,24 +279,35 @@ try {
   // --- hub-and-spoke section editing with explicit saves --------------------
   step = 'sections';
   await editCategory(page, 'About me', async (card) => {
-    await card.locator('.q-row', { hasText: 'Pronouns' })
-      .locator('.opt', { hasText: 'they/them' }).click();
-    await card.locator('.q-row', { hasText: 'Age range' })
-      .locator('.opt', { hasText: '25–34' }).click();
+    await card
+      .locator('.q-row', { hasText: 'Pronouns' })
+      .locator('.opt', { hasText: 'they/them' })
+      .click();
+    await card
+      .locator('.q-row', { hasText: 'Age range' })
+      .locator('.opt', { hasText: '25–34' })
+      .click();
   });
   await editCategory(page, 'Connections I’m open to', async (card) => {
-    await card.locator('.q-row', { hasText: 'Friendship' }).first()
-      .locator('.pip', { hasText: 'Into it' }).click();
-    await card.locator('.q-row', { hasText: 'Polyamory' })
-      .locator('.pip', { hasText: 'Curious' }).click();
+    await card
+      .locator('.q-row', { hasText: 'Friendship' })
+      .first()
+      .locator('.pip', { hasText: 'Into it' })
+      .click();
+    await card
+      .locator('.q-row', { hasText: 'Polyamory' })
+      .locator('.pip', { hasText: 'Curious' })
+      .click();
   });
   // Care given vs received — feeds the interlock flow diagram.
   await editCategory(page, 'How I connect', async (card) => {
     const give = card.locator('.q-row', { hasText: 'How I naturally show care' });
     await give.locator('.opt', { hasText: 'Physical touch' }).click();
     await give.locator('.opt', { hasText: 'Quality time' }).click();
-    await card.locator('.q-row', { hasText: 'How care lands best for me' })
-      .locator('.opt', { hasText: 'Words & affirmation' }).click();
+    await card
+      .locator('.q-row', { hasText: 'How care lands best for me' })
+      .locator('.opt', { hasText: 'Words & affirmation' })
+      .click();
   });
   // A dealbreaker: only "Never"/"Rarely" drinkers need apply.
   await editCategory(page, 'Everyday life', async (card) => {
@@ -300,10 +319,15 @@ try {
     await alcohol.locator('.weight-accept .opt', { hasText: 'Rarely' }).click();
   });
   await editCategory(page, 'Desires & play', async (card) => {
-    await card.locator('.q-row', { hasText: 'Rope' }).first()
-      .locator('.pip', { hasText: 'Into it' }).click();
-    await card.locator('.q-row', { hasText: 'Impact play' })
-      .locator('.pip', { hasText: 'Into it' }).click(); // one-sided vs B
+    await card
+      .locator('.q-row', { hasText: 'Rope' })
+      .first()
+      .locator('.pip', { hasText: 'Into it' })
+      .click();
+    await card
+      .locator('.q-row', { hasText: 'Impact play' })
+      .locator('.pip', { hasText: 'Into it' })
+      .click(); // one-sided vs B
   });
   const aboutCard = await page.textContent('.category-card:has-text("About me") .category-head');
   if (!aboutCard.includes('2 / ')) fail('category completion count not updated: ' + aboutCard);
@@ -321,25 +345,37 @@ try {
   const viewPhraseB = (await pageB.textContent('.code-box')).trim();
   const personaNameB = (await pageB.textContent('.persona-name')).trim();
   await editCategory(pageB, 'Connections I’m open to', async (card) => {
-    await card.locator('.q-row', { hasText: 'Friendship' }).first()
-      .locator('.pip', { hasText: 'Into it' }).click();
+    await card
+      .locator('.q-row', { hasText: 'Friendship' })
+      .first()
+      .locator('.pip', { hasText: 'Into it' })
+      .click();
   });
   // B gives words (covers A's need); B needs acts (A leaves it unmet).
   await editCategory(pageB, 'How I connect', async (card) => {
-    await card.locator('.q-row', { hasText: 'How I naturally show care' })
-      .locator('.opt', { hasText: 'Words & affirmation' }).click();
-    await card.locator('.q-row', { hasText: 'How care lands best for me' })
-      .locator('.opt', { hasText: 'Acts of service' }).click();
+    await card
+      .locator('.q-row', { hasText: 'How I naturally show care' })
+      .locator('.opt', { hasText: 'Words & affirmation' })
+      .click();
+    await card
+      .locator('.q-row', { hasText: 'How care lands best for me' })
+      .locator('.opt', { hasText: 'Acts of service' })
+      .click();
   });
   // B drinks socially — a near-miss by ordinal distance, but outside A's
   // dealbreaker set, so only A's directional fit takes the hit.
   await editCategory(pageB, 'Everyday life', async (card) => {
-    await card.locator('.q-row', { hasText: 'Alcohol' })
-      .locator('.opt-grid .opt', { hasText: 'Socially' }).click();
+    await card
+      .locator('.q-row', { hasText: 'Alcohol' })
+      .locator('.opt-grid .opt', { hasText: 'Socially' })
+      .click();
   });
   await editCategory(pageB, 'Desires & play', async (card) => {
-    await card.locator('.q-row', { hasText: 'Rope' }).first()
-      .locator('.pip', { hasText: 'Curious' }).click();
+    await card
+      .locator('.q-row', { hasText: 'Rope' })
+      .first()
+      .locator('.pip', { hasText: 'Curious' })
+      .click();
   });
   await answerValues(pageB);
 
@@ -373,8 +409,10 @@ try {
   // Categories holding answers are on the page already — nothing to navigate.
   const aboutRestored = editor.locator('.category-card', { hasText: 'About me' });
   await aboutRestored.waitFor();
-  const restored = await aboutRestored.locator('.q-row', { hasText: 'Pronouns' })
-    .locator('.opt[aria-pressed="true"]').allTextContents();
+  const restored = await aboutRestored
+    .locator('.q-row', { hasText: 'Pronouns' })
+    .locator('.opt[aria-pressed="true"]')
+    .allTextContents();
   if (!restored.some((t) => t.includes('they/them'))) {
     fail('open answers not restored on login: ' + restored.join(','));
   }
@@ -382,8 +420,11 @@ try {
   // The row's marker carries the mark, so this reads it without opening the
   // control. Look, don't save: a save here would bump the CAS version under
   // profile A's original tab.
-  const markTitle = await editor.locator('.category-card', { hasText: 'Everyday life' })
-    .locator('.q-row', { hasText: 'Alcohol' }).locator('.q-mark').getAttribute('title');
+  const markTitle = await editor
+    .locator('.category-card', { hasText: 'Everyday life' })
+    .locator('.q-row', { hasText: 'Alcohol' })
+    .locator('.q-mark')
+    .getAttribute('title');
   if (markTitle !== 'Importance: Dealbreaker') {
     fail('dealbreaker weight not restored on login: ' + markTitle);
   }
@@ -400,11 +441,19 @@ try {
   await page.waitForSelector('text=Overall alignment', { timeout: 30000 });
   const compareBody = await page.textContent('body');
   for (const needle of [
-    personaName, personaNameB, 'Friendship', 'Desires — mutual only', 'Rope',
-    'shared answers', 'Values fingerprint', `Fit for ${personaName}`,
+    personaName,
+    personaNameB,
+    'Friendship',
+    'Desires — mutual only',
+    'Rope',
+    'shared answers',
+    'Values fingerprint',
+    `Fit for ${personaName}`,
     'marked it a dealbreaker', // A's alcohol dealbreaker vs B's "Socially"
-    'Care interlock', 'unmet', // flow diagram: A leaves B's "Acts" need dangling
-    'Agreement, item by item', 'Fit, each way',
+    'Care interlock',
+    'unmet', // flow diagram: A leaves B's "Acts" need dangling
+    'Agreement, item by item',
+    'Fit, each way',
   ]) {
     if (!compareBody.includes(needle)) fail('compare missing: ' + needle);
   }
@@ -487,14 +536,17 @@ try {
   await pageB.waitForSelector(`text=${personaName}’s profile`, { timeout: 30000 });
   await pageB.click('text=👉 Boop');
   await pageB.waitForSelector('text=What are you hoping for?', { timeout: 30000 });
-  await pageB.locator('.boop-check', { hasText: 'Curious to connect' })
-    .locator('input').check();
-  await pageB.locator('.boop-check', { hasText: 'Include a contact card' })
-    .locator('input').check();
+  await pageB.locator('.boop-check', { hasText: 'Curious to connect' }).locator('input').check();
+  await pageB
+    .locator('.boop-check', { hasText: 'Include a contact card' })
+    .locator('input')
+    .check();
   await pageB.waitForSelector('text=leaves Menagerie’s protection');
   await pageB.fill('input[placeholder="your handle"]', 'amber.fox.77');
-  await pageB.locator('.boop-check', { hasText: 'I understand this de-anonymizes me' })
-    .locator('input').check();
+  await pageB
+    .locator('.boop-check', { hasText: 'I understand this de-anonymizes me' })
+    .locator('input')
+    .check();
   await pageB.click('text=Send boop');
   await pageB.waitForSelector('text=Booped!', { timeout: 30000 });
   // Mid-flight at-rest check: the knock sits on the server RIGHT NOW, and the
@@ -524,10 +576,8 @@ try {
   step = 'boop-reply';
   await page.click('text=↩️ Reply once');
   await page.waitForSelector('text=One reply, then the channel closes', { timeout: 30000 });
-  await page.locator('.boop-check', { hasText: 'We seem compatible' })
-    .locator('input').check();
-  await page.locator('.boop-check', { hasText: 'Include my view phrase' })
-    .locator('input').check();
+  await page.locator('.boop-check', { hasText: 'We seem compatible' }).locator('input').check();
+  await page.locator('.boop-check', { hasText: 'Include my view phrase' }).locator('input').check();
   await page.click('text=Send reply');
   await page.waitForSelector('text=Reply sent', { timeout: 30000 });
 
@@ -575,8 +625,7 @@ try {
   step = 'boop-after-regenerate';
   await pageB.click('text=👉 Boop');
   await pageB.waitForSelector('text=What are you hoping for?', { timeout: 30000 });
-  await pageB.locator('.boop-check', { hasText: 'Curious to connect' })
-    .locator('input').check();
+  await pageB.locator('.boop-check', { hasText: 'Curious to connect' }).locator('input').check();
   await pageB.click('text=Send boop');
   await pageB.waitForSelector('text=no longer accepting boops', { timeout: 30000 });
 
@@ -592,8 +641,10 @@ try {
   const gcAlivePhrase = (await gcAlive.textContent('.code-box')).trim();
   const gcAlivePersona = (await gcAlive.textContent('.persona-name')).trim();
   await editCategory(gcAlive, 'About me', async (card) => {
-    await card.locator('.q-row', { hasText: 'Age range' })
-      .locator('.opt', { hasText: '35–44' }).click();
+    await card
+      .locator('.q-row', { hasText: 'Age range' })
+      .locator('.opt', { hasText: '35–44' })
+      .click();
   });
   // Age both profiles by two hours (past the 3s TTL + 1h coarseness slack).
   // The empty one becomes GC-eligible; the populated one is immune to the
@@ -617,12 +668,17 @@ try {
   await mPage.click('text=Hatch a profile');
   await mPage.waitForSelector('.passphrase-box', { timeout: 30000 });
   await editCategory(mPage, 'About me', async (card) => {
-    await card.locator('.q-row', { hasText: 'Age range' })
-      .locator('.opt', { hasText: '25–34' }).click();
+    await card
+      .locator('.q-row', { hasText: 'Age range' })
+      .locator('.opt', { hasText: '25–34' })
+      .click();
   });
   await editCategory(mPage, 'Connections I’m open to', async (card) => {
-    await card.locator('.q-row', { hasText: 'Friendship' }).first()
-      .locator('.pip', { hasText: 'Into it' }).click();
+    await card
+      .locator('.q-row', { hasText: 'Friendship' })
+      .first()
+      .locator('.pip', { hasText: 'Into it' })
+      .click();
   });
   // The opt-in moved to /settings with the rest of the set-once controls.
   await mPage.goto(`${BASE}#/settings`);
@@ -675,10 +731,24 @@ try {
   // Markers are chosen so base64url ciphertext can't contain them by chance:
   // multi-word phrases with spaces/hyphens, quoted JSON keys, dotted item ids.
   for (const marker of [
-    editPhrase, viewPhrase, viewPhrase2, groupPhrase, groupPhrase2, groupAdminPhrase,
-    '"answers"', '"viewPhrase"', '"connections"', '"weights"', '"pseudonym"',
-    '"snapshot"', 'dp.rope', '"a":',
-    'amber.fox.77', '"sentBoops"', '"replyBox"', 'Curious to connect',
+    editPhrase,
+    viewPhrase,
+    viewPhrase2,
+    groupPhrase,
+    groupPhrase2,
+    groupAdminPhrase,
+    '"answers"',
+    '"viewPhrase"',
+    '"connections"',
+    '"weights"',
+    '"pseudonym"',
+    '"snapshot"',
+    'dp.rope',
+    '"a":',
+    'amber.fox.77',
+    '"sentBoops"',
+    '"replyBox"',
+    'Curious to connect',
   ]) {
     if (dbBytes.includes(marker)) fail(`plaintext ${JSON.stringify(marker)} at rest`);
   }

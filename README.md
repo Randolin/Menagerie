@@ -7,7 +7,7 @@ and it exists instantly — a creature name, a QR code, and two phrases — befo
 you've answered a single question. Answer themed question packs one card at a
 time, share your **view phrase** (or its link/QR), and lay profiles side by
 side to see where you overlap, where you differ, and — for the optional
-desires section — what you *both* said yes to, revealed only on a mutual
+desires section — what you _both_ said yes to, revealed only on a mutual
 match. Inspired by
 tools like Mojo Upgrade and collaborative kink lists, generalized to every
 relationship shape: friendship, chosen family, monogamy, marriage, polyamory,
@@ -44,7 +44,7 @@ Node file.
   brute-force at Argon2id's memory cost) — a curtain for casual reading,
   while edit control rests on the full-strength edit phrase. The persona's
   accent color derives from the public head words only. The location banner is
-  the one thing that reflects the tail: it renders the landform *family* of the
+  the one thing that reflects the tail: it renders the landform _family_ of the
   final word (1 of 12, ~3.55 bits) and never the word, to viewers who already
   hold the phrase. Growing the lists from 2,048 bought +3 bits to pay for that,
   so effective tail secrecy is ~32.4 bits against ~33 before — near-neutral, in
@@ -52,8 +52,8 @@ Node file.
   and must be recomputed before anything else derives from the tail. "New creature" re-mints the view phrase; every old link,
   QR, and desire fingerprint dies with it.
 - **Weights instead of essays.** Anything that would have been a "must-have"
-  paragraph is a per-item importance mark — *matters*, *matters a lot*, or
-  *dealbreaker* with the options you could live with. Comparison scores are
+  paragraph is a per-item importance mark — _matters_, _matters a lot_, or
+  _dealbreaker_ with the options you could live with. Comparison scores are
   weighted per direction ("fit for you" vs "fit for them"), a violated
   dealbreaker is called out by name, and care given/received is scored as an
   interlock (what one needs vs what the other gives), not similarity.
@@ -65,7 +65,7 @@ Node file.
   answer space — a polite curtain, not cryptographic secrecy.)
 - **Instant profiles, gentle housekeeping.** Profiles exist from the moment
   you hatch. Ones that never save an answer are garbage-collected after
-  **7 days**; populated profiles untouched *and* unviewed for **12 months**
+  **7 days**; populated profiles untouched _and_ unviewed for **12 months**
   are collected too. Any save or view resets the clock. The policy constants
   live in one module shared by the server and the in-app warning copy.
 - **Groups.** A shared, encrypted roster with its own creature and invite QR.
@@ -164,7 +164,7 @@ e2e         Playwright suite run against the production build via a dumb
   tag it `tier: 'core'` only if it belongs in the short first pass).
   Existing profiles keep decoding — the schema freeze test
   (`schema-v2.freeze.json`) enforces this in CI.
-- **New question *type*:** add it to the `Item` union, then the compiler
+- **New question _type_:** add it to the `Item` union, then the compiler
   walks you to the three registries (similarity, item editor, answer
   renderer) via exhaustiveness checks.
 - **New compare visualization:** write one standalone panel component and
@@ -208,20 +208,20 @@ Hash routing means no server rewrites are needed anywhere, and a scanned QR
 node server/moxy-sync-server.ts     # Node >= 24; no npm install needed
 ```
 
-| Env | Default | Meaning |
-|---|---|---|
-| `PORT` | `8787` | listen port (`0` = ephemeral, printed as JSON) |
-| `MOXY_DB_PATH` | `./moxy-sync.db` | SQLite file (`:memory:` for testing) |
-| `MOXY_MAX_BLOB_BYTES` | `262144` | per-blob ciphertext size cap |
-| `MOXY_TRUST_PROXY` | unset | `1` to honor `X-Forwarded-For` for rate limits |
-| `MOXY_MAX_PROFILES` | `100000` | circuit breaker: creates answer 503 beyond |
-| `MOXY_MAX_GROUPS` | `10000` | group circuit breaker |
-| `MOXY_MAX_GROUP_MEMBERS` | `32` | deposits per group |
-| `MOXY_MAX_BOOP_INBOXES` | `200000` | boop inbox circuit breaker |
-| `MOXY_METRICS_K` | `10` | k-floor: aggregate buckets under this stay hidden |
-| `MOXY_GC_EMPTY_MS` | 7 days | never-populated profiles die after this |
-| `MOXY_GC_IDLE_MS` | 365 days | populated ones, after no edit *and* no view |
-| `MOXY_GC_SWEEP_MS` | 1 hour | GC sweep interval |
+| Env                      | Default          | Meaning                                           |
+| ------------------------ | ---------------- | ------------------------------------------------- |
+| `PORT`                   | `8787`           | listen port (`0` = ephemeral, printed as JSON)    |
+| `MOXY_DB_PATH`           | `./moxy-sync.db` | SQLite file (`:memory:` for testing)              |
+| `MOXY_MAX_BLOB_BYTES`    | `262144`         | per-blob ciphertext size cap                      |
+| `MOXY_TRUST_PROXY`       | unset            | `1` to honor `X-Forwarded-For` for rate limits    |
+| `MOXY_MAX_PROFILES`      | `100000`         | circuit breaker: creates answer 503 beyond        |
+| `MOXY_MAX_GROUPS`        | `10000`          | group circuit breaker                             |
+| `MOXY_MAX_GROUP_MEMBERS` | `32`             | deposits per group                                |
+| `MOXY_MAX_BOOP_INBOXES`  | `200000`         | boop inbox circuit breaker                        |
+| `MOXY_METRICS_K`         | `10`             | k-floor: aggregate buckets under this stay hidden |
+| `MOXY_GC_EMPTY_MS`       | 7 days           | never-populated profiles die after this           |
+| `MOXY_GC_IDLE_MS`        | 365 days         | populated ones, after no edit _and_ no view       |
+| `MOXY_GC_SWEEP_MS`       | 1 hour           | GC sweep interval                                 |
 
 Run it behind a TLS reverse proxy. The API:
 `GET /v2/health` ·
@@ -255,7 +255,7 @@ in-memory rate limiter.
 
 Threat model in one paragraph: the server can't read profiles (AES-256-GCM,
 keys never leave the client), can't reverse a locator into a phrase (one-way
-memory-hard Argon2id KDF), and can't be enumerated (128-bit locators). What it *can* do
+memory-hard Argon2id KDF), and can't be enumerated (128-bit locators). What it _can_ do
 — and the app's About page states this plainly — is observe timing, sizes,
 and view/edit correlation, and deny availability by withholding or deleting
 rows; it can never read or forge data, and clients detect tampering as a

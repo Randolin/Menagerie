@@ -86,8 +86,7 @@ function interlockDetail(
   if (!Array.isArray(gives) || !Array.isArray(needs) || needs.length === 0) {
     return undefined;
   }
-  const options =
-    (getItem(cp.receive)?.item as { options?: readonly string[] })?.options ?? [];
+  const options = (getItem(cp.receive)?.item as { options?: readonly string[] })?.options ?? [];
   const asc = (a: number, b: number) => a - b;
   const given = new Set(gives);
   return {
@@ -104,9 +103,7 @@ export async function buildCompareModel(slots: readonly CompareSlot[]): Promise<
   const payloads = good.map((s) => s.payload!);
   // The creature IS the name — profiles carry no nickname by design.
   // Group snapshots identify by their pseudonym instead.
-  const names = good.map(
-    (s, i) => s.persona?.name ?? s.label ?? `Creature ${'ABCD'[i] ?? i + 1}`,
-  );
+  const names = good.map((s, i) => s.persona?.name ?? s.label ?? `Creature ${'ABCD'[i] ?? i + 1}`);
   const personas = good.map((s) => s.persona ?? null);
   const emojis = good.map((s) => s.persona?.emoji ?? s.emoji ?? null);
   const grid = payloads.length >= 2 ? buildGrid(payloads) : [];

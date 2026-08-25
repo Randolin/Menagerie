@@ -6,9 +6,15 @@ import { ToastService } from './toast.service';
   selector: 'moxy-toast',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div id="toast" role="status" aria-live="polite"
-         [class.show]="toast.message() !== null"
-         [attr.data-kind]="toast.kind()">{{ toast.message() }}</div>
+    <div
+      id="toast"
+      role="status"
+      aria-live="polite"
+      [class.show]="toast.message() !== null"
+      [attr.data-kind]="toast.kind()"
+    >
+      {{ toast.message() }}
+    </div>
   `,
 })
 export class ToastComponent {

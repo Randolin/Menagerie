@@ -77,8 +77,9 @@ export class DraftStore {
   isOptedIn(section: Section): boolean {
     if (!section.optIn) return true;
     const a = this.answers();
-    return a[`_optin.${section.id}`] !== undefined ||
-      section.items.some((it) => a[it.id] !== undefined);
+    return (
+      a[`_optin.${section.id}`] !== undefined || section.items.some((it) => a[it.id] !== undefined)
+    );
   }
 
   /**
@@ -98,9 +99,7 @@ export class DraftStore {
   }
 
   isAdded(section: Section): boolean {
-    return (
-      this.answers()[`_added.${section.id}`] !== undefined || this.answeredIn(section) > 0
-    );
+    return this.answers()[`_added.${section.id}`] !== undefined || this.answeredIn(section) > 0;
   }
 
   /**

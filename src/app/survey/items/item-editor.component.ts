@@ -28,20 +28,20 @@ import { WeightControlComponent } from './weight-control.component';
     <div class="item-block">
       @switch (item().type) {
         @case ('choice') {
-          <moxy-choice-editor [item]="$any(item())" [value]="value()"
-                              (valueChange)="set($event)" />
+          <moxy-choice-editor [item]="$any(item())" [value]="value()" (valueChange)="set($event)" />
         }
         @case ('multi') {
-          <moxy-multi-editor [item]="$any(item())" [value]="value()"
-                             (valueChange)="set($event)" />
+          <moxy-multi-editor [item]="$any(item())" [value]="value()" (valueChange)="set($event)" />
         }
         @case ('scale') {
-          <moxy-scale-editor [item]="$any(item())" [value]="value()"
-                             (valueChange)="set($event)" />
+          <moxy-scale-editor [item]="$any(item())" [value]="value()" (valueChange)="set($event)" />
         }
         @case ('interest') {
-          <moxy-interest-editor [item]="$any(item())" [value]="value()"
-                                (valueChange)="set($event)" />
+          <moxy-interest-editor
+            [item]="$any(item())"
+            [value]="value()"
+            (valueChange)="set($event)"
+          />
         }
       }
       @if (showWeight() && value() !== undefined) {

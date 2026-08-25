@@ -57,9 +57,7 @@ function violatesDealbreaker(
 }
 
 /** Items that complementarity scoring owns; skipped in directional similarity. */
-const COMPLEMENT_ITEM_IDS = new Set(
-  COMPLEMENT_PAIRS.flatMap((p) => [p.give, p.receive]),
-);
+const COMPLEMENT_ITEM_IDS = new Set(COMPLEMENT_PAIRS.flatMap((p) => [p.give, p.receive]));
 
 function weightedOverall(sections: Record<string, SectionScore>): number | null {
   let wsum = 0;
@@ -80,10 +78,7 @@ function weightedOverall(sections: Record<string, SectionScore>): number | null 
  * needs) instead of same-item similarity; a violated dealbreaker zeroes its
  * item at full multiplier and raises an alert.
  */
-function directionalFit(
-  owner: ProfilePayload,
-  other: ProfilePayload,
-): DirectionalFit {
+function directionalFit(owner: ProfilePayload, other: ProfilePayload): DirectionalFit {
   const weights = owner.w ?? {};
   const acceptable = owner.d ?? {};
   const alerts: string[] = [];
@@ -106,7 +101,7 @@ function directionalFit(
       if (sim === null) continue;
       answered++;
       const importance = weights[item.id];
-      let mult = importance ? IMPORTANCE_MULTIPLIER[importance] ?? 1 : 1;
+      let mult = importance ? (IMPORTANCE_MULTIPLIER[importance] ?? 1) : 1;
       if (importance === 3 && violatesDealbreaker(acceptable[item.id], other.a[item.id])) {
         alerts.push(item.id);
         sim = 0;

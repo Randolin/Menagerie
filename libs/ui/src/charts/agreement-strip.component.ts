@@ -23,14 +23,30 @@ export interface AgreementRow {
     @for (row of rows(); track row.label) {
       <div class="agree-row">
         <span class="agree-label">{{ row.label }}</span>
-        <svg [attr.viewBox]="'0 0 ' + W + ' ' + H" role="img"
-             [attr.aria-label]="row.label + ': ' + row.dots.length + ' shared answers'">
-          <line [attr.x1]="PAD" [attr.y1]="H / 2" [attr.x2]="W - PAD" [attr.y2]="H / 2"
-                stroke="var(--border)" stroke-width="2" stroke-linecap="round" />
+        <svg
+          [attr.viewBox]="'0 0 ' + W + ' ' + H"
+          role="img"
+          [attr.aria-label]="row.label + ': ' + row.dots.length + ' shared answers'"
+        >
+          <line
+            [attr.x1]="PAD"
+            [attr.y1]="H / 2"
+            [attr.x2]="W - PAD"
+            [attr.y2]="H / 2"
+            stroke="var(--border)"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
           @for (dot of row.dots; track $index) {
-            <circle [attr.cx]="x(dot.sim)" [attr.cy]="y($index)" r="4.5"
-                    fill="var(--accent)" fill-opacity="0.75"
-                    stroke="var(--surface)" stroke-width="1.5">
+            <circle
+              [attr.cx]="x(dot.sim)"
+              [attr.cy]="y($index)"
+              r="4.5"
+              fill="var(--accent)"
+              fill-opacity="0.75"
+              stroke="var(--surface)"
+              stroke-width="1.5"
+            >
               <title>{{ dot.title }}</title>
             </circle>
           }
@@ -39,17 +55,31 @@ export interface AgreementRow {
     }
   `,
   styles: `
-    :host { display: block; }
+    :host {
+      display: block;
+    }
     .agree-head {
-      display: flex; justify-content: space-between;
+      display: flex;
+      justify-content: space-between;
       margin: 0 0 2px 132px;
     }
-    .agree-row { display: flex; align-items: center; gap: 10px; margin: 2px 0; }
-    .agree-label {
-      width: 122px; flex: none; text-align: right;
-      font-size: 12.5px; color: var(--ink-2);
+    .agree-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 2px 0;
     }
-    svg { flex: 1; height: 26px; }
+    .agree-label {
+      width: 122px;
+      flex: none;
+      text-align: right;
+      font-size: 12.5px;
+      color: var(--ink-2);
+    }
+    svg {
+      flex: 1;
+      height: 26px;
+    }
   `,
 })
 export class AgreementStripComponent {

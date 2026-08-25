@@ -14,7 +14,9 @@ import { CreatureIconComponent } from './creature-icon.component';
     </span>
   `,
   styles: `
-    :host { display: inline-flex; }
+    :host {
+      display: inline-flex;
+    }
     .persona-chip {
       display: inline-flex;
       align-items: center;

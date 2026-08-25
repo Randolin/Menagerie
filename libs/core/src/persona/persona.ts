@@ -26,7 +26,11 @@ export interface Persona {
 
 /** Null when the first three words don't match the frozen lists. */
 export async function personaFromViewPhrase(viewPhrase: string): Promise<Persona | null> {
-  const words = viewPhrase.trim().toLowerCase().split(/[\s-]+/).filter(Boolean);
+  const words = viewPhrase
+    .trim()
+    .toLowerCase()
+    .split(/[\s-]+/)
+    .filter(Boolean);
   if (words.length < 3) return null;
   const [adjA, adjB, animalName] = words;
   const animal = ANIMALS.find((a) => a.name === animalName);

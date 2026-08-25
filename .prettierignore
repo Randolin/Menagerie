@@ -1,0 +1,6 @@
+# Build output and lockfile churn.
+dist/
+package-lock.json
+
+# Vendored data kept byte-stable (EFF large wordlist, upstream formatting).
+libs/core/src/crypto/eff-wordlist.ts

@@ -6,8 +6,8 @@
         <circle cx="50" cy="25" r="12" />
         <circle cx="73" cy="32" r="12" />
         <ellipse cx="50" cy="64" rx="24" ry="20" />
-      </svg>
-    </span>Menagerie
+      </svg> </span
+    >Menagerie
   </a>
   <nav class="nav" aria-label="Main">
     @if (session.active()) {
@@ -15,7 +15,9 @@
       <a routerLink="/menagerie" routerLinkActive="active">
         Menagerie
         @if (boopCount() > 0) {
-          <span class="nav-badge" [attr.aria-label]="boopCount() + ' waiting'">{{ boopCount() }}</span>
+          <span class="nav-badge" [attr.aria-label]="boopCount() + ' waiting'">{{
+            boopCount()
+          }}</span>
         }
       </a>
       <a routerLink="/groups" routerLinkActive="active">Groups</a>
@@ -34,13 +36,21 @@
       <moxy-creature-icon [emoji]="persona.emoji" [size]="16" />
       <span class="session-name">{{ persona.name }}</span>
     </a>
-    <button class="btn btn-ghost btn-small" style="white-space:nowrap" (click)="logout()">Log out</button>
+    <button class="btn btn-ghost btn-small" style="white-space: nowrap" (click)="logout()">
+      Log out
+    </button>
   } @else {
     <a class="btn btn-ghost btn-small" routerLink="/edit">Log in</a>
   }
 
-  <button class="btn btn-ghost btn-small" title="Theme" aria-label="Toggle theme"
-          (click)="cycleTheme()">◐</button>
+  <button
+    class="btn btn-ghost btn-small"
+    title="Theme"
+    aria-label="Toggle theme"
+    (click)="cycleTheme()"
+  >
+    ◐
+  </button>
 </header>
 
 <main id="view">
@@ -49,8 +59,8 @@
 
 <footer class="app-footer">
   <p>
-    No accounts, no names, no analytics — the server stores only ciphertext it can’t
-    read. <a routerLink="/about">See exactly how</a>.
+    No accounts, no names, no analytics — the server stores only ciphertext it can’t read.
+    <a routerLink="/about">See exactly how</a>.
   </p>
 </footer>
 

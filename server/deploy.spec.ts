@@ -14,15 +14,15 @@ const root = join(here, '..');
 describe('deploy image', () => {
   test('every ../libs import in server/ has a Dockerfile COPY line', () => {
     const dockerfile = readFileSync(join(root, 'deploy', 'Dockerfile'), 'utf8');
-    const copied = new Set(
-      [...dockerfile.matchAll(/^COPY\s+(libs\/\S+)\s/gm)].map((m) => m[1]),
-    );
+    const copied = new Set([...dockerfile.matchAll(/^COPY\s+(libs\/\S+)\s/gm)].map((m) => m[1]));
 
     const serverFiles = readdirSync(here).filter((f) => f.endsWith('.ts'));
     for (const file of serverFiles) {
       const source = readFileSync(join(here, file), 'utf8');
       for (const match of source.matchAll(/from\s+'(\.\.\/libs\/[^']+)'/g)) {
-        const target = normalize(match[1]).replace(/^\.\.\//, '').replace(/\\/g, '/');
+        const target = normalize(match[1])
+          .replace(/^\.\.\//, '')
+          .replace(/\\/g, '/');
         expect(
           copied.has(target),
           `${file} imports ${target} but deploy/Dockerfile never COPYs it — the container would crash at startup`,

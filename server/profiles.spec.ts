@@ -13,10 +13,7 @@ import { MetricsDb } from './metrics-db.ts';
 import { BoopsDb } from './boops-db.ts';
 import { createApp } from './http.ts';
 import { startGc } from './gc.ts';
-import {
-  EDIT_TOKEN_HEADER,
-  NEW_EDIT_TOKEN_HEADER,
-} from '../libs/core/src/hatch/hatch-api.ts';
+import { EDIT_TOKEN_HEADER, NEW_EDIT_TOKEN_HEADER } from '../libs/core/src/hatch/hatch-api.ts';
 import {
   ADMIN_TOKEN_HEADER,
   MEMBER_TOKEN_HEADER,
@@ -170,12 +167,12 @@ describe('v2 profiles: lifecycle', () => {
     });
     expect(noToken.status).toBe(400);
     expect((await createProfile(VIEW_B, VIEW_B, TOKEN_B)).status).toBe(400);
-    expect((await createProfile(VIEW_B, EDIT_B, TOKEN_B, { blob_view: 'not base64!' })).status).toBe(
-      400,
-    );
-    expect((await createProfile(VIEW_B, EDIT_B, TOKEN_B, { blob_view: 'Z'.repeat(2000) })).status).toBe(
-      400,
-    );
+    expect(
+      (await createProfile(VIEW_B, EDIT_B, TOKEN_B, { blob_view: 'not base64!' })).status,
+    ).toBe(400);
+    expect(
+      (await createProfile(VIEW_B, EDIT_B, TOKEN_B, { blob_view: 'Z'.repeat(2000) })).status,
+    ).toBe(400);
   });
 
   test('PUT updates with CAS; populated is monotonic', async () => {
@@ -320,7 +317,11 @@ describe('v2 profiles: garbage collection', () => {
     expect((await putProfile(id('k'), TOKEN_A, 1, { populated: true })).status).toBe(200);
 
     // Old but recently viewed → survives.
-    backdate(id('k'), { created_at: now - 400 * DAY, updated_at: now - 400 * DAY, last_viewed_at: now - DAY });
+    backdate(id('k'), {
+      created_at: now - 400 * DAY,
+      updated_at: now - 400 * DAY,
+      last_viewed_at: now - DAY,
+    });
     expect(profiles.sweep(7 * DAY, 365 * DAY, now)).toBe(0);
 
     // Old and last viewed even longer ago → collected.
@@ -424,9 +425,7 @@ describe('v2 groups: rosters and deposits', () => {
 
     expect((await join(G, M1, M1_TOKEN)).status).toBe(201);
     const roster = await (await fetch(`${base}/v2/groups/${G}`)).json();
-    expect(roster.members).toEqual([
-      { member_locator: M1, blob_member: 'DEP0', version: 1 },
-    ]);
+    expect(roster.members).toEqual([{ member_locator: M1, blob_member: 'DEP0', version: 1 }]);
 
     expect((await join(id('z'), M2, M2_TOKEN)).status).toBe(404); // no such group
   });

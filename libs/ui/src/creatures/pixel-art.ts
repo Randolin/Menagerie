@@ -19,7 +19,8 @@ export function spriteRects(sprite: PixelSprite): string {
       let end = c + 1;
       while (end < n && row[end] === letter) end++;
       const fill = sprite.palette[letter];
-      if (fill) parts.push(`<rect x="${c}" y="${r}" width="${end - c}" height="1" fill="${fill}"/>`);
+      if (fill)
+        parts.push(`<rect x="${c}" y="${r}" width="${end - c}" height="1" fill="${fill}"/>`);
       c = end;
     }
   }

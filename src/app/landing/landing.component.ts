@@ -14,9 +14,9 @@ import { ServerConfigStore } from '../stores/server-config.store';
     <div class="card" style="text-align:center">
       <h1 style="margin-bottom:6px">Compatibility, minus the identity</h1>
       <p class="sub" style="max-width:52ch;margin:0 auto">
-        Hatch an anonymous profile, answer what you like, share a phrase or QR code.
-        Comparing reveals overlap — and intimate interests only when they’re mutual.
-        No accounts, no email, no names required. <a routerLink="/about">How it works</a>
+        Hatch an anonymous profile, answer what you like, share a phrase or QR code. Comparing
+        reveals overlap — and intimate interests only when they’re mutual. No accounts, no email, no
+        names required. <a routerLink="/about">How it works</a>
       </p>
     </div>
 
@@ -24,13 +24,20 @@ import { ServerConfigStore } from '../stores/server-config.store';
       <div class="card">
         <div class="notice">
           <strong>No profile server is configured.</strong> This copy of Menagerie doesn’t know
-          where profiles live, so hatching and viewing are disabled. If you run your own
-          server, set its URL:
+          where profiles live, so hatching and viewing are disabled. If you run your own server, set
+          its URL:
         </div>
-        <form style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"
-              (submit)="saveServer($event, serverInput)">
-          <input #serverInput type="text" placeholder="https://moxy-sync.example.com"
-                 aria-label="Profile server URL" style="flex:1;min-width:240px">
+        <form
+          style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"
+          (submit)="saveServer($event, serverInput)"
+        >
+          <input
+            #serverInput
+            type="text"
+            placeholder="https://moxy-sync.example.com"
+            aria-label="Profile server URL"
+            style="flex:1;min-width:240px"
+          />
           <button class="btn">Use this server</button>
         </form>
       </div>
@@ -40,11 +47,14 @@ import { ServerConfigStore } from '../stores/server-config.store';
       <div class="card">
         <h2>🥚 Hatch</h2>
         <p class="sub">
-          Start fresh. Your profile — creature name, QR code, and edit phrase —
-          exists instantly, before you answer anything.
+          Start fresh. Your profile — creature name, QR code, and edit phrase — exists instantly,
+          before you answer anything.
         </p>
-        <button class="btn btn-primary" [disabled]="hatching() || config.state() !== 'ready'"
-                (click)="hatch()">
+        <button
+          class="btn btn-primary"
+          [disabled]="hatching() || config.state() !== 'ready'"
+          (click)="hatch()"
+        >
           {{ hatching() ? 'Hatching…' : 'Hatch a profile' }}
         </button>
       </div>
@@ -53,8 +63,13 @@ import { ServerConfigStore } from '../stores/server-config.store';
         <h2>✏️ Edit</h2>
         <p class="sub">Come back to your own profile with your 5-word edit phrase.</p>
         <form style="display:flex;flex-direction:column;gap:8px" (submit)="edit($event, editInput)">
-          <input #editInput type="text" placeholder="correct horse battery staple luck"
-                 autocomplete="off" aria-label="Edit phrase">
+          <input
+            #editInput
+            type="text"
+            placeholder="correct horse battery staple luck"
+            autocomplete="off"
+            aria-label="Edit phrase"
+          />
           <button class="btn" [disabled]="config.state() !== 'ready'">Open my profile</button>
         </form>
       </div>
@@ -63,8 +78,13 @@ import { ServerConfigStore } from '../stores/server-config.store';
         <h2>👀 View</h2>
         <p class="sub">See someone’s profile from the phrase or link they shared.</p>
         <form style="display:flex;flex-direction:column;gap:8px" (submit)="view($event, viewInput)">
-          <input #viewInput type="text" placeholder="amber-azure-fox-canal-stove-plume"
-                 autocomplete="off" aria-label="View phrase">
+          <input
+            #viewInput
+            type="text"
+            placeholder="amber-azure-fox-canal-stove-plume"
+            autocomplete="off"
+            aria-label="View phrase"
+          />
           <button class="btn" [disabled]="config.state() !== 'ready'">View profile</button>
         </form>
       </div>
@@ -76,8 +96,14 @@ import { ServerConfigStore } from '../stores/server-config.store';
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 16px;
     }
-    .landing-actions .card { margin: 0; display: flex; flex-direction: column; }
-    .landing-actions .sub { flex: 1; }
+    .landing-actions .card {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .landing-actions .sub {
+      flex: 1;
+    }
   `,
 })
 export class LandingComponent {

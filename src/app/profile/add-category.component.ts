@@ -33,7 +33,9 @@ import { DraftStore } from '../stores/draft.store';
               <button type="button" class="add-option" (click)="add(s)">
                 <span class="add-option-title">
                   {{ s.title }}
-                  @if (s.privacy === 'match') { <span class="fine">🔒 mutual-only</span> }
+                  @if (s.privacy === 'match') {
+                    <span class="fine">🔒 mutual-only</span>
+                  }
                 </span>
                 <span class="fine add-option-blurb">{{ s.blurb }}</span>
                 <span class="fine">{{ s.items.length }} questions</span>
@@ -49,9 +51,7 @@ export class AddCategoryComponent {
   private readonly draft = inject(DraftStore);
   protected readonly open = signal(false);
 
-  protected readonly missing = computed(() =>
-    SECTIONS.filter((s) => !this.draft.isAdded(s)),
-  );
+  protected readonly missing = computed(() => SECTIONS.filter((s) => !this.draft.isAdded(s)));
 
   protected add(section: Section): void {
     this.draft.addSection(section.id);

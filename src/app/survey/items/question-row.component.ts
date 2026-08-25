@@ -33,7 +33,9 @@ import { WeightControlComponent } from './weight-control.component';
             [attr.aria-label]="markLabel()"
             [title]="markLabel()"
             (click)="open.set(!open())"
-          >{{ markGlyph() }}</button>
+          >
+            {{ markGlyph() }}
+          </button>
         }
       </div>
       <div class="q-control">

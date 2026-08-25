@@ -32,23 +32,40 @@ interface ResolvedPanel {
       <div class="slot-list">
         @for (slot of store.model()?.slots ?? []; track slot.ref; let i = $index) {
           <div class="slot">
-            <span class="person-dot"
-                  [style.background]="slot.payload ? color(goodIndexBefore(i)) : 'var(--baseline)'"></span>
-            @if (slotEmoji(i); as emoji) { <span aria-hidden="true">{{ emoji }}</span> }
+            <span
+              class="person-dot"
+              [style.background]="slot.payload ? color(goodIndexBefore(i)) : 'var(--baseline)'"
+            ></span>
+            @if (slotEmoji(i); as emoji) {
+              <span aria-hidden="true">{{ emoji }}</span>
+            }
             <span class="person-name">{{ slotName(i) }}</span>
-            @if (slot.error) { <span class="fine">{{ slot.error }}</span> }
+            @if (slot.error) {
+              <span class="fine">{{ slot.error }}</span>
+            }
             <span class="slot-meta">{{ slot.ref }}</span>
-            <button class="btn btn-ghost btn-small" [attr.aria-label]="'Remove ' + slotName(i)"
-                    (click)="store.remove(i)">✕</button>
+            <button
+              class="btn btn-ghost btn-small"
+              [attr.aria-label]="'Remove ' + slotName(i)"
+              (click)="store.remove(i)"
+            >
+              ✕
+            </button>
           </div>
         }
       </div>
 
-      <form style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"
-            (submit)="paste($event, pasteInput)">
+      <form
+        style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"
+        (submit)="paste($event, pasteInput)"
+      >
         <div style="flex:1;min-width:220px">
-          <input #pasteInput type="text" placeholder="Paste a view phrase or link…"
-                 aria-label="Paste a view phrase or link">
+          <input
+            #pasteInput
+            type="text"
+            placeholder="Paste a view phrase or link…"
+            aria-label="Paste a view phrase or link"
+          />
         </div>
         <button class="btn" [disabled]="store.full">Add</button>
       </form>
@@ -69,8 +86,8 @@ interface ResolvedPanel {
         }
       </div>
       <p class="fine" style="margin-top:10px">
-        Comparisons happen entirely in this tab and vanish when you leave — the server
-        only ever sees encrypted lookups.
+        Comparisons happen entirely in this tab and vanish when you leave — the server only ever
+        sees encrypted lookups.
       </p>
     </div>
 
@@ -82,8 +99,8 @@ interface ResolvedPanel {
       } @else {
         <div class="card">
           <p class="sub">
-            Add at least two profiles to see the comparison — your own, people you’ve
-            saved, or any view phrase you’ve been given.
+            Add at least two profiles to see the comparison — your own, people you’ve saved, or any
+            view phrase you’ve been given.
           </p>
         </div>
       }
@@ -101,9 +118,7 @@ export class CompareComponent {
   protected readonly visiblePanels = computed(() => {
     const m = this.store.model();
     if (!m) return [];
-    return this.resolved().filter(
-      (p) => !p.descriptor.visible || p.descriptor.visible(m),
-    );
+    return this.resolved().filter((p) => !p.descriptor.visible || p.descriptor.visible(m));
   });
 
   protected readonly canAddMine = computed(() => {

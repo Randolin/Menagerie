@@ -116,7 +116,10 @@ function blades({ rnd, scale, amount }: Params, lean: number): PatternShape[] {
 }
 
 /** Rounded leaf/petal scatter — lowland, woodland, tended. */
-function scatter({ rnd, scale, amount }: Params, kind: 'leaf' | 'petal' | 'needle'): PatternShape[] {
+function scatter(
+  { rnd, scale, amount }: Params,
+  kind: 'leaf' | 'petal' | 'needle',
+): PatternShape[] {
   const n = Math.round((kind === 'needle' ? 40 : 26) * amount * scale);
   return Array.from({ length: n }, () => {
     const x = range(rnd, -6, W + 6);

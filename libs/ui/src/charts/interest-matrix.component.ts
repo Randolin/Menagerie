@@ -29,7 +29,9 @@ interface MatrixRow {
                 {{ ' ' + name }}
               </th>
             }
-            @if (names().length >= 2) { <th scope="col" class="matrix-mutual-head"></th> }
+            @if (names().length >= 2) {
+              <th scope="col" class="matrix-mutual-head"></th>
+            }
           </tr>
         </thead>
         <tbody>
@@ -41,16 +43,21 @@ interface MatrixRow {
                   <td class="cell cell-empty" [title]="names()[$index] + ': not answered'">—</td>
                 } @else {
                   <td class="cell" [title]="names()[$index] + ': ' + levelLabel(lvl)">
-                    <span class="interest-pip lvl-{{ lvl }}"
-                          [style.background]="lvl > 0 ? 'var(--ramp-' + lvl + ')' : ''"></span>
+                    <span
+                      class="interest-pip lvl-{{ lvl }}"
+                      [style.background]="lvl > 0 ? 'var(--ramp-' + lvl + ')' : ''"
+                    ></span>
                     <span class="cell-label">{{ levelLabel(lvl) }}</span>
                   </td>
                 }
               }
               @if (names().length >= 2) {
                 <td class="matrix-mutual">
-                  @if (row.badge === 'mutual') { <span class="badge badge-mutual">mutual ✦</span> }
-                  @else if (row.badge === 'possible') { <span class="badge badge-open">possible</span> }
+                  @if (row.badge === 'mutual') {
+                    <span class="badge badge-mutual">mutual ✦</span>
+                  } @else if (row.badge === 'possible') {
+                    <span class="badge badge-open">possible</span>
+                  }
                 </td>
               }
             </tr>

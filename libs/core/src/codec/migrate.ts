@@ -19,8 +19,7 @@ const MIGRATIONS: Record<number, Migration> = {
     };
     const pronouns = a['ab.pronouns'];
     if (typeof pronouns === 'string' && a['ab.pn'] === undefined) {
-      const options = (getItem('ab.pn')?.item as { options?: readonly string[] })
-        ?.options ?? [];
+      const options = (getItem('ab.pn')?.item as { options?: readonly string[] })?.options ?? [];
       const idx = options.indexOf(pronouns.trim());
       if (idx >= 0) a['ab.pn'] = [idx];
     }

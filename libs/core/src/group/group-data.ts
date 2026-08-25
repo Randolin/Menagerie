@@ -38,8 +38,22 @@ export interface GroupDeposit {
 }
 
 const PSEUDONYM_EMOJI = [
-  '🐾', '🌿', '🌙', '⭐', '🍄', '🌊', '🪶', '🦋',
-  '🐚', '🌸', '🍁', '⛰️', '🔥', '❄️', '🌈', '🫧',
+  '🐾',
+  '🌿',
+  '🌙',
+  '⭐',
+  '🍄',
+  '🌊',
+  '🪶',
+  '🦋',
+  '🐚',
+  '🌸',
+  '🍁',
+  '⛰️',
+  '🔥',
+  '❄️',
+  '🌈',
+  '🫧',
 ] as const;
 
 function tinyHash(s: string): number {

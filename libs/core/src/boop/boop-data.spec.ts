@@ -26,7 +26,9 @@ describe('boop content', () => {
     });
     expect(good.attachments?.contact).toEqual({ platform: 0, handle: 'amber.fox.77' });
     expect(() =>
-      buildBoop('boop', FROM, [0], { contact: { platform: CONTACT_PLATFORMS.length, handle: 'x' } }),
+      buildBoop('boop', FROM, [0], {
+        contact: { platform: CONTACT_PLATFORMS.length, handle: 'x' },
+      }),
     ).toThrow(/contact/i);
     expect(() =>
       buildBoop('boop', FROM, [0], { contact: { platform: 0, handle: 'has space' } }),
@@ -117,7 +119,13 @@ describe('priv-data pass-through', () => {
     expect(migrated.boop).toEqual(stored.boop);
     expect(migrated.sentBoops).toEqual(stored.sentBoops);
     // And a pre-boop blob simply has neither.
-    const legacy = migratePrivData({ v: 1, viewPhrase: 'x', answers: {}, desiresSalt: null, connections: [] });
+    const legacy = migratePrivData({
+      v: 1,
+      viewPhrase: 'x',
+      answers: {},
+      desiresSalt: null,
+      connections: [],
+    });
     expect(legacy.boop).toBeUndefined();
     expect(legacy.sentBoops).toBeUndefined();
   });

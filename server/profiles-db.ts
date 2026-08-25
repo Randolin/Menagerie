@@ -110,10 +110,11 @@ export class ProfilesDb {
 
   getEdit(editLocator: string): ProfileEditRow | null {
     const row = this.db
-      .prepare('SELECT blob_view, blob_priv, version, populated FROM profiles WHERE edit_locator = ?')
+      .prepare(
+        'SELECT blob_view, blob_priv, version, populated FROM profiles WHERE edit_locator = ?',
+      )
       .get(editLocator) as
-      | { blob_view: string; blob_priv: string; version: number; populated: number }
-      | undefined;
+      { blob_view: string; blob_priv: string; version: number; populated: number } | undefined;
     if (!row) return null;
     return {
       blob_view: row.blob_view,

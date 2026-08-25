@@ -66,7 +66,9 @@ describe('placeFamilyOf', () => {
     const { PLACE_BASES, PLACE_SUFFIXES } = TAIL_MORPHEMES;
     for (let s = 0; s < PLACE_SUFFIXES.length; s++) {
       const families = new Set(PLACE_BASES.map((_, b) => placeFamilyOf(TAIL_PLACES[b * 32 + s])));
-      expect(families.size, `suffix "${PLACE_SUFFIXES[s]}" spans ${families.size} families`).toBe(1);
+      expect(families.size, `suffix "${PLACE_SUFFIXES[s]}" spans ${families.size} families`).toBe(
+        1,
+      );
     }
   });
 

@@ -17,8 +17,8 @@ import type { ComparePanelComponent } from '../compare-panels.token';
     <div class="card">
       <h2>Values fingerprint</h2>
       <p class="sub">
-        Each shape is one profile's values, drawn over the same axes — overlap is
-        alignment you can see. An axis points toward the trait it names.
+        Each shape is one profile's values, drawn over the same axes — overlap is alignment you can
+        see. An axis points toward the trait it names.
       </p>
       <moxy-person-key [names]="model().names" [emojis]="personaEmojis()" />
       <moxy-radar [axes]="axes()" [series]="series()" />
@@ -37,8 +37,7 @@ export class FingerprintPanel implements ComparePanelComponent {
     if (!values || payloads.length < 2) return [];
     return values.items.filter(
       (item): item is ScaleItem =>
-        item.type === 'scale' &&
-        payloads.every((p) => typeof p.a[item.id] === 'number'),
+        item.type === 'scale' && payloads.every((p) => typeof p.a[item.id] === 'number'),
     );
   });
 

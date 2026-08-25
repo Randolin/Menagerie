@@ -431,14 +431,17 @@ export class ProfileSessionStore {
     const { groupLocator, groupKey } = await deriveGroupReadKeys(groupPhrase);
     const existing = this.groups().find((g) => g.groupPhrase === groupPhrase);
     const pseudonym = existing?.pseudonym
-      ? { pseudonym: existing.pseudonym, emoji: existing.emoji ?? pseudonymEmoji(existing.pseudonym) }
+      ? {
+          pseudonym: existing.pseudonym,
+          emoji: existing.emoji ?? pseudonymEmoji(existing.pseudonym),
+        }
       : mintPseudonym();
     const deposit = buildDeposit(
       tier,
       this.draft.answers(),
       this.draft.weights(),
       this.draft.acceptable(),
-      tier === 2 ? this.viewPhrase() ?? undefined : undefined,
+      tier === 2 ? (this.viewPhrase() ?? undefined) : undefined,
       pseudonym,
       Date.now(),
     );
@@ -629,7 +632,9 @@ export class ProfileSessionStore {
     const client = this.requireClient();
     const entry = this.sentBoops().find((b) => b.id === id);
     if (!entry || entry.status !== 'pending') return;
-    await client.deleteBoopInbox(entry.replyBox.locator, entry.replyBox.token).catch(() => undefined);
+    await client
+      .deleteBoopInbox(entry.replyBox.locator, entry.replyBox.token)
+      .catch(() => undefined);
     this.mutateSentBoops((list) => list.filter((b) => b.id !== id));
     await this.save();
   }
@@ -758,9 +763,7 @@ export class ProfileSessionStore {
         try {
           const reply = migrateBoopContent(await openWithKey(entry.replyBox.key, knock.blob));
           this.mutateSentBoops((list) =>
-            list.map((b) =>
-              b.id === entry.id ? { ...b, status: 'answered' as const, reply } : b,
-            ),
+            list.map((b) => (b.id === entry.id ? { ...b, status: 'answered' as const, reply } : b)),
           );
           await client
             .deleteBoopInbox(entry.replyBox.locator, entry.replyBox.token)
@@ -892,9 +895,7 @@ export class ProfileSessionStore {
         // the server's copy wins, the local edit is the casualty and the UI
         // says so.
         const remote = err.failure.remote;
-        const remotePriv = migratePrivData(
-          await decryptBlob(remote.blob_priv, editKeys.editKey),
-        );
+        const remotePriv = migratePrivData(await decryptBlob(remote.blob_priv, editKeys.editKey));
         this.priv = remotePriv;
         this.version.set(remote.version);
         this.connections.set(remotePriv.connections);
