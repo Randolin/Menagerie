@@ -20,6 +20,8 @@ export { ToastComponent } from './widgets/toast.component';
 export { QrCodeComponent } from './widgets/qr-code.component';
 export { PersonaChipComponent } from './widgets/persona-chip.component';
 export { CreatureIconComponent } from './widgets/creature-icon.component';
+export { LocationBannerComponent } from './widgets/location-banner.component';
+export { habitatClass, habitatMotif, type HabitatMotif } from './widgets/persona-decor';
 export { CREATURE_SPRITES, type PixelSprite } from './creatures/pixel-grids';
 export { creaturePixelSvg, creatureSpriteRects, spriteSvg } from './creatures/pixel-art';
 

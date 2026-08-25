@@ -7,15 +7,15 @@ import {
   GC_IDLE_HUMAN,
   SECTIONS,
   coreItems,
+  bannerStyleFor,
+  tailPlaceOf,
   extractGroupPhrase,
   extractViewPhrase,
   visiblePacks,
   type Pack,
-  personaHabitat,
-  HABITAT_META,
   type Persona,
 } from '@moxy/core';
-import { CreatureIconComponent, PersonaChipComponent, QrCodeComponent, RingComponent, ToastService, copyText } from '@moxy/ui';
+import { CreatureIconComponent, LocationBannerComponent, PersonaChipComponent, QrCodeComponent, RingComponent, ToastService, copyText, habitatClass, habitatMotif } from '@moxy/ui';
 import { APP_STORAGE } from '../stores/storage.token';
 import { DraftStore } from '../stores/draft.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
@@ -25,7 +25,7 @@ import { BoopComposerComponent } from '../boop/boop-composer.component';
 @Component({
   selector: 'moxy-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, BoopComposerComponent, CreatureIconComponent, PersonaChipComponent, QrCodeComponent, RingComponent],
+  imports: [RouterLink, BoopComposerComponent, CreatureIconComponent, LocationBannerComponent, PersonaChipComponent, QrCodeComponent, RingComponent],
   template: `
     @if (!noticeDismissed()) {
       <div class="card" style="border-color:var(--accent)">
@@ -51,6 +51,7 @@ import { BoopComposerComponent } from '../boop/boop-composer.component';
     }
 
     <div class="card habitat-accent" [class]="habitatClass(session.persona())">
+      <moxy-location-banner [banner]="bannerFor(session.persona(), session.viewPhrase())" />
       <h2 style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         My profile
         @if (session.persona(); as persona) { <moxy-persona-chip [persona]="persona" /> }
@@ -339,19 +340,20 @@ import { BoopComposerComponent } from '../boop/boop-composer.component';
   `,
 })
 export class DashboardComponent {
-  protected habitatClass(persona: Persona | null | undefined): string {
-    const habitat = personaHabitat(persona);
-    return habitat ? `habitat-${habitat}` : '';
+
+  /**
+   * The banner renders only on this top card — the subject whose phrase the
+   * viewer is holding. Never on member rows or compare panels: those carry a
+   * random pseudonym and a null persona, and bannerStyleFor returns null for
+   * them, but the structural rule is what actually keeps the tail off screens
+   * whose viewer has no phrase.
+   */
+  protected bannerFor(persona: Persona | null | undefined, phrase: string | null | undefined) {
+    return bannerStyleFor(persona, tailPlaceOf(phrase));
   }
 
-  protected habitatMotif(
-    persona: Persona | null | undefined,
-  ): { glyph: string; title: string } | null {
-    const habitat = personaHabitat(persona);
-    if (!habitat) return null;
-    const meta = HABITAT_META[habitat];
-    return { glyph: meta.motif, title: `a creature ${meta.label}` };
-  }
+  protected readonly habitatClass = habitatClass;
+  protected readonly habitatMotif = habitatMotif;
 
   protected readonly session = inject(ProfileSessionStore);
   protected readonly draft = inject(DraftStore);

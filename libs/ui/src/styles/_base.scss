@@ -126,12 +126,93 @@ main {
 .habitat-sky { --habitat-tint: color-mix(in srgb, #7aa5d8 60%, var(--surface)); }
 .habitat-meadow { --habitat-tint: color-mix(in srgb, #d9a125 55%, var(--surface)); }
 .habitat-mythic { --habitat-tint: color-mix(in srgb, #9b6fd0 55%, var(--surface)); }
-.card.habitat-accent {
+/* Habitat owns the creature's NATURE (its motif). The location banner below
+   owns the page's PLACE (its colour). One colour authority per card: where a
+   banner renders, it replaces this border, because a water-tinted border above
+   a desert banner is not just ugly — a viewer noticing the two disagree learns
+   the banner isn't animal-derived, which is a nudge toward realising it comes
+   from the tail. */
+.card.habitat-accent:not(:has(.location-banner)) {
   border-top: 3px solid var(--habitat-tint, var(--border));
   border-top-left-radius: var(--radius);
   border-top-right-radius: var(--radius);
 }
 .habitat-motif { font-size: 14px; opacity: 0.75; }
+
+/* Location banner — the page's landform family, the single coarse projection
+   of the view phrase's secret tail (1 of 12, ~3.55 bits; see libs/core
+   place-family.ts and the ledger in hatch/phrases.ts).
+
+   Same idiom as the habitat tints: one color-mix against --surface per family,
+   so a single declaration is correct in light and dark. The mix PERCENTAGE
+   varies per family as well as the hue — twelve tints crowd where five didn't,
+   and highland/coastal/spring would otherwise read as one blue at a glance. */
+.location-banner {
+  --place-mix: 55%;
+  --place-tint: color-mix(in srgb, var(--place-base) var(--place-mix), var(--surface));
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  height: 44px;
+  margin: calc(-1 * clamp(18px, 3vw, 28px)) calc(-1 * clamp(18px, 3vw, 28px)) 16px;
+  padding: 0 16px;
+  border-top-left-radius: var(--radius);
+  border-top-right-radius: var(--radius);
+  overflow: hidden;
+  background-image:
+    radial-gradient(
+      120% 180% at var(--place-mottle-x, 20%) -60%,
+      color-mix(in srgb, var(--place-tint) 70%, var(--surface)) 0%,
+      transparent 60%
+    ),
+    linear-gradient(
+      var(--place-angle, 100deg),
+      var(--place-tint) 0%,
+      color-mix(in srgb, var(--place-tint) 55%, var(--surface)) 100%
+    );
+}
+/* Time-of-day overlay: a warm or cool wash, HEAD-derived (zero extra bits). */
+.location-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--place-wash, transparent);
+  pointer-events: none;
+}
+.location-motifs { display: inline-flex; gap: 6px; position: relative; }
+.location-motif { font-size: 15px; opacity: 0.55; }
+
+/* 12 families — hue and mix percentage both vary. */
+.place-lowland { --place-base: #3e7d4a; --place-mix: 55%; }
+.place-wetland { --place-base: #3f7d6e; --place-mix: 50%; }
+.place-highland { --place-base: #6b7280; --place-mix: 62%; }
+.place-coastal { --place-base: #2f7da8; --place-mix: 52%; }
+.place-woodland { --place-base: #2f6b3f; --place-mix: 66%; }
+.place-openland { --place-base: #94793f; --place-mix: 54%; }
+.place-threshold { --place-base: #7a6a8a; --place-mix: 58%; }
+.place-stronghold { --place-base: #8a6f5a; --place-mix: 60%; }
+.place-underground { --place-base: #5d4a3f; --place-mix: 70%; }
+.place-hearthside { --place-base: #a8622f; --place-mix: 48%; }
+.place-spring { --place-base: #4a86b8; --place-mix: 44%; }
+.place-tended { --place-base: #a3567f; --place-mix: 50%; }
+
+/* 8 variants — gradient angle and mottle position. HEAD-derived. */
+.place-v0 { --place-angle: 100deg; --place-mottle-x: 15%; }
+.place-v1 { --place-angle: 80deg; --place-mottle-x: 35%; }
+.place-v2 { --place-angle: 115deg; --place-mottle-x: 55%; }
+.place-v3 { --place-angle: 65deg; --place-mottle-x: 75%; }
+.place-v4 { --place-angle: 130deg; --place-mottle-x: 90%; }
+.place-v5 { --place-angle: 95deg; --place-mottle-x: 45%; }
+.place-v6 { --place-angle: 70deg; --place-mottle-x: 25%; }
+.place-v7 { --place-angle: 110deg; --place-mottle-x: 65%; }
+
+/* 4 times of day — a wash, not a hue change, so the family stays readable. */
+.place-t0 { --place-wash: transparent; }
+.place-t1 { --place-wash: color-mix(in srgb, #ffb066 12%, transparent); }
+.place-t2 { --place-wash: color-mix(in srgb, #2b3f7a 14%, transparent); }
+.place-t3 { --place-wash: color-mix(in srgb, #ffe6a8 10%, transparent); }
 
 h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(26px, 4.5vw, 38px); letter-spacing: -0.01em; line-height: 1.15; margin: 0 0 10px; }
 h2 { font-family: var(--font-display); font-weight: 550; font-size: 21px; letter-spacing: 0; margin: 0 0 8px; }
