@@ -28,16 +28,21 @@ export const routes: Routes = [
     loadComponent: () => import('./dashboard/dashboard.component').then((m) => m.DashboardComponent),
   },
   {
-    path: 'me/pack/:id',
+    path: 'menagerie',
     canActivate: [hatchSessionGuard],
     loadComponent: () =>
-      import('./pack-runner/pack-runner.component').then((m) => m.PackRunnerComponent),
+      import('./menagerie/menagerie.component').then((m) => m.MenagerieComponent),
   },
   {
-    path: 'me/section/:id',
+    path: 'groups',
+    canActivate: [hatchSessionGuard],
+    loadComponent: () => import('./groups/groups.component').then((m) => m.GroupsComponent),
+  },
+  {
+    path: 'settings',
     canActivate: [hatchSessionGuard],
     loadComponent: () =>
-      import('./section-editor/section-editor.component').then((m) => m.SectionEditorComponent),
+      import('./settings/settings.component').then((m) => m.SettingsComponent),
   },
   {
     path: 'compare',

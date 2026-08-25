@@ -23,6 +23,8 @@ a { color: var(--accent); }
 
 /* ---------- shell ---------- */
 
+/* Six nav links plus the session chip, logout and theme is a full row; keep
+   the pieces from wrapping mid-word when it gets tight. */
 .app-header {
   position: sticky;
   top: 0;
@@ -30,7 +32,7 @@ a { color: var(--accent); }
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 10px clamp(16px, 4vw, 40px);
+  padding: 10px clamp(12px, 3vw, 32px);
   background: color-mix(in srgb, var(--page) 88%, transparent);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--hairline);
@@ -73,14 +75,42 @@ a { color: var(--accent); }
 .nav a {
   text-decoration: none;
   color: var(--ink-2);
-  padding: 7px 12px;
+  padding: 7px 10px;
   border-radius: var(--radius-pill);
   font-size: 14.5px;
   font-weight: 550;
+  white-space: nowrap;
 }
 
 .nav a:hover { background: var(--surface-2); color: var(--ink); }
 .nav a.active { background: var(--accent-soft); color: var(--accent); }
+.nav a { display: inline-flex; align-items: center; gap: 6px; }
+
+.nav-badge {
+  display: inline-grid; place-items: center;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--accent); color: var(--accent-ink);
+  font-size: 11.5px; font-weight: 700; line-height: 1;
+}
+
+/* Signed-in identity, visible on every page. */
+.session-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px 4px 7px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--hairline);
+  text-decoration: none; color: var(--ink-2);
+  font-size: 13.5px; font-weight: 600;
+  max-width: 150px;
+}
+.session-chip:hover { border-color: var(--accent); color: var(--ink); }
+.session-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 720px) {
+  /* The creature is the identity; the name is the part that can go. */
+  .session-name { display: none; }
+}
 
 @media (max-width: 600px) {
   .app-header { flex-wrap: wrap; row-gap: 4px; }
@@ -126,12 +156,106 @@ main {
 .habitat-sky { --habitat-tint: color-mix(in srgb, #7aa5d8 60%, var(--surface)); }
 .habitat-meadow { --habitat-tint: color-mix(in srgb, #d9a125 55%, var(--surface)); }
 .habitat-mythic { --habitat-tint: color-mix(in srgb, #9b6fd0 55%, var(--surface)); }
-.card.habitat-accent {
+/* Habitat owns the creature's NATURE (its motif). The location banner below
+   owns the page's PLACE (its colour). One colour authority per card: where a
+   banner renders, it replaces this border, because a water-tinted border above
+   a desert banner is not just ugly — a viewer noticing the two disagree learns
+   the banner isn't animal-derived, which is a nudge toward realising it comes
+   from the tail. */
+.card.habitat-accent:not(:has(.location-banner)) {
   border-top: 3px solid var(--habitat-tint, var(--border));
   border-top-left-radius: var(--radius);
   border-top-right-radius: var(--radius);
 }
 .habitat-motif { font-size: 14px; opacity: 0.75; }
+
+/* Location banner — the page's landform family, the single coarse projection
+   of the view phrase's secret tail (1 of 12, ~3.55 bits; see libs/core
+   place-family.ts and the ledger in hatch/phrases.ts).
+
+   Same idiom as the habitat tints: one color-mix against --surface per family,
+   so a single declaration is correct in light and dark. The mix PERCENTAGE
+   varies per family as well as the hue, because twelve tints crowd where five
+   didn't. Checked against a rendered 12x8 grid in both themes: the pairs that
+   actually collided were lowland/woodland (both mid-green) and
+   stronghold/underground (both brown), so woodland was pushed blue-green and
+   underground plum-brown. Re-render that grid before touching these values. */
+.location-banner {
+  --place-mix: 55%;
+  --place-tint: color-mix(in srgb, var(--place-base) var(--place-mix), var(--surface));
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  height: 72px;
+  margin: calc(-1 * clamp(18px, 3vw, 28px)) calc(-1 * clamp(18px, 3vw, 28px)) 16px;
+  padding: 0 16px;
+  border-top-left-radius: var(--radius);
+  border-top-right-radius: var(--radius);
+  overflow: hidden;
+  background-image:
+    radial-gradient(
+      120% 180% at var(--place-mottle-x, 20%) -60%,
+      color-mix(in srgb, var(--place-tint) 70%, var(--surface)) 0%,
+      transparent 60%
+    ),
+    linear-gradient(
+      var(--place-angle, 100deg),
+      var(--place-tint) 0%,
+      color-mix(in srgb, var(--place-tint) 55%, var(--surface)) 100%
+    );
+}
+/* Time-of-day overlay: a warm or cool wash, HEAD-derived (zero extra bits). */
+.location-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--place-wash, transparent);
+  pointer-events: none;
+}
+.location-pattern {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* Shapes inherit currentColor, so the pattern's colour is set here and only
+     here — the generator emits geometry and opacity, never a colour. */
+  color: color-mix(in srgb, var(--place-base) 78%, var(--ink));
+  pointer-events: none;
+}
+.location-motifs { display: inline-flex; gap: 6px; position: relative; }
+.location-motif { font-size: 15px; opacity: 0.55; }
+
+/* 12 families — hue and mix percentage both vary. */
+.place-lowland { --place-base: #5f9440; --place-mix: 52%; }
+.place-wetland { --place-base: #3f7d6e; --place-mix: 50%; }
+.place-highland { --place-base: #6b7280; --place-mix: 62%; }
+.place-coastal { --place-base: #2f7da8; --place-mix: 52%; }
+.place-woodland { --place-base: #1f5c46; --place-mix: 70%; }
+.place-openland { --place-base: #94793f; --place-mix: 54%; }
+.place-threshold { --place-base: #8560a8; --place-mix: 55%; }
+.place-stronghold { --place-base: #8a6f5a; --place-mix: 60%; }
+.place-underground { --place-base: #4a3b46; --place-mix: 74%; }
+.place-hearthside { --place-base: #a8622f; --place-mix: 48%; }
+.place-spring { --place-base: #3fa8b8; --place-mix: 46%; }
+.place-tended { --place-base: #a3567f; --place-mix: 50%; }
+
+/* 8 variants — gradient angle and mottle position. HEAD-derived. */
+.place-v0 { --place-angle: 100deg; --place-mottle-x: 15%; }
+.place-v1 { --place-angle: 80deg; --place-mottle-x: 35%; }
+.place-v2 { --place-angle: 115deg; --place-mottle-x: 55%; }
+.place-v3 { --place-angle: 65deg; --place-mottle-x: 75%; }
+.place-v4 { --place-angle: 130deg; --place-mottle-x: 90%; }
+.place-v5 { --place-angle: 95deg; --place-mottle-x: 45%; }
+.place-v6 { --place-angle: 70deg; --place-mottle-x: 25%; }
+.place-v7 { --place-angle: 110deg; --place-mottle-x: 65%; }
+
+/* 4 times of day — a wash, not a hue change, so the family stays readable. */
+.place-t0 { --place-wash: transparent; }
+.place-t1 { --place-wash: color-mix(in srgb, #ffb066 12%, transparent); }
+.place-t2 { --place-wash: color-mix(in srgb, #2b3f7a 14%, transparent); }
+.place-t3 { --place-wash: color-mix(in srgb, #ffe6a8 10%, transparent); }
 
 h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(26px, 4.5vw, 38px); letter-spacing: -0.01em; line-height: 1.15; margin: 0 0 10px; }
 h2 { font-family: var(--font-display); font-weight: 550; font-size: 21px; letter-spacing: 0; margin: 0 0 8px; }
@@ -262,8 +386,150 @@ textarea { min-height: 84px; resize: vertical; }
 .survey-step.active { background: var(--accent); color: var(--accent-ink); }
 .survey-step.done { color: var(--accent); background: var(--accent-soft); }
 
-.item-block { padding: 16px 0; border-bottom: 1px solid var(--hairline); }
-.item-block:last-of-type { border-bottom: none; }
+.item-block { padding: 0; }
+
+/* ---------- profile categories: the scannable survey table ----------
+
+   Every question is a row of label + control, and the controls line up in a
+   column across the whole card. That alignment is the entire point: it is what
+   lets a 25-question category be read down in one pass instead of clicked
+   through one card at a time. */
+
+.profile-head {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin: 18px 4px 10px;
+}
+.profile-head h2 { margin: 0; }
+
+.category-card { padding: 0; overflow: hidden; }
+.category-head {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 14px clamp(14px, 2.4vw, 20px);
+  border-bottom: 1px solid var(--hairline);
+}
+.category-head h2 { margin: 0; font-size: 19px; }
+.category-count { margin-left: auto; }
+.category-remove:hover { border-color: var(--danger, #a03535); color: var(--danger, #a03535); }
+.category-card .notice { margin: 12px clamp(14px, 2.4vw, 20px); }
+.category-card > .fine { display: block; padding: 10px clamp(14px, 2.4vw, 20px) 0; }
+
+.q-table { padding: 4px clamp(14px, 2.4vw, 20px) 14px; }
+
+.q-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 16px;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.q-row:last-child { border-bottom: none; }
+/* min-height reserves the importance marker's space on every row, answered or
+   not, so answering a question doesn't nudge the grid taller and break the
+   column rhythm that makes the card scannable. */
+.q-label { display: flex; align-items: center; gap: 6px; min-width: 0; min-height: 30px; }
+.q-text { font-size: 15px; line-height: 1.35; }
+.q-control { justify-self: end; }
+.q-weight { grid-column: 1 / -1; }
+
+/* Importance marker: a quiet dot until it carries a mark. */
+.q-mark {
+  flex: none;
+  width: 22px; height: 22px;
+  display: grid; place-items: center;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0;
+}
+.q-row:hover .q-mark, .q-mark:focus-visible, .q-mark.on { opacity: 1; }
+.q-mark:hover { border-color: var(--border); color: var(--ink-2); }
+.q-mark.on { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+
+/* Pips — the fixed columns. Interest carries its label; scale is numeric and
+   reads from the anchors either side, so its pips are unlabelled dots. */
+.pip-row { display: flex; gap: 6px; align-items: center; }
+.pip {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+.pip:hover { border-color: var(--ink-2); color: var(--ink); }
+.pip.selected {
+  background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
+}
+.pip-interest { width: 84px; height: 30px; font-size: 12.5px; padding: 0 4px; }
+.pip-interest .pip-text { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pip-scale { width: 26px; height: 26px; }
+
+/* Mixed categories: chips wrap under a narrower label column. */
+.q-table:not(.q-interest):not(.q-scale) .q-row { grid-template-columns: minmax(0, 22ch) minmax(0, 1fr); }
+.q-table:not(.q-interest):not(.q-scale) .q-control { justify-self: stretch; }
+.q-table:not(.q-interest):not(.q-scale) .q-row { align-items: start; padding: 11px 0; }
+.q-table:not(.q-interest):not(.q-scale) .q-label { padding-top: 5px; }
+
+/* Scale rows keep their anchors either side of the pips; the row label would
+   just repeat them, so it stays for screen readers and leaves the layout. */
+.q-row.is-scale .q-text {
+  position: absolute; width: 1px; height: 1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+.q-row.is-scale { grid-template-columns: minmax(0, 1fr); }
+.q-row.is-scale .q-control { justify-self: stretch; }
+.q-row.is-scale .q-label { justify-content: flex-end; }
+.q-scale .q-row { grid-template-columns: minmax(0, 1fr); }
+.q-scale .q-control { justify-self: stretch; }
+.q-scale .q-label { grid-row: 1; justify-content: flex-end; }
+.q-scale .scale-input { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+
+/* Add card */
+.add-card { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.add-head { display: flex; align-items: center; gap: 12px; width: 100%; }
+.add-head h2 { margin: 0; font-size: 19px; }
+.add-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+}
+.add-option {
+  display: flex; flex-direction: column; gap: 4px; text-align: left;
+  padding: 12px 14px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); color: inherit; font: inherit; cursor: pointer;
+}
+.add-option:hover { border-color: var(--accent); }
+.add-option-title { font-weight: 650; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.add-option-blurb { flex: 1; }
+
+/* Save bar — present only while there is something to save. */
+.save-bar {
+  position: sticky; bottom: 12px; z-index: 15;
+  display: flex; align-items: center; gap: 12px;
+  width: fit-content; margin: 12px auto 0;
+  padding: 8px 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow);
+}
+
+@media (max-width: 640px) {
+  .q-row, .q-table:not(.q-interest):not(.q-scale) .q-row {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+  .q-control { justify-self: stretch; }
+  .pip-row { flex-wrap: wrap; }
+  .pip-interest, .pip-head { width: auto; flex: 1 1 68px; }
+}
 
 .optin-gate { text-align: center; padding: 28px 16px; }
 

@@ -1,33 +1,47 @@
 // Phrase minting and recognition.
 //
 // View phrase (6 words, fixed grammar): adjA-adjB-animal + a poetic secret
-// tail of adjC-adjD-place from the 2,048-entry compound lists —
+// tail of adjC-adjD-place from the 4,096-entry compound lists —
 // `animated-pink-dartfrog-mistwoven-emberlit-fernhollow`. The first three
-// words ARE the profile's creature name by construction (18 bits, public by
-// design — anyone who sees the persona chip learns them), so the secret
-// budget is the tail: exactly 33 bits, priced by the memory-hard Argon2id
-// KDF — a deliberate curtain, documented in-app. The tail is handled as a
-// secret: never displayed, never themed. Edit phrase: 5 EFF words
+// words ARE the profile's creature name by construction (~20.8 bits, public
+// by design — anyone who sees the persona chip learns them), so the secret
+// budget is the tail: exactly 36 bits, priced by the memory-hard Argon2id
+// KDF — a deliberate curtain, documented in-app. Edit phrase: 5 EFF words
 // (~65 bits) — the strong credential.
+//
+// BIT LEDGER (why the tail may now tint a banner at all):
+//   head   log2(128 · 128 · 108)  = 20.76 bits, public by design
+//   tail   log2(4096 · 4096 · 4096) = 36 bits, secret
+//   published: the place word's landform FAMILY, 1 of 12 — 3.55 bits
+//   effective secret = 36 − 3.55 = 32.45 bits, versus 33.00 before the growth
+// So widening the tail lists pays for the banner almost exactly, and the
+// banner buys memorability — a tail nobody can hold is a curtain in name only.
+// Recompute this ledger before deriving anything else from the tail.
+//
+// TAIL SECRECY (revised): the tail words are never *displayed* and never
+// derived into anything a phrase-less viewer can see. Only the landform family
+// above is published, and only to viewers who already hold the phrase. Never a
+// base, never an adjective, never the suffix itself. All within-family visual
+// variation derives from the PUBLIC head words. See persona/place-family.ts.
 import { normalizePassphrase } from '../crypto/phrase-kdf';
 import { generatePassphrase } from '../crypto/passphrase';
-import { randomBytes, randomIndex } from '../crypto/random';
+import { randomIndex } from '../crypto/random';
 import { ADJECTIVES_A, ADJECTIVES_B, ANIMALS } from '../persona/wordlists';
 import { TAIL_ADJECTIVES, TAIL_PLACES } from '../persona/tail-wordlists';
 
 export const VIEW_PHRASE_WORDS = 6;
 export const EDIT_PHRASE_WORDS = 5;
 
-function pick64(list: readonly unknown[]): number {
-  // 64 divides 256 exactly — single-byte masking is uniform.
-  return randomBytes(1)[0] & (list.length - 1);
-}
-
 export async function mintViewPhrase(): Promise<string> {
+  // Every slot uses randomIndex (rejection-sampled, uniform for ANY length).
+  // The old pick64 masked with `length - 1`, which is only correct for a
+  // power-of-two list — true at 64, still true for the 128-entry adjective
+  // lists, but wrong the moment ANIMALS became 108. Masking is gone for good
+  // so list sizes are free to be whatever curation honestly supports.
   return [
-    ADJECTIVES_A[pick64(ADJECTIVES_A)],
-    ADJECTIVES_B[pick64(ADJECTIVES_B)],
-    ANIMALS[pick64(ANIMALS)].name,
+    ADJECTIVES_A[randomIndex(ADJECTIVES_A.length)],
+    ADJECTIVES_B[randomIndex(ADJECTIVES_B.length)],
+    ANIMALS[randomIndex(ANIMALS.length)].name,
     TAIL_ADJECTIVES[randomIndex(TAIL_ADJECTIVES.length)],
     TAIL_ADJECTIVES[randomIndex(TAIL_ADJECTIVES.length)],
     TAIL_PLACES[randomIndex(TAIL_PLACES.length)],
@@ -41,6 +55,20 @@ export async function mintEditPhrase(): Promise<string> {
 /** The canonical hyphenated form used for display, URLs, and derivation. */
 export function canonicalViewPhrase(text: string): string {
   return normalizePassphrase(text).split(' ').join('-');
+}
+
+/**
+ * Word 6 (the place) of a well-formed view phrase, else null — the only
+ * supported way to reach a tail word, and the sole input the location banner
+ * takes from the tail. Gated on isViewPhraseShaped so a malformed or partial
+ * phrase yields null rather than a stray substring that might resolve to a
+ * family by accident.
+ */
+export function tailPlaceOf(text: string | null | undefined): string | null {
+  if (!text) return null;
+  const canonical = canonicalViewPhrase(text);
+  if (!isViewPhraseShaped(canonical)) return null;
+  return canonical.split('-')[5];
 }
 
 const TAIL_ADJ_SET = new Set<string>(TAIL_ADJECTIVES);

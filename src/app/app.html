@@ -10,10 +10,35 @@
     </span>Menagerie
   </a>
   <nav class="nav" aria-label="Main">
-    <a routerLink="/me" routerLinkActive="active">My profile</a>
+    @if (session.active()) {
+      <a routerLink="/me" routerLinkActive="active">Profile</a>
+      <a routerLink="/menagerie" routerLinkActive="active">
+        Menagerie
+        @if (boopCount() > 0) {
+          <span class="nav-badge" [attr.aria-label]="boopCount() + ' waiting'">{{ boopCount() }}</span>
+        }
+      </a>
+      <a routerLink="/groups" routerLinkActive="active">Groups</a>
+    }
     <a routerLink="/compare" routerLinkActive="active">Compare</a>
+    @if (session.active()) {
+      <a routerLink="/settings" routerLinkActive="active">Settings</a>
+    }
     <a routerLink="/about" routerLinkActive="active">How it works</a>
   </nav>
+
+  <!-- Who you are, wherever you are: the session used to be invisible outside
+       /me, so navigating to Compare felt like being logged out. -->
+  @if (session.persona(); as persona) {
+    <a class="session-chip" routerLink="/me" title="Signed in — go to my profile">
+      <moxy-creature-icon [emoji]="persona.emoji" [size]="16" />
+      <span class="session-name">{{ persona.name }}</span>
+    </a>
+    <button class="btn btn-ghost btn-small" style="white-space:nowrap" (click)="logout()">Log out</button>
+  } @else {
+    <a class="btn btn-ghost btn-small" routerLink="/edit">Log in</a>
+  }
+
   <button class="btn btn-ghost btn-small" title="Theme" aria-label="Toggle theme"
           (click)="cycleTheme()">◐</button>
 </header>

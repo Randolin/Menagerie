@@ -8,13 +8,13 @@ import type { AnswerValue, ScaleItem } from '@moxy/core';
   template: `
     <div class="scale-input">
       <span class="scale-side">{{ item().left }}</span>
-      <div class="scale-ticks" role="group"
+      <div class="pip-row" role="group"
            [attr.aria-label]="item().left + ' versus ' + item().right">
         @for (v of ticks; track v) {
-          <button class="scale-tick" [class.selected]="value() === v"
-                  [attr.aria-label]="v + ' of 6 toward ' + item().right"
+          <button type="button" class="pip pip-scale" [class.selected]="value() === v"
+                  [attr.aria-label]="item().left + ' to ' + item().right + ': ' + v + ' of 6'"
                   [title]="v + '/6'"
-                  (click)="toggle(v)">{{ v }}</button>
+                  (click)="toggle(v)"></button>
         }
       </div>
       <span class="scale-side right">{{ item().right }}</span>

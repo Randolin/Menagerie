@@ -81,6 +81,55 @@ export class DraftStore {
       section.items.some((it) => a[it.id] !== undefined);
   }
 
+  /**
+   * Which categories are ON the profile page.
+   *
+   * A category shows when it holds an answer, or when it was added and is
+   * still empty. That second case needs to survive a reload — otherwise you
+   * add a category, get called away, come back and it has silently vanished —
+   * so it rides in the payload as the reserved `_added.<sectionId>` key,
+   * exactly like `_optin` already does. Reserved keys start with `_`, never
+   * collide with an item id, and are ignored by the view page (which renders
+   * `section.items`) and by scoring (which iterates the schema). No schema
+   * version bump, no migration.
+   */
+  addSection(sectionId: string): void {
+    this.set(`_added.${sectionId}`, 1);
+  }
+
+  isAdded(section: Section): boolean {
+    return (
+      this.answers()[`_added.${section.id}`] !== undefined || this.answeredIn(section) > 0
+    );
+  }
+
+  /**
+   * Remove a category from the page, discarding its answers, weights and
+   * acceptable-sets. Destructive by design — a category that lingers with
+   * hidden answers is exactly the invisible state this redesign removes — so
+   * callers must confirm first.
+   */
+  removeSection(section: Section): void {
+    const ids = section.items.map((it) => it.id);
+    this.answers.update((a) => {
+      const next = { ...a };
+      for (const id of ids) delete next[id];
+      delete next[`_added.${section.id}`];
+      delete next[`_optin.${section.id}`];
+      return next;
+    });
+    this.weights.update((w) => {
+      const next = { ...w };
+      for (const id of ids) delete next[id];
+      return next;
+    });
+    this.acceptable.update((d) => {
+      const next = { ...d };
+      for (const id of ids) delete next[id];
+      return next;
+    });
+  }
+
   answeredIn(section: Section): number {
     return this.answeredAmong(section.items.map((it) => it.id));
   }

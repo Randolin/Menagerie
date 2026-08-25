@@ -20,13 +20,13 @@ import {
   migrateGroupMeta,
   pairScores,
   personaFromViewPhrase,
+  bannerStyleFor,
+  tailPlaceOf,
   type GroupDeposit,
   type Persona,
   type ProfilePayload,
-  personaHabitat,
-  HABITAT_META,
 } from '@moxy/core';
-import { CreatureIconComponent, PersonaChipComponent, QrCodeComponent, ToastService, copyText } from '@moxy/ui';
+import { CreatureIconComponent, LocationBannerComponent, PersonaChipComponent, QrCodeComponent, ToastService, copyText, habitatClass, habitatMotif } from '@moxy/ui';
 import { CompareStore } from '../stores/compare.store';
 import { DraftStore } from '../stores/draft.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
@@ -55,7 +55,7 @@ interface LoadedGroup {
 @Component({
   selector: 'moxy-group',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, CreatureIconComponent, PersonaChipComponent, QrCodeComponent],
+  imports: [RouterLink, CreatureIconComponent, LocationBannerComponent, PersonaChipComponent, QrCodeComponent],
   template: `
     @if (view.error()) {
       <div class="card">
@@ -65,6 +65,7 @@ interface LoadedGroup {
       </div>
     } @else if (view.value(); as g) {
       <div class="card habitat-accent" [class]="habitatClass(g.persona)">
+        <moxy-location-banner [banner]="bannerFor(g.persona, g.phrase)" />
         <h2 style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           {{ g.persona?.name ?? 'A group' }}
           @if (g.persona; as persona) { <moxy-persona-chip [persona]="persona" /> }
@@ -200,19 +201,20 @@ interface LoadedGroup {
   `,
 })
 export class GroupComponent {
-  protected habitatClass(persona: Persona | null | undefined): string {
-    const habitat = personaHabitat(persona);
-    return habitat ? `habitat-${habitat}` : '';
+
+  /**
+   * The banner renders only on this top card — the subject whose phrase the
+   * viewer is holding. Never on member rows or compare panels: those carry a
+   * random pseudonym and a null persona, and bannerStyleFor returns null for
+   * them, but the structural rule is what actually keeps the tail off screens
+   * whose viewer has no phrase.
+   */
+  protected bannerFor(persona: Persona | null | undefined, phrase: string | null | undefined) {
+    return bannerStyleFor(persona, tailPlaceOf(phrase));
   }
 
-  protected habitatMotif(
-    persona: Persona | null | undefined,
-  ): { glyph: string; title: string } | null {
-    const habitat = personaHabitat(persona);
-    if (!habitat) return null;
-    const meta = HABITAT_META[habitat];
-    return { glyph: meta.motif, title: `a creature ${meta.label}` };
-  }
+  protected readonly habitatClass = habitatClass;
+  protected readonly habitatMotif = habitatMotif;
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);

@@ -9,6 +9,8 @@ import {
   IMPORTANCE_WEIGHTS,
   migrateToCurrent,
   personaFromViewPhrase,
+  bannerStyleFor,
+  tailPlaceOf,
   SECTIONS,
   type AnswerValue,
   type ImportanceWeight,
@@ -16,14 +18,15 @@ import {
   type Persona,
   type ProfilePayload,
   type ScaleItem,
-  personaHabitat,
-  HABITAT_META,
 } from '@moxy/core';
 import {
   AnswerTextComponent,
+  LocationBannerComponent,
   PersonaChipComponent,
   ScaleStripComponent,
   ToastService,
+  habitatClass,
+  habitatMotif,
 } from '@moxy/ui';
 import { BoopComposerComponent } from '../boop/boop-composer.component';
 import { CompareStore } from '../stores/compare.store';
@@ -54,6 +57,7 @@ interface LoadedProfile {
     RouterLink,
     AnswerTextComponent,
     BoopComposerComponent,
+    LocationBannerComponent,
     PersonaChipComponent,
     ScaleStripComponent,
   ],
@@ -66,6 +70,7 @@ interface LoadedProfile {
       </div>
     } @else if (view.value(); as v) {
       <div class="card habitat-accent" [class]="habitatClass(v.persona)">
+        <moxy-location-banner [banner]="bannerFor(v.persona, v.phrase)" />
         <h2 style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           {{ v.name }}’s profile
           @if (v.persona; as persona) { <moxy-persona-chip [persona]="persona" /> }
@@ -139,19 +144,20 @@ interface LoadedProfile {
   `,
 })
 export class ViewComponent {
-  protected habitatClass(persona: Persona | null | undefined): string {
-    const habitat = personaHabitat(persona);
-    return habitat ? `habitat-${habitat}` : '';
+
+  /**
+   * The banner renders only on this top card — the subject whose phrase the
+   * viewer is holding. Never on member rows or compare panels: those carry a
+   * random pseudonym and a null persona, and bannerStyleFor returns null for
+   * them, but the structural rule is what actually keeps the tail off screens
+   * whose viewer has no phrase.
+   */
+  protected bannerFor(persona: Persona | null | undefined, phrase: string | null | undefined) {
+    return bannerStyleFor(persona, tailPlaceOf(phrase));
   }
 
-  protected habitatMotif(
-    persona: Persona | null | undefined,
-  ): { glyph: string; title: string } | null {
-    const habitat = personaHabitat(persona);
-    if (!habitat) return null;
-    const meta = HABITAT_META[habitat];
-    return { glyph: meta.motif, title: `a creature ${meta.label}` };
-  }
+  protected readonly habitatClass = habitatClass;
+  protected readonly habitatMotif = habitatMotif;
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);

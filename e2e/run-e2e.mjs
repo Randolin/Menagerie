@@ -176,41 +176,50 @@ async function decodeQr(page, expected) {
   return null;
 }
 
-/** Section review cards live behind the dashboard's details toggle. */
-async function openSectionList(page) {
-  const details = page.locator('details:has-text("Review all answers")');
-  if ((await details.getAttribute('open')) === null) {
-    await details.locator('summary').click();
-  }
+/**
+ * Categories are added to the profile page, not navigated to. Adding is
+ * idempotent here: an already-added category simply isn't in the menu.
+ */
+async function addCategory(page, title) {
+  const card = page.locator('.category-card', { hasText: title });
+  if (await card.count()) return card.first();
+  await page.click('.add-trigger');
+  await page.locator('.add-option', { hasText: title }).click();
+  await page.waitForSelector(`.category-card:has-text("${title}")`);
+  return page.locator('.category-card', { hasText: title }).first();
 }
 
-/** Open a section review form from the dashboard, run `edit`, save, return. */
-async function editSection(page, sectionTitle, edit) {
-  await openSectionList(page);
-  await page.locator('details .section-card', { hasText: sectionTitle }).click();
-  await page.waitForSelector('.item-block, .optin-gate');
-  await edit();
-  await page.click('text=💾 Save');
+/** Save via the bar that appears only while there are unsaved edits. */
+async function saveProfile(page) {
+  await page.waitForSelector('.save-bar');
+  await page.click('.save-bar button');
   // Generous: the sandbox CPU is shared with two spawned servers, and other
-  // contexts may be mid-Argon2id (64 MiB × 3 passes) at the same time.
-  await page.waitForSelector('.section-grid', { timeout: 45000 });
+  // contexts may be mid-Argon2id (64 MiB x 3 passes) at the same time.
+  await page.waitForSelector('.save-bar', { state: 'detached', timeout: 45000 });
+}
+
+/** Add a category, edit it in place, then save. */
+async function editCategory(page, title, edit) {
+  const card = await addCategory(page, title);
+  await edit(card);
+  await saveProfile(page);
 }
 
 /**
- * Run the first three cards of the "Inner compass" pack (values scales, tick
- * 3/6 each) through the one-card-at-a-time stream, then save. Single-tap
- * answers auto-advance, so each next card is awaited by its right anchor.
+ * Importance lives behind a per-row marker; open it before touching weights.
  */
-async function runCompassPack(page) {
-  await page.locator('.section-card', { hasText: 'Inner compass' }).click();
-  await page.waitForSelector('.pack-stage .item-block', { timeout: 15000 });
-  for (const anchor of ['Togetherness', 'Novelty & adventure', 'Heart decides']) {
-    await page.waitForSelector(`.pack-stage:has-text("${anchor}")`);
-    await page.locator('.pack-stage .scale-tick', { hasText: '3' }).click();
-  }
-  await page.waitForSelector('.pack-stage:has-text("Spender")', { timeout: 5000 });
-  await page.click('text=💾 Save & exit');
-  await page.waitForSelector('.section-grid', { timeout: 45000 });
+async function openImportance(row) {
+  await row.locator('.q-mark').click();
+  await row.locator('.weight-row').waitFor();
+}
+
+/** Three "What I value" scales, tick 3 of 0..6 on each. */
+async function answerValues(page) {
+  await editCategory(page, 'What I value', async (card) => {
+    for (const anchor of ['Togetherness', 'Novelty & adventure', 'Heart decides']) {
+      await card.locator('.q-row', { hasText: anchor }).locator('.pip-scale').nth(3).click();
+    }
+  });
 }
 
 try {
@@ -256,54 +265,52 @@ try {
   await page.click('text=I’ve saved it');
   await page.waitForSelector('.passphrase-box', { state: 'detached' });
   await page.reload(); // session survives via sessionStorage (guard re-derives keys)
-  await page.waitForSelector('.section-grid', { timeout: 45000 });
+  await page.waitForSelector('.profile-head', { timeout: 45000 });
   if (await page.locator('.passphrase-box').count()) fail('notice reappeared after dismissal');
 
   // --- hub-and-spoke section editing with explicit saves --------------------
   step = 'sections';
-  await editSection(page, 'About me', async () => {
-    await page.locator('.item-block', { hasText: 'Pronouns' })
+  await editCategory(page, 'About me', async (card) => {
+    await card.locator('.q-row', { hasText: 'Pronouns' })
       .locator('.opt', { hasText: 'they/them' }).click();
-    await page.locator('.item-block', { hasText: 'Age range' })
+    await card.locator('.q-row', { hasText: 'Age range' })
       .locator('.opt', { hasText: '25–34' }).click();
   });
-  await editSection(page, 'Connections I’m open to', async () => {
-    await page.locator('.item-block', { hasText: 'Friendship' }).first()
-      .locator('.opt', { hasText: 'Into it' }).click();
-    await page.locator('.item-block', { hasText: 'Polyamory' })
-      .locator('.opt', { hasText: 'Curious' }).click();
+  await editCategory(page, 'Connections I’m open to', async (card) => {
+    await card.locator('.q-row', { hasText: 'Friendship' }).first()
+      .locator('.pip', { hasText: 'Into it' }).click();
+    await card.locator('.q-row', { hasText: 'Polyamory' })
+      .locator('.pip', { hasText: 'Curious' }).click();
   });
   // Care given vs received — feeds the interlock flow diagram.
-  await editSection(page, 'How I connect', async () => {
-    const give = page.locator('.item-block', { hasText: 'How I naturally show care' });
+  await editCategory(page, 'How I connect', async (card) => {
+    const give = card.locator('.q-row', { hasText: 'How I naturally show care' });
     await give.locator('.opt', { hasText: 'Physical touch' }).click();
     await give.locator('.opt', { hasText: 'Quality time' }).click();
-    await page.locator('.item-block', { hasText: 'How care lands best for me' })
+    await card.locator('.q-row', { hasText: 'How care lands best for me' })
       .locator('.opt', { hasText: 'Words & affirmation' }).click();
   });
   // A dealbreaker: only "Never"/"Rarely" drinkers need apply.
-  await editSection(page, 'Everyday life', async () => {
-    const alcohol = page.locator('.item-block', { hasText: 'Alcohol' });
+  await editCategory(page, 'Everyday life', async (card) => {
+    const alcohol = card.locator('.q-row', { hasText: 'Alcohol' });
     await alcohol.locator('.opt-grid .opt', { hasText: 'Never' }).click();
+    await openImportance(alcohol);
     await alcohol.locator('button', { hasText: 'Dealbreaker' }).click();
     await alcohol.locator('.weight-accept .opt', { hasText: 'Never' }).click();
     await alcohol.locator('.weight-accept .opt', { hasText: 'Rarely' }).click();
   });
-  await editSection(page, 'Desires & play', async () => {
-    await page.click('text=Open this section');
-    await page.waitForSelector('text=Rope');
-    await page.locator('.item-block', { hasText: 'Rope' }).first()
-      .locator('.opt', { hasText: 'Into it' }).click();
-    await page.locator('.item-block', { hasText: 'Impact play' })
-      .locator('.opt', { hasText: 'Into it' }).click(); // one-sided vs B
+  await editCategory(page, 'Desires & play', async (card) => {
+    await card.locator('.q-row', { hasText: 'Rope' }).first()
+      .locator('.pip', { hasText: 'Into it' }).click();
+    await card.locator('.q-row', { hasText: 'Impact play' })
+      .locator('.pip', { hasText: 'Into it' }).click(); // one-sided vs B
   });
-  await openSectionList(page);
-  const aboutCard = await page.textContent('details .section-card:has-text("About me")');
-  if (!aboutCard.includes('2 of')) fail('section completion count not updated: ' + aboutCard);
+  const aboutCard = await page.textContent('.category-card:has-text("About me") .category-head');
+  if (!aboutCard.includes('2 / ')) fail('category completion count not updated: ' + aboutCard);
 
   // --- the card stream: three values answered one card at a time ------------
   step = 'pack-runner';
-  await runCompassPack(page);
+  await answerValues(page);
   await shot(page, '04-dashboard-filled.png');
 
   // --- a second profile to compare against ----------------------------------
@@ -313,30 +320,28 @@ try {
   await pageB.waitForSelector('.passphrase-box', { timeout: 30000 });
   const viewPhraseB = (await pageB.textContent('.code-box')).trim();
   const personaNameB = (await pageB.textContent('.persona-name')).trim();
-  await editSection(pageB, 'Connections I’m open to', async () => {
-    await pageB.locator('.item-block', { hasText: 'Friendship' }).first()
-      .locator('.opt', { hasText: 'Into it' }).click();
+  await editCategory(pageB, 'Connections I’m open to', async (card) => {
+    await card.locator('.q-row', { hasText: 'Friendship' }).first()
+      .locator('.pip', { hasText: 'Into it' }).click();
   });
   // B gives words (covers A's need); B needs acts (A leaves it unmet).
-  await editSection(pageB, 'How I connect', async () => {
-    await pageB.locator('.item-block', { hasText: 'How I naturally show care' })
+  await editCategory(pageB, 'How I connect', async (card) => {
+    await card.locator('.q-row', { hasText: 'How I naturally show care' })
       .locator('.opt', { hasText: 'Words & affirmation' }).click();
-    await pageB.locator('.item-block', { hasText: 'How care lands best for me' })
+    await card.locator('.q-row', { hasText: 'How care lands best for me' })
       .locator('.opt', { hasText: 'Acts of service' }).click();
   });
   // B drinks socially — a near-miss by ordinal distance, but outside A's
   // dealbreaker set, so only A's directional fit takes the hit.
-  await editSection(pageB, 'Everyday life', async () => {
-    await pageB.locator('.item-block', { hasText: 'Alcohol' })
+  await editCategory(pageB, 'Everyday life', async (card) => {
+    await card.locator('.q-row', { hasText: 'Alcohol' })
       .locator('.opt-grid .opt', { hasText: 'Socially' }).click();
   });
-  await editSection(pageB, 'Desires & play', async () => {
-    await pageB.click('text=Open this section');
-    await pageB.waitForSelector('text=Rope');
-    await pageB.locator('.item-block', { hasText: 'Rope' }).first()
-      .locator('.opt', { hasText: 'Curious' }).click();
+  await editCategory(pageB, 'Desires & play', async (card) => {
+    await card.locator('.q-row', { hasText: 'Rope' }).first()
+      .locator('.pip', { hasText: 'Curious' }).click();
   });
-  await runCompassPack(pageB);
+  await answerValues(pageB);
 
   // --- the QR bypass: a fresh device opens the view URL directly ------------
   step = 'view-fresh-context';
@@ -357,7 +362,7 @@ try {
   await editor.goto(`${BASE}#/edit`);
   await editor.fill('input[aria-label="Edit phrase"]', editPhrase);
   await editor.click('text=Open my profile');
-  await editor.waitForSelector('.section-grid', { timeout: 30000 });
+  await editor.waitForSelector('.profile-head', { timeout: 30000 });
   // The edit-phrase notice reappears on a new device — that's the feature.
   if (!(await editor.locator('.passphrase-box').count())) {
     fail('edit-phrase notice missing on a new device');
@@ -365,30 +370,25 @@ try {
   if ((await editor.textContent('.code-box')).trim() !== viewPhrase) {
     fail('view phrase not recovered from blob_priv');
   }
-  await openSectionList(editor);
-  await editor.locator('details .section-card', { hasText: 'About me' }).click();
-  await editor.waitForSelector('.item-block');
-  const restored = await editor.locator('.item-block', { hasText: 'Pronouns' })
+  // Categories holding answers are on the page already — nothing to navigate.
+  const aboutRestored = editor.locator('.category-card', { hasText: 'About me' });
+  await aboutRestored.waitFor();
+  const restored = await aboutRestored.locator('.q-row', { hasText: 'Pronouns' })
     .locator('.opt[aria-pressed="true"]').allTextContents();
   if (!restored.some((t) => t.includes('they/them'))) {
     fail('open answers not restored on login: ' + restored.join(','));
   }
-  await editor.goto(`${BASE}#/me`);
-  await editor.waitForSelector('.section-grid');
-  // Weights round-trip through blob_priv too — the dealbreaker survives
-  // login. Look, don't save: a save here would bump the CAS version under
+  // Weights round-trip through blob_priv too — the dealbreaker survives login.
+  // The row's marker carries the mark, so this reads it without opening the
+  // control. Look, don't save: a save here would bump the CAS version under
   // profile A's original tab.
-  await openSectionList(editor);
-  await editor.locator('details .section-card', { hasText: 'Everyday life' }).click();
-  await editor.waitForSelector('.item-block');
-  const marked = await editor.locator('.item-block', { hasText: 'Alcohol' })
-    .locator('.weight-on', { hasText: 'Dealbreaker' }).count();
-  if (!marked) fail('dealbreaker weight not restored on login');
-  await editor.goto(`${BASE}#/me`);
-  await editor.waitForSelector('.section-grid');
-  await openSectionList(editor);
-  const desiresCard = await editor.textContent('details .section-card:has-text("Desires")');
-  if (!desiresCard.includes('2 of')) fail('desires answers not restored on login: ' + desiresCard);
+  const markTitle = await editor.locator('.category-card', { hasText: 'Everyday life' })
+    .locator('.q-row', { hasText: 'Alcohol' }).locator('.q-mark').getAttribute('title');
+  if (markTitle !== 'Importance: Dealbreaker') {
+    fail('dealbreaker weight not restored on login: ' + markTitle);
+  }
+  const desiresCard = await editor.textContent('.category-card:has-text("Desires") .category-head');
+  if (!desiresCard.includes('2 / ')) fail('desires answers not restored on login: ' + desiresCard);
 
   // --- compare by phrases: mutual desires reveal, one-sided stay hidden -----
   step = 'compare';
@@ -413,8 +413,8 @@ try {
 
   // --- groups: create, join both tiers, compare, kick, re-mint --------------
   step = 'group-create';
-  await page.goto(`${BASE}#/me`);
-  await page.waitForSelector('.section-grid');
+  await page.goto(`${BASE}#/groups`);
+  await page.waitForSelector('text=My groups');
   await page.click('text=🐣 Create a group');
   await page.waitForSelector('text=Your group is hatched', { timeout: 60000 });
   const groupAdminPhrase = (await page.textContent('.notice .passphrase-box')).trim();
@@ -510,7 +510,7 @@ try {
   }
 
   step = 'boop-receive';
-  await page.goto(`${BASE}#/me`); // A's dashboard polls on load
+  await page.goto(`${BASE}#/menagerie`); // the shell polls; this page shows them
   await page.waitForSelector(`text=says it’s from`, { timeout: 30000 });
   const boopRow = await page.textContent('body');
   if (!boopRow.includes(personaNameB)) fail('boop does not show the claimed sender creature');
@@ -532,7 +532,7 @@ try {
   await page.waitForSelector('text=Reply sent', { timeout: 30000 });
 
   step = 'boop-answer';
-  await pageB.goto(`${BASE}#/me`);
+  await pageB.goto(`${BASE}#/menagerie`);
   await pageB.waitForSelector('text=↩️ replied', { timeout: 30000 });
   const answerBody = await pageB.textContent('body');
   if (!answerBody.includes('We seem compatible')) fail('reply intents missing');
@@ -547,7 +547,7 @@ try {
   // --- regenerate: new creature, old links and QRs die ----------------------
   step = 'regenerate';
   await page.goto(`${BASE}#/me`);
-  await page.waitForSelector('.section-grid');
+  await page.waitForSelector('.profile-head');
   await page.click('text=🎲 New creature'); // confirm dialog auto-accepted
   await page.waitForFunction(
     (old) => document.querySelector('.code-box')?.textContent?.trim() !== old,
@@ -591,8 +591,8 @@ try {
   await gcAlive.waitForSelector('.passphrase-box', { timeout: 30000 });
   const gcAlivePhrase = (await gcAlive.textContent('.code-box')).trim();
   const gcAlivePersona = (await gcAlive.textContent('.persona-name')).trim();
-  await editSection(gcAlive, 'About me', async () => {
-    await gcAlive.locator('.item-block', { hasText: 'Age range' })
+  await editCategory(gcAlive, 'About me', async (card) => {
+    await card.locator('.q-row', { hasText: 'Age range' })
       .locator('.opt', { hasText: '35–44' }).click();
   });
   // Age both profiles by two hours (past the 3s TTL + 1h coarseness slack).
@@ -616,14 +616,17 @@ try {
   const mPage = await freshPage(metricsSrv.url);
   await mPage.click('text=Hatch a profile');
   await mPage.waitForSelector('.passphrase-box', { timeout: 30000 });
-  await editSection(mPage, 'About me', async () => {
-    await mPage.locator('.item-block', { hasText: 'Age range' })
+  await editCategory(mPage, 'About me', async (card) => {
+    await card.locator('.q-row', { hasText: 'Age range' })
       .locator('.opt', { hasText: '25–34' }).click();
   });
-  await editSection(mPage, 'Connections I’m open to', async () => {
-    await mPage.locator('.item-block', { hasText: 'Friendship' }).first()
-      .locator('.opt', { hasText: 'Into it' }).click();
+  await editCategory(mPage, 'Connections I’m open to', async (card) => {
+    await card.locator('.q-row', { hasText: 'Friendship' }).first()
+      .locator('.pip', { hasText: 'Into it' }).click();
   });
+  // The opt-in moved to /settings with the rest of the set-once controls.
+  await mPage.goto(`${BASE}#/settings`);
+  await mPage.waitForSelector('text=Contribute anonymously');
   await mPage.locator('label:has-text("Count my answers") input').check();
   await mPage.waitForSelector('text=Counted — thank you', { timeout: 60000 });
 
