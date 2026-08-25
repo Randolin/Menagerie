@@ -4,7 +4,7 @@
 /out-tsc
 
 # Node
-/node_modules
+node_modules/
 *.log
 
 # Local profile-server database (npm run server defaults to ./moxy-sync.db)
