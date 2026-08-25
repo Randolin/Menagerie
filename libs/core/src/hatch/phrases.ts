@@ -57,6 +57,20 @@ export function canonicalViewPhrase(text: string): string {
   return normalizePassphrase(text).split(' ').join('-');
 }
 
+/**
+ * Word 6 (the place) of a well-formed view phrase, else null — the only
+ * supported way to reach a tail word, and the sole input the location banner
+ * takes from the tail. Gated on isViewPhraseShaped so a malformed or partial
+ * phrase yields null rather than a stray substring that might resolve to a
+ * family by accident.
+ */
+export function tailPlaceOf(text: string | null | undefined): string | null {
+  if (!text) return null;
+  const canonical = canonicalViewPhrase(text);
+  if (!isViewPhraseShaped(canonical)) return null;
+  return canonical.split('-')[5];
+}
+
 const TAIL_ADJ_SET = new Set<string>(TAIL_ADJECTIVES);
 const TAIL_PLACE_SET = new Set<string>(TAIL_PLACES);
 

@@ -42,6 +42,21 @@ export * from './persona/persona';
 export { ADJECTIVES_A, ADJECTIVES_B, ANIMALS, PERSONA_COLORS } from './persona/wordlists';
 export { ADJ_B_HUES, adjBHue } from './persona/adjb-hues';
 export { ANIMAL_HABITATS, HABITAT_META, habitatOf, personaHabitat, type Habitat, type HabitatMeta } from './persona/habitat';
+export {
+  PLACE_FAMILIES,
+  PLACE_FAMILY_META,
+  placeFamilyOf,
+  type PlaceFamily,
+  type PlaceFamilyMeta,
+} from './persona/place-family';
+export {
+  bannerStyleFor,
+  BANNER_VARIANTS,
+  BANNER_TIMES,
+  BANNER_DENSITIES,
+  type BannerStyle,
+  type BannerPersonaLike,
+} from './persona/banner';
 
 export * from './hatch/constants';
 export * from './hatch/keys';
