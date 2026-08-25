@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { RETIRED_ITEM_IDS, RETIRED_SECTION_IDS, SECTIONS } from './sections';
+import { SECTIONS } from './sections';
+import { RETIRED_ITEM_IDS, RETIRED_SECTION_IDS } from './retired';
 import { allItems, coreItems, matchItems, openItems } from './schema';
 import freeze from './fixtures/schema-v2.freeze.json';
 

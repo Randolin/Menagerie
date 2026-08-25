@@ -1,7 +1,7 @@
 // The survey definition — every section and item. Originally ported verbatim
 // from the legacy JS app; since schema v2 it is fully structured (no free
 // text) and hand-edited under the append-only rule in types.ts: options only
-// grow, ids never change meaning, and RETIRED_IDS (bottom of this file) are
+// grow, ids never change meaning, and the retired ids (schema/retired.ts) are
 // never reused.
 import type { Section } from './types';
 
@@ -725,24 +725,3 @@ export const SECTIONS: readonly Section[] = [
     ],
   },
 ] as const;
-
-/**
- * Ids (items and sections) that once existed and were removed in schema v2.
- * They are NEVER reused — the freeze spec enforces this — and the v1→v2
- * payload migration drops or remaps their answers:
- *   ab.name / ab.intro / nt.*  → dropped (free text is gone; the creature is
- *                                the name, weighting replaced must-haves)
- *   ab.pronouns (text)         → mapped to ab.pn (multi) where possible
- *   cn.affection               → copied to cn.give (identical options)
- */
-export const RETIRED_ITEM_IDS: readonly string[] = [
-  'ab.name',
-  'ab.pronouns',
-  'ab.intro',
-  'cn.affection',
-  'nt.musthave',
-  'nt.dealbreak',
-  'nt.joy',
-];
-
-export const RETIRED_SECTION_IDS: readonly string[] = ['notes'];
