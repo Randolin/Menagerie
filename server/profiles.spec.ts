@@ -357,7 +357,15 @@ describe('v2 profiles: capacity circuit breaker', () => {
   test('POST answers 503 at_capacity once maxProfiles is reached', async () => {
     const capDb = new ProfilesDb(':memory:');
     const capServer = createServer(
-      createApp({ profiles: capDb, maxBlobBytes: 1024, trustProxy: false, maxProfiles: 1 }),
+      createApp({
+        profiles: capDb,
+        groups: new GroupsDb(':memory:', 3),
+        metrics: new MetricsDb(':memory:'),
+        boops: new BoopsDb(':memory:', 4, 3, 30 * 86_400_000),
+        maxBlobBytes: 1024,
+        trustProxy: false,
+        maxProfiles: 1,
+      }),
     );
     await new Promise<void>((resolve) => capServer.listen(0, '127.0.0.1', resolve));
     const address = capServer.address();
@@ -516,7 +524,7 @@ describe('v2 groups: rosters and deposits', () => {
     raw.prepare('UPDATE groups SET updated_at = 0, last_viewed_at = NULL').run();
     groups.sweep(7 * DAY, 365 * DAY);
     expect((await fetch(`${base}/v2/groups/${id('f')}`)).status).toBe(404);
-    const orphans = raw.prepare('SELECT COUNT(*) AS n FROM group_members').get();
+    const orphans = raw.prepare('SELECT COUNT(*) AS n FROM group_members').get()!;
     expect(orphans.n).toBe(0);
   });
 });
