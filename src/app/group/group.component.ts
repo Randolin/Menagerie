@@ -12,7 +12,6 @@ import {
   buildSharePayload,
   canonicalViewPhrase,
   decryptBlob,
-  deriveGroupAdminToken,
   deriveGroupReadKeys,
   groupUrlFor,
   isViewPhraseShaped,
@@ -36,6 +35,7 @@ import { CompareStore } from '../stores/compare.store';
 import { DraftStore } from '../stores/draft.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
 import { ServerConfigStore } from '../stores/server-config.store';
+import { GroupMembershipStore } from '../stores/group-membership.store';
 
 interface MemberRow {
   readonly memberLocator: string;
@@ -238,6 +238,7 @@ export class GroupComponent {
   private readonly compare = inject(CompareStore);
   private readonly draft = inject(DraftStore);
   protected readonly session = inject(ProfileSessionStore);
+  private readonly groupStore = inject(GroupMembershipStore);
   private readonly toast = inject(ToastService);
 
   private readonly params = toSignal(this.route.params, {
@@ -378,7 +379,7 @@ export class GroupComponent {
   protected async deposit(g: LoadedGroup, tier: 1 | 2): Promise<void> {
     this.busy.set(true);
     try {
-      await this.session.depositToGroup(g.phrase, tier);
+      await this.groupStore.depositToGroup(g.phrase, tier);
       this.toast.show(tier === 1 ? 'Deposited under your pseudonym' : 'Deposited openly');
       this.reload.update((n) => n + 1);
     } catch (err) {
@@ -393,7 +394,7 @@ export class GroupComponent {
     if (!entry) return;
     this.busy.set(true);
     try {
-      await this.session.leaveGroup(entry.id);
+      await this.groupStore.leaveGroup(entry.id);
       this.toast.show('Left the group — your deposit is gone');
       this.reload.update((n) => n + 1);
     } catch (err) {
@@ -409,11 +410,7 @@ export class GroupComponent {
     if (!confirm(`Remove ${m.name}'s deposit? They can rejoin until you re-mint.`)) return;
     this.busy.set(true);
     try {
-      const client = this.config.client();
-      if (!client) throw new Error('No profile server is configured.');
-      const adminToken = await deriveGroupAdminToken(entry.adminPhrase);
-      const { groupLocator } = await deriveGroupReadKeys(g.phrase);
-      await client.removeMember(groupLocator, m.memberLocator, adminToken, 'admin');
+      await this.groupStore.kickMember(entry.adminPhrase, g.phrase, m.memberLocator);
       this.toast.show(`${m.name} removed`);
       this.reload.update((n) => n + 1);
     } catch (err) {
@@ -434,7 +431,7 @@ export class GroupComponent {
       return;
     this.busy.set(true);
     try {
-      const newPhrase = await this.session.remintGroup(entry.id);
+      const newPhrase = await this.groupStore.remintGroup(entry.id);
       this.toast.show('Group re-minted — share the new invite');
       await this.router.navigate(['/group', newPhrase]);
     } catch (err) {
@@ -450,12 +447,7 @@ export class GroupComponent {
     if (!confirm('Delete this group and every deposit forever?')) return;
     this.busy.set(true);
     try {
-      const client = this.config.client();
-      if (!client) throw new Error('No profile server is configured.');
-      const adminToken = await deriveGroupAdminToken(entry.adminPhrase);
-      const { groupLocator } = await deriveGroupReadKeys(g.phrase);
-      await client.removeGroup(groupLocator, adminToken);
-      await this.session.leaveGroup(entry.id);
+      await this.groupStore.deleteGroup(entry.id, entry.adminPhrase, g.phrase);
       this.toast.show('Group deleted');
       await this.router.navigate(['/me']);
     } catch (err) {

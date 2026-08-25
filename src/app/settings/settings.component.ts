@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
 import { ToastService } from '@moxy/ui';
 import { ProfileSessionStore } from '../stores/profile-session.store';
+import { MetricsStore } from '../stores/metrics.store';
 
 /**
  * The things you set once and then forget: what leaves this device, what stays
@@ -60,6 +61,7 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
 })
 export class SettingsComponent {
   protected readonly session = inject(ProfileSessionStore);
+  private readonly metrics = inject(MetricsStore);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
@@ -87,7 +89,7 @@ export class SettingsComponent {
   protected async toggleMetrics(event: Event): Promise<void> {
     const on = (event.target as HTMLInputElement).checked;
     try {
-      await this.session.setMetricsOptIn(on);
+      await this.metrics.setMetricsOptIn(on);
       this.toast.show(
         on
           ? 'Counted — thank you. You can opt out any time.'

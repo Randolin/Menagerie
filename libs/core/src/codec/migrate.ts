@@ -2,7 +2,7 @@
 // version only needs a new upgrader in MIGRATIONS, never a change at call
 // sites.
 import { PROFILE_VERSION, type ProfilePayload } from '../schema/types';
-import { RETIRED_ITEM_IDS } from '../schema/sections';
+import { RETIRED_ITEM_IDS } from '../schema/retired';
 import { getItem } from '../schema/schema';
 
 type Migration = (payload: Record<string, unknown>) => Record<string, unknown>;

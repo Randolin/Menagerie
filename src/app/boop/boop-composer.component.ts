@@ -9,6 +9,7 @@ import {
 } from '@moxy/core';
 import { ToastService, errorText } from '@moxy/ui';
 import { ProfileSessionStore, type IncomingBoop } from '../stores/profile-session.store';
+import { BoopStore } from '../stores/boop.store';
 
 type Phase = 'idle' | 'staging' | 'composing' | 'sending' | 'done';
 
@@ -16,7 +17,7 @@ type Phase = 'idle' | 'staging' | 'composing' | 'sending' | 'done';
  * The one composer for first contact and for the single reply. Structured
  * only: intents from the fixed list, optional view phrase, optional contact
  * card — each reveal behind its own advisory. In send mode the reply box is
- * staged the moment the composer opens (see ProfileSessionStore.prepareBoop
+ * staged the moment the composer opens (see BoopStore.prepareBoop
  * for the timing rationale).
  */
 @Component({
@@ -168,6 +169,7 @@ type Phase = 'idle' | 'staging' | 'composing' | 'sending' | 'done';
 export class BoopComposerComponent {
   private readonly toast = inject(ToastService);
   protected readonly session = inject(ProfileSessionStore);
+  private readonly boops = inject(BoopStore);
 
   /** Send mode: where the boop goes (from the recipient's view payload). */
   readonly target = input<BoopReachability | null>(null);
@@ -217,7 +219,7 @@ export class BoopComposerComponent {
     }
     this.phase.set('staging');
     try {
-      this.stagedId = await this.session.prepareBoop(this.label(), this.emoji());
+      this.stagedId = await this.boops.prepareBoop(this.label(), this.emoji());
       this.phase.set('composing');
     } catch (err) {
       this.phase.set('idle');
@@ -230,7 +232,7 @@ export class BoopComposerComponent {
     if (this.stagedId) {
       const staged = this.stagedId;
       this.stagedId = null;
-      await this.session.discardBoop(staged).catch(() => undefined);
+      await this.boops.discardBoop(staged).catch(() => undefined);
     }
   }
 
@@ -246,14 +248,14 @@ export class BoopComposerComponent {
     try {
       const reply = this.replyTo();
       if (reply) {
-        await this.session.replyToBoop(reply, [...this.chosen()], attachments);
+        await this.boops.replyToBoop(reply, [...this.chosen()], attachments);
         // Success removes the boop's row — and this composer with it — so
         // the confirmation must outlive us as a toast.
         this.toast.show('Reply sent — this exchange is complete.');
       } else {
         const target = this.target();
         if (!target || !this.stagedId) throw new Error('Nothing to send to.');
-        await this.session.sendBoop(this.stagedId, target, [...this.chosen()], attachments);
+        await this.boops.sendBoop(this.stagedId, target, [...this.chosen()], attachments);
         this.stagedId = null;
       }
       this.phase.set('done');

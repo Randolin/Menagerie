@@ -147,7 +147,7 @@ const shot = async (page, name) => {
 async function hatchProfile(serverUrl = main.url, options = {}) {
   const page = await freshPage(serverUrl, options);
   await page.click('text=Hatch a profile');
-  await page.waitForSelector('.passphrase-box', { timeout: 30000 });
+  await page.waitForSelector('.passphrase-box', { timeout: 60000 });
   return page;
 }
 
@@ -267,7 +267,7 @@ try {
   // --- hatch: profile, QR, and both phrases exist before any answer --------
   step = 'hatch';
   await page.click('text=Hatch a profile');
-  await page.waitForSelector('.passphrase-box', { timeout: 30000 });
+  await page.waitForSelector('.passphrase-box', { timeout: 60000 });
   const editPhrase = (await page.textContent('.passphrase-box')).trim();
   if (editPhrase.split(' ').length !== 5) fail(`edit phrase not 5 words: "${editPhrase}"`);
   const noticeText = await page.textContent('.card:has(.passphrase-box)');

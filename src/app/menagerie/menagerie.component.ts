@@ -5,6 +5,7 @@ import { CreatureIconComponent, ToastService } from '@moxy/ui';
 import { BoopComposerComponent } from '../boop/boop-composer.component';
 import { CompareStore } from '../stores/compare.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
+import { BoopStore } from '../stores/boop.store';
 
 /**
  * Other people: the creatures you keep, and the ones who reached out.
@@ -177,6 +178,7 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
 })
 export class MenagerieComponent {
   protected readonly session = inject(ProfileSessionStore);
+  private readonly boops = inject(BoopStore);
 
   private readonly compare = inject(CompareStore);
   private readonly router = inject(Router);
@@ -187,8 +189,8 @@ export class MenagerieComponent {
     // session becomes active so the nav badge is populated from anywhere, but
     // that fires before boops that arrive later — opening this page is the
     // moment a refresh is actually wanted.
-    void this.session.pollBoops().catch(() => undefined);
-    void this.session.pollSentBoops().catch(() => undefined);
+    void this.boops.pollBoops().catch(() => undefined);
+    void this.boops.pollSentBoops().catch(() => undefined);
   }
 
   protected readonly revealed = signal<ReadonlySet<string>>(new Set());
@@ -240,7 +242,7 @@ export class MenagerieComponent {
 
   protected async dismissBoop(id: string): Promise<void> {
     try {
-      await this.session.dismissBoop(id);
+      await this.boops.dismissBoop(id);
       this.toast.show('Dismissed — they are not notified.');
     } catch (err) {
       this.toast.error(err);
@@ -249,7 +251,7 @@ export class MenagerieComponent {
 
   protected async removeSentBoop(id: string): Promise<void> {
     try {
-      await this.session.removeSentBoop(id);
+      await this.boops.removeSentBoop(id);
     } catch (err) {
       this.toast.error(err);
     }
