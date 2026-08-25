@@ -126,9 +126,13 @@ export async function handleGroups(
         ifVersion,
         body['blob_member'],
       );
-      if (outcome === 'updated') send(res, 200, { version: ifVersion + 1 });
-      else if (outcome === 'bad_token') sendError(res, 401, 'bad_token');
-      else if (outcome === 'conflict') sendError(res, 409, 'version_conflict');
+      if (outcome.status === 'updated') send(res, 200, { version: outcome.version });
+      else if (outcome.status === 'bad_token') sendError(res, 401, 'bad_token');
+      else if (outcome.status === 'conflict')
+        sendError(res, 409, 'version_conflict', {
+          version: outcome.version,
+          blob_member: outcome.blob_member,
+        });
       else sendError(res, 404, 'not_found');
       return true;
     }
@@ -200,7 +204,7 @@ export async function handleGroups(
       case 'conflict':
         sendError(res, 409, 'version_conflict', {
           version: outcome.version,
-          blob_view: outcome.blob_meta,
+          blob_meta: outcome.blob_meta,
         });
         return true;
       case 'bad_token':

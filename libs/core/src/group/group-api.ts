@@ -50,3 +50,11 @@ export const NEW_ADMIN_TOKEN_HEADER = 'x-moxy-new-admin-token';
 
 /** Hard cap on deposits per group. */
 export const GROUP_MAX_MEMBERS = 32;
+
+export interface PutGroupResponse {
+  version: number;
+}
+
+export interface PutMemberResponse {
+  version: number;
+}

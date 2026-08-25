@@ -451,7 +451,14 @@ describe('v2 groups: rosters and deposits', () => {
         body: JSON.stringify({ blob_member: 'DEP1' }),
       });
     expect((await put(M2_TOKEN, 1)).status).toBe(401);
-    expect((await put(M1_TOKEN, 9)).status).toBe(409);
+    const conflicted = await put(M1_TOKEN, 9);
+    expect(conflicted.status).toBe(409);
+    // The lost race ships the current state for a client-side merge.
+    expect(await conflicted.json()).toEqual({
+      error: 'version_conflict',
+      version: 1,
+      blob_member: 'DEP0',
+    });
     const ok = await put(M1_TOKEN, 1);
     expect(ok.status).toBe(200);
     expect(await ok.json()).toEqual({ version: 2 });
@@ -670,7 +677,7 @@ describe('v2 boops: inboxes and knocks', () => {
       method: 'DELETE',
       headers: { [BOOP_TOKEN_HEADER]: BTOKEN },
     });
-    expect(one.status).toBe(200);
+    expect(one.status).toBe(204);
     const again = await fetch(`${base}/v2/boops/${INBOX}/knocks/${knocks[0].id}`, {
       method: 'DELETE',
       headers: { [BOOP_TOKEN_HEADER]: BTOKEN },
@@ -681,7 +688,7 @@ describe('v2 boops: inboxes and knocks', () => {
       method: 'DELETE',
       headers: { [BOOP_TOKEN_HEADER]: BTOKEN },
     });
-    expect(gone.status).toBe(200);
+    expect(gone.status).toBe(204);
     expect((await listKnocks(INBOX, BTOKEN)).status).toBe(404);
     expect((await knock(INBOX)).status).toBe(404);
     const orphaned = raw
