@@ -286,9 +286,12 @@ try {
   const viewUrl = `${BASE}#/view/${viewPhrase}`;
   if ((await decodeQr(page, viewUrl)) === null) fail('QR did not decode to the view URL');
 
-  // --- notice dismissal sticks per device -----------------------------------
+  // --- the edit-phrase notice cannot be dismissed until acknowledged --------
   step = 'notice-dismiss';
-  await page.click('text=I’ve saved it');
+  const dismiss = page.locator('.card-danger button', { hasText: 'I’ve saved it' });
+  if (await dismiss.isEnabled()) fail('edit-phrase notice was dismissable before acknowledgement');
+  await page.check('.ack-row input');
+  await dismiss.click();
   await page.waitForSelector('.passphrase-box', { state: 'detached' });
   await page.reload(); // session survives via sessionStorage (guard re-derives keys)
   await page.waitForSelector('.profile-head', { timeout: 45000 });

@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { hatchSessionGuard } from './hatch-session.guard';
+import { unsavedChangesGuard } from './unsaved-changes.guard';
 
 export const routes: Routes = [
   {
@@ -25,6 +26,7 @@ export const routes: Routes = [
   {
     path: 'me',
     canActivate: [hatchSessionGuard],
+    canDeactivate: [unsavedChangesGuard],
     loadComponent: () =>
       import('./dashboard/dashboard.component').then((m) => m.DashboardComponent),
   },

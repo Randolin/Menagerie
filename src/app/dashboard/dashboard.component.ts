@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  HostListener,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN, SECTIONS, coreItems } from '@moxy/core';
 import { QrCodeComponent, RingComponent, SubjectCardComponent, ToastService } from '@moxy/ui';
 import { CategoryCardComponent } from '../profile/category-card.component';
@@ -21,12 +28,12 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
   ],
   template: `
     @if (!noticeDismissed()) {
-      <div class="card" style="border-color:var(--accent)">
-        <h2>🔑 Your edit phrase — save it now</h2>
+      <div class="card card-danger" role="alert" aria-labelledby="edit-phrase-heading">
+        <h2 id="edit-phrase-heading">⚠️ Save your edit phrase before you do anything else</h2>
         <p class="sub">
-          This phrase is the <strong>only</strong> way to edit this profile. It’s shown here until
-          you dismiss this notice, and after that only lives wherever you put it. No account, no
-          email, no reset — if it’s lost, the profile can never be edited again.
+          This phrase is the <strong>only</strong> way to edit this profile. It is shown here once.
+          Dismiss this notice and it lives nowhere but where you put it — no account, no email, no
+          reset. Lose it and this profile can never be edited again.
         </p>
         <div class="passphrase-box">{{ session.editPhrase() }}</div>
         <p class="fine">
@@ -36,12 +43,27 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
         </p>
         <div class="btn-row">
           <button
-            class="btn"
-            (click)="copy(session.editPhrase()!, 'Copied — store it somewhere safe')"
+            class="btn btn-primary"
+            (click)="copyEditPhrase()"
+            [attr.aria-label]="copied() ? 'Edit phrase copied' : 'Copy edit phrase'"
           >
-            📋 Copy edit phrase
+            {{ copied() ? '✓ Copied' : '📋 Copy edit phrase' }}
           </button>
-          <button class="btn btn-primary" (click)="dismissNotice()">I’ve saved it</button>
+        </div>
+        <label class="ack-row">
+          <input type="checkbox" [checked]="acknowledged()" (change)="toggleAck($event)" />
+          <span>
+            I have saved my edit phrase somewhere I can get back to — a password manager, or written
+            down.
+          </span>
+        </label>
+        <div class="btn-row">
+          <button class="btn btn-primary" [disabled]="!acknowledged()" (click)="dismissNotice()">
+            I’ve saved it — hide this
+          </button>
+          @if (!acknowledged()) {
+            <span class="fine">Tick the box above to dismiss.</span>
+          }
         </div>
       </div>
     }
@@ -147,6 +169,37 @@ export class DashboardComponent {
   );
   protected readonly coreDone = computed(() => this.coreAnswered() === this.coreTotal);
 
+  /**
+   * The notice is the one dismissal in the app that destroys something: after
+   * it, the edit phrase exists only wherever the person put it. So dismissal
+   * is gated on an explicit acknowledgement rather than a stray click, and
+   * `copied` reports whether the clipboard write actually landed — it silently
+   * fails often enough (permissions, http, mobile browsers) that "I clicked
+   * copy" is not evidence the phrase was saved.
+   */
+  protected readonly copied = signal(false);
+  protected readonly acknowledged = signal(false);
+
+  protected async copyEditPhrase(): Promise<void> {
+    const phrase = this.session.editPhrase();
+    if (!phrase) return;
+    this.copied.set(await this.toast.copy(phrase, 'Copied — store it somewhere safe'));
+  }
+
+  protected toggleAck(event: Event): void {
+    this.acknowledged.set((event.target as HTMLInputElement).checked);
+  }
+
+  /**
+   * Closing the tab is the other way to lose the phrase, and no in-page gate
+   * catches it. Browsers show their own generic wording; the returned string
+   * is legacy API, not copy we control.
+   */
+  @HostListener('window:beforeunload', ['$event'])
+  protected warnOnLeave(event: BeforeUnloadEvent): void {
+    if (!this.noticeDismissed() || this.session.dirty()) event.preventDefault();
+  }
+
   private readonly dismissalSeen = signal(0);
   protected readonly noticeDismissed = computed(() => {
     this.dismissalSeen();
@@ -174,8 +227,8 @@ export class DashboardComponent {
     return `moxy.hatch.notice.${personaName}`;
   }
 
-  protected copy(text: string, okMessage: string): Promise<void> {
-    return this.toast.copy(text, okMessage);
+  protected async copy(text: string, okMessage: string): Promise<void> {
+    await this.toast.copy(text, okMessage);
   }
 
   protected async regenerate(): Promise<void> {

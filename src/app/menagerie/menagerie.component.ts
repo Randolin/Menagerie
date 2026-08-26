@@ -207,8 +207,8 @@ export class MenagerieComponent {
     return CONTACT_PLATFORMS[i] ?? 'Elsewhere';
   }
 
-  protected copy(text: string, okMessage: string): Promise<void> {
-    return this.toast.copy(text, okMessage);
+  protected async copy(text: string, okMessage: string): Promise<void> {
+    await this.toast.copy(text, okMessage);
   }
 
   protected async addConnection(
