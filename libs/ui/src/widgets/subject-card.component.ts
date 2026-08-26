@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { bannerStyleFor, tailPlaceOf, type Persona } from '@moxy/core';
 import { LocationBannerComponent } from './location-banner.component';
 import { PersonaChipComponent } from './persona-chip.component';
+import { CreatureAvatarComponent } from './creature-avatar.component';
 import { habitatClass, habitatMotif } from './persona-decor';
 
 /**
@@ -17,11 +18,14 @@ import { habitatClass, habitatMotif } from './persona-decor';
 @Component({
   selector: 'moxy-subject-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LocationBannerComponent, PersonaChipComponent],
+  imports: [LocationBannerComponent, PersonaChipComponent, CreatureAvatarComponent],
   host: { '[class]': 'hostClass()' },
   template: `
     <moxy-location-banner [banner]="banner()" />
     <h2 class="profile-head">
+      @if (persona(); as persona) {
+        <moxy-creature-avatar [persona]="persona" [size]="44" />
+      }
       {{ title() }}
       @if (persona(); as persona) {
         <moxy-persona-chip [persona]="persona" />
