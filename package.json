@@ -13,8 +13,10 @@
     "test:ui": "vitest run --config libs/ui/vitest.config.ts",
     "e2e": "node e2e/run-e2e.mjs",
     "server": "node server/moxy-sync-server.ts",
+    "seed:qa": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/ts-resolve.mjs scripts/seed-qa.ts",
     "test:server": "vitest run --config server/vitest.config.ts",
     "typecheck:server": "tsc -p server/tsconfig.json",
+    "typecheck:scripts": "tsc -p scripts/tsconfig.json",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

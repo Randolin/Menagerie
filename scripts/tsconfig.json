@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitReturns": true,
+    "skipLibCheck": true,
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM"],
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "types": ["node"],
+    "paths": {
+      "@moxy/core": ["../libs/core/src/index.ts"],
+      "@moxy/core/wordlist": ["../libs/core/src/crypto/eff-wordlist.ts"]
+    }
+  },
+  "include": ["./**/*.ts"]
+}

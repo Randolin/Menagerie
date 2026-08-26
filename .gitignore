@@ -7,6 +7,9 @@
 node_modules/
 *.log
 
+# Seed-run reports — these hold live edit/admin phrases
+qa-seed*.local.json
+
 # Local profile-server database (npm run server defaults to ./moxy-sync.db)
 moxy-sync.db*
 
