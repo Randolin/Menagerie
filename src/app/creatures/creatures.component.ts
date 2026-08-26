@@ -22,7 +22,7 @@ import { CreatureIconComponent } from '@moxy/ui';
       <div class="creature-grid">
         @for (animal of animals; track animal.name) {
           <div class="creature-cell">
-            <moxy-creature-icon [emoji]="animal.emoji" [size]="64" />
+            <moxy-creature-icon [emoji]="animal.emoji ?? '🐾'" [animal]="animal.name" [size]="64" />
             <span class="fine">{{ animal.name }}</span>
             <span class="fine creature-habitat">{{ habitatMotif($index) }}</span>
           </div>

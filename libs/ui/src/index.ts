@@ -19,6 +19,7 @@ export { ToastService } from './widgets/toast.service';
 export { ToastComponent } from './widgets/toast.component';
 export { QrCodeComponent } from './widgets/qr-code.component';
 export { PersonaChipComponent } from './widgets/persona-chip.component';
+export { CreatureAvatarComponent } from './widgets/creature-avatar.component';
 export { CreatureIconComponent } from './widgets/creature-icon.component';
 export { LocationBannerComponent } from './widgets/location-banner.component';
 export { SubjectCardComponent } from './widgets/subject-card.component';

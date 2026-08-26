@@ -54,7 +54,9 @@ type-checks templates — run it even for "trivial" component edits.
   (retired ids never reused), options never reorder. The freeze fixtures
   (`schema-v*.freeze.json`) enforce it.
 - Wordlists (`persona/wordlists.ts`, `persona/tail-wordlists.ts`, the EFF
-  list) are append-only; index-aligned tables (`ADJ_B_HUES`,
+  list) are append-only; the plan for growing ANIMALS to 300 and the sprite
+  conventions that gate it are in `docs/animal-plan.md` and
+  `docs/pixel-art-guide.md`; index-aligned tables (`ADJ_B_HUES`,
   `ANIMAL_HABITATS`) must grow in the same commit, guarded by specs.
 - The entropy ledger in `hatch/phrases.ts` must be recomputed before
   anything new derives from a view phrase's tail.

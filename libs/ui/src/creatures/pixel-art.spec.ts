@@ -4,19 +4,22 @@ import { CREATURE_SPRITES } from './pixel-grids';
 import { creaturePixelSvg, creatureSpriteRects, spriteRects, spriteSvg } from './pixel-art';
 
 describe('CREATURE_SPRITES', () => {
-  // Coverage FLOOR, not full coverage. ANIMALS grew 64 → 108; the 44 appended
-  // creatures have no hand-drawn sprite yet and fall back to the platform
-  // emoji, which pixel-grids.ts documents as always-safe. Requiring a sprite
-  // per animal would have blocked the wordlist growth on ~44 pieces of art.
+  // Strict per-animal coverage. This was a FLOOR of 64 while the 44 animals
+  // appended in the 64 → 108 growth fell back to the platform emoji; that
+  // backlog is now drawn, so the floor is gone and a new animal ships with a
+  // sprite or fails here.
   //
-  // The floor still ratchets: it must never drop below the sprites that exist
-  // today, so this cannot silently regress into "no sprites at all". Raise it
-  // as art lands, and restore strict per-animal coverage once it all does.
-  const SPRITE_FLOOR = 64;
+  // The emoji fallback in creature-icon stays — it is what non-animal marks
+  // (🥚, group pseudonyms) and anything arriving over the wire still need —
+  // but it is no longer load-bearing for our own list.
+  test('every animal has a sprite', () => {
+    const missing = ANIMALS.filter((a) => !CREATURE_SPRITES[a.name]).map((a) => a.name);
+    expect(missing).toEqual([]);
+  });
 
-  test('sprite coverage stays at or above the floor', () => {
-    const covered = ANIMALS.filter((a) => CREATURE_SPRITES[a.name]).length;
-    expect(covered).toBeGreaterThanOrEqual(SPRITE_FLOOR);
+  test('no sprite exists for an animal that is not in the list', () => {
+    const names = new Set(ANIMALS.map((a) => a.name));
+    expect(Object.keys(CREATURE_SPRITES).filter((k) => !names.has(k))).toEqual([]);
   });
 
   test('every sprite is a real animal', () => {
@@ -38,6 +41,51 @@ describe('CREATURE_SPRITES', () => {
           expect(sprite.palette[letter], `${name}: letter '${letter}'`).toBeDefined();
         }
       }
+    }
+  });
+
+  // The letter vocabulary is shared on purpose: it is what lets one sprite's
+  // grid be read, and edited, by anyone who has read another's. A batch that
+  // invents its own letter breaks that, and the grids are too terse to
+  // survive a private code.
+  const LETTERS = {
+    o: 'outline',
+    a: 'primary fill',
+    b: 'secondary — muzzle, belly, cheek patch',
+    c: 'accent — comb, crest, fin',
+    m: 'marking — stripes and spots',
+    p: 'pink — nose, inner ear, tongue',
+    y: 'beak, horn, tusk, talon',
+    k: 'ink — pupils',
+    w: 'white — eye whites and highlights',
+  };
+
+  test('palettes use only the shared letter vocabulary', () => {
+    for (const [name, sprite] of Object.entries(CREATURE_SPRITES)) {
+      for (const letter of Object.keys(sprite.palette)) {
+        expect(Object.keys(LETTERS), `${name}: letter '${letter}'`).toContain(letter);
+      }
+    }
+  });
+
+  test('every creature is outlined', () => {
+    for (const [name, sprite] of Object.entries(CREATURE_SPRITES)) {
+      expect(sprite.rows.join('').includes('o'), name).toBe(true);
+    }
+  });
+
+  // Eyes are what make a grid read as a creature rather than an object, so
+  // the absence of them is a deliberate act that has to be named here.
+  // Two kinds of exception, both deliberate. `nautilus` is a shell drawn as a
+  // shell. The rest are the elementals: carved or bodiless things whose eyes
+  // are LIT (the `y` iris) rather than looking — a pupil would give stone and
+  // smoke an interiority the design is deliberately withholding. Anything
+  // else reaching this list is a mistake, not a style.
+  const EYELESS = new Set(['nautilus', 'golem', 'titan', 'djinn', 'sylph']);
+  test('every creature has eyes, or is listed as deliberately eyeless', () => {
+    for (const [name, sprite] of Object.entries(CREATURE_SPRITES)) {
+      if (EYELESS.has(name)) continue;
+      expect(sprite.rows.join('').includes('k'), `${name} has no pupils`).toBe(true);
     }
   });
 

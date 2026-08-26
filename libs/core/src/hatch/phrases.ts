@@ -10,7 +10,10 @@
 // (~65 bits) — the strong credential.
 //
 // BIT LEDGER (why the tail may now tint a banner at all):
-//   head   log2(128 · 128 · 108)  = 20.76 bits, public by design
+//   head   log2(128 · 128 · 300)  = 22.23 bits, public by design
+//          (ANIMALS grows by name now that emoji ran out — the head widens
+//           with it, which only ever helps: the head is public either way
+//           and the secret budget below is untouched.)
 //   tail   log2(4096 · 4096 · 4096) = 36 bits, secret
 //   published: the place word's landform FAMILY, 1 of 12 — 3.55 bits
 //   effective secret = 36 − 3.55 = 32.45 bits, versus 33.00 before the growth

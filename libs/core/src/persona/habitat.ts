@@ -23,7 +23,7 @@ import { ANIMALS } from './wordlists';
 
 export type Habitat = 'forest' | 'water' | 'sky' | 'meadow' | 'mythic';
 
-/** 108 entries — habitat for the same index in ANIMALS (lockstep asserted). */
+/** One habitat per ANIMALS entry, same index (lockstep asserted). */
 export const ANIMAL_HABITATS: readonly Habitat[] = [
   'forest', // fox
   'water', // otter
@@ -134,6 +134,214 @@ export const ANIMAL_HABITATS: readonly Habitat[] = [
   'forest', // moose
   'meadow', // donkey
   'water', // nautilus
+
+  // --- batch 1, in ANIMALS order ---
+  'forest', // lynx
+  'meadow', // caracal
+  'forest', // ocelot
+  'forest', // puma
+  'meadow', // cheetah
+  'meadow', // coyote
+  'meadow', // dingo
+  'meadow', // fennec
+  'meadow', // hyena
+  'forest', // marten
+  'forest', // wolverine
+  'forest', // ferret
+  'meadow', // mongoose
+  'meadow', // meerkat
+  'forest', // coati
+  'forest', // kinkajou
+  'forest', // ringtail
+  'forest', // fossa
+  'forest', // binturong
+
+  // --- batch 2, in ANIMALS order ---
+  'forest', // chipmunk
+  'meadow', // marmot
+  'meadow', // gopher
+  'forest', // mole
+  'meadow', // jerboa
+  'meadow', // chinchilla
+  'forest', // porcupine
+  'water', // capybara
+  'meadow', // pika
+  'forest', // agouti
+  'meadow', // hyrax
+  'forest', // pangolin
+  'meadow', // armadillo
+  'forest', // anteater
+  'meadow', // aardvark
+  'forest', // echidna
+  'water', // platypus
+  'forest', // wombat
+  'forest', // quokka
+
+  // --- batch 3, in ANIMALS order ---
+  'meadow', // gazelle
+  'meadow', // kudu
+  'meadow', // oryx
+  'meadow', // ibex
+  'meadow', // yak
+  'meadow', // markhor
+  'meadow', // saiga
+  'meadow', // springbok
+  'forest', // tapir
+  'forest', // okapi
+  'meadow', // wallaby
+  'forest', // lemur
+  'forest', // gibbon
+  'forest', // tarsier
+  'forest', // mandrill
+  'forest', // chimp
+  'forest', // tamarin
+  'forest', // galago
+  'forest', // colobus
+  'forest', // sifaka
+  'forest', // indri
+
+  // --- batch 4, in ANIMALS order ---
+  'water', // walrus
+  'water', // narwhal
+  'water', // orca
+  'water', // beluga
+  'water', // manatee
+  'water', // sealion
+  'water', // trout
+  'water', // salmon
+  'water', // koi
+  'water', // pike
+  'water', // eel
+  'water', // marlin
+  'water', // tuna
+  'water', // seahorse
+  'water', // stingray
+  'water', // betta
+  'water', // discus
+  'water', // wrasse
+  'water', // lionfish
+  'water', // sailfish
+  'water', // manta
+  'water', // seadragon
+  'water', // sunfish
+  'water', // starfish
+  'water', // anemone
+  'water', // cuttlefish
+
+  // --- batch 5, in ANIMALS order ---
+  'water', // heron
+  'water', // pelican
+  'water', // puffin
+  'water', // kingfisher
+  'water', // cormorant
+  'water', // ibis
+  'water', // tern
+  'water', // stork
+  'water', // dipper
+  'water', // avocet
+  'water', // plover
+  'water', // sandpiper
+  'water', // curlew
+  'sky', // falcon
+  'sky', // osprey
+  'sky', // kestrel
+  'sky', // harrier
+  'sky', // goshawk
+  'sky', // condor
+  'sky', // caracara
+  'meadow', // pheasant
+  'meadow', // ostrich
+  'meadow', // quail
+  'forest', // kiwi
+
+  // --- batch 6, in ANIMALS order ---
+  'sky', // robin
+  'sky', // sparrow
+  'sky', // nightingale
+  'sky', // canary
+  'sky', // tanager
+  'sky', // lovebird
+  'sky', // bluebird
+  'sky', // parakeet
+  'sky', // raven
+  'sky', // magpie
+  'sky', // goldfinch
+  'sky', // oriole
+  'sky', // shrike
+  'sky', // swallow
+  'sky', // starling
+  'sky', // wren
+  'sky', // finch
+  'sky', // lark
+  'sky', // quetzal
+  'sky', // lorikeet
+  'sky', // budgie
+  'sky', // kookaburra
+  'sky', // hornbill
+  'sky', // macaw
+  'sky', // sunbird
+  'sky', // honeyeater
+  'sky', // jay
+  'sky', // cockatiel
+  'sky', // hoopoe
+
+  // --- batch 7, in ANIMALS order ---
+  'forest', // iguana
+  'forest', // chameleon
+  'forest', // python
+  'meadow', // cobra
+  'meadow', // viper
+  'water', // axolotl
+  'water', // newt
+  'forest', // salamander
+  'forest', // treefrog
+  'sky', // dragonfly
+  'sky', // firefly
+  'meadow', // bumblebee
+  'meadow', // grasshopper
+
+  // --- batch 8, in ANIMALS order ---
+  'mythic', // griffin
+  'mythic', // phoenix
+  'mythic', // roc
+  'mythic', // thunderbird
+  'mythic', // simurgh
+  'mythic', // garuda
+  'mythic', // pegasus
+  'mythic', // alicorn
+  'mythic', // hippogriff
+  'mythic', // peryton
+  'mythic', // valkyrie
+  'mythic', // seraph
+  'mythic', // cherub
+  'mythic', // drake
+  'mythic', // wyrm
+  'mythic', // hydra
+  'mythic', // basilisk
+  'mythic', // naga
+  'mythic', // leviathan
+  'mythic', // behemoth
+  'mythic', // kraken
+  'mythic', // chimera
+  'mythic', // manticore
+  'mythic', // sphinx
+  'mythic', // minotaur
+  'mythic', // centaur
+  'mythic', // faun
+  'mythic', // jackalope
+  'mythic', // kitsune
+  'mythic', // tanuki
+  'mythic', // yeti
+  'mythic', // golem
+  'mythic', // titan
+  'mythic', // djinn
+  'mythic', // nymph
+  'mythic', // dryad
+  'mythic', // sylph
+  'mythic', // siren
+  'mythic', // selkie
+  'mythic', // kelpie
+  'mythic', // kirin
 ];
 
 export interface HabitatMeta {

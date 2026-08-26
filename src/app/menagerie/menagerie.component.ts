@@ -76,7 +76,12 @@ import { BoopStore } from '../stores/boop.store';
       @for (boop of session.incomingBoops(); track boop.id) {
         <div class="grid-row" style="align-items:flex-start">
           <div class="grid-item-label">
-            says it’s from <moxy-creature-icon [emoji]="boop.content.from.emoji" [size]="18" />
+            says it’s from
+            <moxy-creature-icon
+              [emoji]="boop.content.from.emoji"
+              [animal]="boop.content.from.animal ?? null"
+              [size]="18"
+            />
             {{ boop.content.from.label }}
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
               @for (i of boop.content.intents; track i) {

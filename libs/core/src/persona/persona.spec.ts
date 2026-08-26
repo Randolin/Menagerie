@@ -14,9 +14,10 @@ describe('persona wordlists', () => {
   test('sizes are the grown index spaces, entries unique', () => {
     expect(ADJECTIVES_A).toHaveLength(128);
     expect(ADJECTIVES_B).toHaveLength(128);
-    // 108, not 128: the supply of single-codepoint animal emoji runs out. See
-    // the note on ANIMALS — the list stops where the good entries stop.
-    expect(ANIMALS).toHaveLength(108);
+    // The list grows by NAME now: emoji ran out at 108 and art is keyed by
+    // name, so this is a ratchet rather than a fixed size. It must never
+    // shrink — every index that has shipped is frozen.
+    expect(ANIMALS.length).toBeGreaterThanOrEqual(108);
     expect(PERSONA_COLORS).toHaveLength(16);
     expect(new Set(ADJECTIVES_A).size).toBe(ADJECTIVES_A.length);
     expect(new Set(ADJECTIVES_B).size).toBe(ADJECTIVES_B.length);
@@ -43,12 +44,25 @@ describe('persona wordlists', () => {
   // codepoint such as U+1F54A DOVE, which is one codepoint but renders as a
   // monochrome text glyph. Both are rejected by requiring exactly one
   // codepoint AND no variation selector.
-  test('every animal emoji is a single codepoint with no VS16', () => {
-    for (const { name, emoji } of ANIMALS) {
-      expect([...emoji], `${name} ${emoji}`).toHaveLength(1);
-      expect(emoji.includes('\uFE0F'), `${name} carries VS16`).toBe(false);
+  //
+  // Emoji is now OPTIONAL — the supply ran out at 108 and later animals are
+  // identified by name with a required sprite. The rule still binds every
+  // entry that HAS one, uniqueness included, because a shared glyph would
+  // make two creatures indistinguishable wherever the fallback is what gets
+  // rendered (old clients, wire data, non-animal marks).
+  test('every animal emoji that exists is a unique single codepoint, no VS16', () => {
+    const withEmoji = ANIMALS.filter((a) => a.emoji !== undefined);
+    for (const { name, emoji } of withEmoji) {
+      expect([...emoji!], `${name} ${emoji}`).toHaveLength(1);
+      expect(emoji!.includes('\uFE0F'), `${name} carries VS16`).toBe(false);
     }
-    expect(new Set(ANIMALS.map((a) => a.emoji)).size).toBe(ANIMALS.length);
+    expect(new Set(withEmoji.map((a) => a.emoji)).size).toBe(withEmoji.length);
+  });
+
+  // The 108 that shipped with emoji keep them: dropping one would change what
+  // an existing profile renders as on any client still using the fallback.
+  test('the original 108 still carry their emoji', () => {
+    expect(ANIMALS.slice(0, 108).every((a) => a.emoji !== undefined)).toBe(true);
   });
 
   test('every color keeps QR-safe contrast (relative luminance <= 0.20)', () => {

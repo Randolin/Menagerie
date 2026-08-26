@@ -47,8 +47,17 @@ export interface BoopReplyBox {
 export interface BoopContent {
   v: 1;
   kind: 'boop' | 'reply';
-  /** Claimed sender identity: creature name (or pseudonym) + emoji. */
-  from: { label: string; emoji: string };
+  /**
+   * Claimed sender identity: creature name (or pseudonym) + emoji, plus the
+   * ANIMAL word when the sender has one.
+   *
+   * `animal` is additive and optional. Emoji ran out at 108 creatures, so a
+   * sender past that point carries a generic glyph; the animal word is what
+   * lets the recipient render the real sprite. Absent from every knock sent
+   * before this field existed, and from group pseudonyms, which have no
+   * animal — both fall back to the emoji, as they always did.
+   */
+  from: { label: string; emoji: string; animal?: string };
   intents: number[];
   attachments?: {
     viewPhrase?: string;
@@ -69,7 +78,7 @@ export function validContactHandle(handle: string): boolean {
 
 export function buildBoop(
   kind: 'boop' | 'reply',
-  from: { label: string; emoji: string },
+  from: { label: string; emoji: string; animal?: string },
   intents: readonly number[],
   attachments?: { viewPhrase?: string; contact?: BoopContact },
   replyBox?: BoopReplyBox,
@@ -77,7 +86,15 @@ export function buildBoop(
   const content: BoopContent = {
     v: 1,
     kind,
-    from: { label: from.label.slice(0, BOOP_LABEL_MAX), emoji: from.emoji },
+    from: {
+      label: from.label.slice(0, BOOP_LABEL_MAX),
+      emoji: from.emoji,
+      // Wire data: a bad value only misses the sprite lookup and falls back
+      // to the emoji, but there is no reason to carry an unbounded string.
+      ...(typeof from.animal === 'string' && /^[a-z]{2,16}$/.test(from.animal)
+        ? { animal: from.animal }
+        : {}),
+    },
     intents: [...new Set(intents)].filter(
       (i) => Number.isInteger(i) && i >= 0 && i < BOOP_INTENTS.length,
     ),

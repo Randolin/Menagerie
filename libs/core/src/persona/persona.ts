@@ -10,6 +10,15 @@
 // everyone. Regenerating the view phrase is the unlink lever — new creature,
 // and every previously shared link or QR stops working.
 import { ADJECTIVES_A, ADJECTIVES_B, ANIMALS, PERSONA_COLORS } from './wordlists';
+
+/**
+ * Stand-in glyph for animals that have no emoji — everything added after the
+ * emoji supply ran out. Persona.emoji stays a plain string because a dozen
+ * call sites treat it as one, and because the real art is keyed by
+ * `words[2]`: the glyph is a fallback for wire data and unknown marks, not
+ * the creature's identity.
+ */
+export const GENERIC_CREATURE_EMOJI = '🐾';
 import { adjBHue } from './adjb-hues';
 
 export interface Persona {
@@ -46,7 +55,7 @@ export async function personaFromViewPhrase(viewPhrase: string): Promise<Persona
   return {
     words: [adjA, adjB, animal.name],
     name: `${adjA}-${adjB}-${animal.name}`,
-    emoji: animal.emoji,
+    emoji: animal.emoji ?? GENERIC_CREATURE_EMOJI,
     color: PERSONA_COLORS[colorIndex],
     // Membership was checked above, so the lookup can't miss.
     color2: adjBHue(adjB) ?? PERSONA_COLORS[colorIndex],
