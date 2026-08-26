@@ -4,19 +4,22 @@ import { CREATURE_SPRITES } from './pixel-grids';
 import { creaturePixelSvg, creatureSpriteRects, spriteRects, spriteSvg } from './pixel-art';
 
 describe('CREATURE_SPRITES', () => {
-  // Coverage FLOOR, not full coverage. ANIMALS grew 64 → 108; the 44 appended
-  // creatures have no hand-drawn sprite yet and fall back to the platform
-  // emoji, which pixel-grids.ts documents as always-safe. Requiring a sprite
-  // per animal would have blocked the wordlist growth on ~44 pieces of art.
+  // Strict per-animal coverage. This was a FLOOR of 64 while the 44 animals
+  // appended in the 64 → 108 growth fell back to the platform emoji; that
+  // backlog is now drawn, so the floor is gone and a new animal ships with a
+  // sprite or fails here.
   //
-  // The floor still ratchets: it must never drop below the sprites that exist
-  // today, so this cannot silently regress into "no sprites at all". Raise it
-  // as art lands, and restore strict per-animal coverage once it all does.
-  const SPRITE_FLOOR = 64;
+  // The emoji fallback in creature-icon stays — it is what non-animal marks
+  // (🥚, group pseudonyms) and anything arriving over the wire still need —
+  // but it is no longer load-bearing for our own list.
+  test('every animal has a sprite', () => {
+    const missing = ANIMALS.filter((a) => !CREATURE_SPRITES[a.name]).map((a) => a.name);
+    expect(missing).toEqual([]);
+  });
 
-  test('sprite coverage stays at or above the floor', () => {
-    const covered = ANIMALS.filter((a) => CREATURE_SPRITES[a.name]).length;
-    expect(covered).toBeGreaterThanOrEqual(SPRITE_FLOOR);
+  test('no sprite exists for an animal that is not in the list', () => {
+    const names = new Set(ANIMALS.map((a) => a.name));
+    expect(Object.keys(CREATURE_SPRITES).filter((k) => !names.has(k))).toEqual([]);
   });
 
   test('every sprite is a real animal', () => {
