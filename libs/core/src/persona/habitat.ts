@@ -253,6 +253,37 @@ export const ANIMAL_HABITATS: readonly Habitat[] = [
   'meadow', // ostrich
   'meadow', // quail
   'forest', // kiwi
+
+  // --- batch 6, in ANIMALS order ---
+  'sky', // robin
+  'sky', // sparrow
+  'sky', // nightingale
+  'sky', // canary
+  'sky', // tanager
+  'sky', // lovebird
+  'sky', // bluebird
+  'sky', // parakeet
+  'sky', // raven
+  'sky', // magpie
+  'sky', // goldfinch
+  'sky', // oriole
+  'sky', // shrike
+  'sky', // swallow
+  'sky', // starling
+  'sky', // wren
+  'sky', // finch
+  'sky', // lark
+  'sky', // quetzal
+  'sky', // lorikeet
+  'sky', // budgie
+  'sky', // kookaburra
+  'sky', // hornbill
+  'sky', // macaw
+  'sky', // sunbird
+  'sky', // honeyeater
+  'sky', // jay
+  'sky', // cockatiel
+  'sky', // hoopoe
 ];
 
 export interface HabitatMeta {

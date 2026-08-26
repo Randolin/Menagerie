@@ -108,6 +108,9 @@ These are the mistakes that actually happened, in order of how often:
   and ostrich each got a pass that added colour and both got harder to read;
   what fixed them was taking things away — a red patch per eye instead of a
   red face, and no neck at all.
+- **Alternating letters read as stripes, not speckles.** The starling's
+  first cut was `amamam` across each row and rendered as a striped cupcake.
+  Scattered single marks at irregular positions is what reads as speckling.
 - **Two similar species need one deliberate difference each.** `hound`,
   `retriever` and `poodle` share a head; they are told apart by ear length,
   ear colour, and a topknot. Decide that difference before drawing, not after.
