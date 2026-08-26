@@ -518,6 +518,32 @@ export const ANIMALS: readonly AnimalEntry[] = [
   { name: 'starfish' },
   { name: 'anemone' },
   { name: 'cuttlefish' },
+
+  // --- batch 5 ---
+  { name: 'heron' },
+  { name: 'pelican' },
+  { name: 'puffin' },
+  { name: 'kingfisher' },
+  { name: 'cormorant' },
+  { name: 'ibis' },
+  { name: 'tern' },
+  { name: 'stork' },
+  { name: 'dipper' },
+  { name: 'avocet' },
+  { name: 'plover' },
+  { name: 'sandpiper' },
+  { name: 'curlew' },
+  { name: 'falcon' },
+  { name: 'osprey' },
+  { name: 'kestrel' },
+  { name: 'harrier' },
+  { name: 'goshawk' },
+  { name: 'condor' },
+  { name: 'caracara' },
+  { name: 'pheasant' },
+  { name: 'ostrich' },
+  { name: 'quail' },
+  { name: 'kiwi' },
 ];
 
 /**

@@ -102,6 +102,12 @@ These are the mistakes that actually happened, in order of how often:
   sprites failed their first cut against roughly one in five elsewhere. A face
   has landmarks that survive at 16px; a fish is a silhouette plus one feature,
   and the silhouette has to do nearly all of it.
+- **A diagonal of single pixels reads as a zipper, not a curve.** The ibis's
+  down-curved bill needed two-pixel steps before it read as one line.
+- **Adding detail to a failing sprite usually makes it worse.** The pheasant
+  and ostrich each got a pass that added colour and both got harder to read;
+  what fixed them was taking things away — a red patch per eye instead of a
+  red face, and no neck at all.
 - **Two similar species need one deliberate difference each.** `hound`,
   `retriever` and `poodle` share a head; they are told apart by ear length,
   ear colour, and a topknot. Decide that difference before drawing, not after.

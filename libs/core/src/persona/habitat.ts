@@ -227,6 +227,32 @@ export const ANIMAL_HABITATS: readonly Habitat[] = [
   'water', // starfish
   'water', // anemone
   'water', // cuttlefish
+
+  // --- batch 5, in ANIMALS order ---
+  'water', // heron
+  'water', // pelican
+  'water', // puffin
+  'water', // kingfisher
+  'water', // cormorant
+  'water', // ibis
+  'water', // tern
+  'water', // stork
+  'water', // dipper
+  'water', // avocet
+  'water', // plover
+  'water', // sandpiper
+  'water', // curlew
+  'sky', // falcon
+  'sky', // osprey
+  'sky', // kestrel
+  'sky', // harrier
+  'sky', // goshawk
+  'sky', // condor
+  'sky', // caracara
+  'meadow', // pheasant
+  'meadow', // ostrich
+  'meadow', // quail
+  'forest', // kiwi
 ];
 
 export interface HabitatMeta {
