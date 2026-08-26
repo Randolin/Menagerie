@@ -44,6 +44,46 @@ describe('CREATURE_SPRITES', () => {
     }
   });
 
+  // The letter vocabulary is shared on purpose: it is what lets one sprite's
+  // grid be read, and edited, by anyone who has read another's. A batch that
+  // invents its own letter breaks that, and the grids are too terse to
+  // survive a private code.
+  const LETTERS = {
+    o: 'outline',
+    a: 'primary fill',
+    b: 'secondary — muzzle, belly, cheek patch',
+    c: 'accent — comb, crest, fin',
+    m: 'marking — stripes and spots',
+    p: 'pink — nose, inner ear, tongue',
+    y: 'beak, horn, tusk, talon',
+    k: 'ink — pupils',
+    w: 'white — eye whites and highlights',
+  };
+
+  test('palettes use only the shared letter vocabulary', () => {
+    for (const [name, sprite] of Object.entries(CREATURE_SPRITES)) {
+      for (const letter of Object.keys(sprite.palette)) {
+        expect(Object.keys(LETTERS), `${name}: letter '${letter}'`).toContain(letter);
+      }
+    }
+  });
+
+  test('every creature is outlined', () => {
+    for (const [name, sprite] of Object.entries(CREATURE_SPRITES)) {
+      expect(sprite.rows.join('').includes('o'), name).toBe(true);
+    }
+  });
+
+  // Eyes are what make a grid read as a creature rather than an object, so
+  // the absence of them is a deliberate act that has to be named here.
+  const EYELESS = new Set(['nautilus']);
+  test('every creature has eyes, or is listed as deliberately eyeless', () => {
+    for (const [name, sprite] of Object.entries(CREATURE_SPRITES)) {
+      if (EYELESS.has(name)) continue;
+      expect(sprite.rows.join('').includes('k'), `${name} has no pupils`).toBe(true);
+    }
+  });
+
   test('palette entries are hex colors', () => {
     for (const [name, sprite] of Object.entries(CREATURE_SPRITES)) {
       for (const hex of Object.values(sprite.palette)) {
