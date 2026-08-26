@@ -76,7 +76,12 @@ describe('CREATURE_SPRITES', () => {
 
   // Eyes are what make a grid read as a creature rather than an object, so
   // the absence of them is a deliberate act that has to be named here.
-  const EYELESS = new Set(['nautilus']);
+  // Two kinds of exception, both deliberate. `nautilus` is a shell drawn as a
+  // shell. The rest are the elementals: carved or bodiless things whose eyes
+  // are LIT (the `y` iris) rather than looking — a pupil would give stone and
+  // smoke an interiority the design is deliberately withholding. Anything
+  // else reaching this list is a mistake, not a style.
+  const EYELESS = new Set(['nautilus', 'golem', 'titan', 'djinn', 'sylph']);
   test('every creature has eyes, or is listed as deliberately eyeless', () => {
     for (const [name, sprite] of Object.entries(CREATURE_SPRITES)) {
       if (EYELESS.has(name)) continue;

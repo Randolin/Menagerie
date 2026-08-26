@@ -1,4 +1,8 @@
-# The animal plan — 108 → 300
+# The animal plan — 108 → 300 · **COMPLETE**
+
+All 192 planned creatures are drawn and shipped; `ANIMALS` stands at 300 with a
+sprite and a habitat for every entry. This file is kept as the record of what
+was chosen and why — the review pass below is still the argument for every cut.
 
 A **plan**, not a commitment. `ANIMALS` in `libs/core/src/persona/wordlists.ts` is
 append-only and frozen on arrival, so a name only goes in when its sprite is drawn

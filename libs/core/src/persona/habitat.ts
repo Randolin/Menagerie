@@ -299,6 +299,49 @@ export const ANIMAL_HABITATS: readonly Habitat[] = [
   'sky', // firefly
   'meadow', // bumblebee
   'meadow', // grasshopper
+
+  // --- batch 8, in ANIMALS order ---
+  'mythic', // griffin
+  'mythic', // phoenix
+  'mythic', // roc
+  'mythic', // thunderbird
+  'mythic', // simurgh
+  'mythic', // garuda
+  'mythic', // pegasus
+  'mythic', // alicorn
+  'mythic', // hippogriff
+  'mythic', // peryton
+  'mythic', // valkyrie
+  'mythic', // seraph
+  'mythic', // cherub
+  'mythic', // drake
+  'mythic', // wyrm
+  'mythic', // hydra
+  'mythic', // basilisk
+  'mythic', // naga
+  'mythic', // leviathan
+  'mythic', // behemoth
+  'mythic', // kraken
+  'mythic', // chimera
+  'mythic', // manticore
+  'mythic', // sphinx
+  'mythic', // minotaur
+  'mythic', // centaur
+  'mythic', // faun
+  'mythic', // jackalope
+  'mythic', // kitsune
+  'mythic', // tanuki
+  'mythic', // yeti
+  'mythic', // golem
+  'mythic', // titan
+  'mythic', // djinn
+  'mythic', // nymph
+  'mythic', // dryad
+  'mythic', // sylph
+  'mythic', // siren
+  'mythic', // selkie
+  'mythic', // kelpie
+  'mythic', // kirin
 ];
 
 export interface HabitatMeta {
