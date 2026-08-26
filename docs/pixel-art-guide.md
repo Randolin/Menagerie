@@ -111,6 +111,10 @@ These are the mistakes that actually happened, in order of how often:
 - **Alternating letters read as stripes, not speckles.** The starling's
   first cut was `amamam` across each row and rendered as a striped cupcake.
   Scattered single marks at irregular positions is what reads as speckling.
+- **A round mass above a round head is a BEAR, whatever you meant.** The
+  cobra took three passes: hood-above-head read as ears, and it only became a
+  cobra when the hood went wider than the head and the head dropped in front
+  of it. Check what the silhouette resembles, not what it depicts.
 - **Two similar species need one deliberate difference each.** `hound`,
   `retriever` and `poodle` share a head; they are told apart by ear length,
   ear colour, and a topknot. Decide that difference before drawing, not after.

@@ -10,7 +10,7 @@
 // (~65 bits) — the strong credential.
 //
 // BIT LEDGER (why the tail may now tint a banner at all):
-//   head   log2(128 · 128 · 246)  = 21.94 bits, public by design
+//   head   log2(128 · 128 · 259)  = 22.01 bits, public by design
 //          (ANIMALS grows by name now that emoji ran out — the head widens
 //           with it, which only ever helps: the head is public either way
 //           and the secret budget below is untouched.)

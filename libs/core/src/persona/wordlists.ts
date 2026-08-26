@@ -575,6 +575,21 @@ export const ANIMALS: readonly AnimalEntry[] = [
   { name: 'jay' },
   { name: 'cockatiel' },
   { name: 'hoopoe' },
+
+  // --- batch 7 ---
+  { name: 'iguana' },
+  { name: 'chameleon' },
+  { name: 'python' },
+  { name: 'cobra' },
+  { name: 'viper' },
+  { name: 'axolotl' },
+  { name: 'newt' },
+  { name: 'salamander' },
+  { name: 'treefrog' },
+  { name: 'dragonfly' },
+  { name: 'firefly' },
+  { name: 'bumblebee' },
+  { name: 'grasshopper' },
 ];
 
 /**

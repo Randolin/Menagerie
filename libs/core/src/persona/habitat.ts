@@ -284,6 +284,21 @@ export const ANIMAL_HABITATS: readonly Habitat[] = [
   'sky', // jay
   'sky', // cockatiel
   'sky', // hoopoe
+
+  // --- batch 7, in ANIMALS order ---
+  'forest', // iguana
+  'forest', // chameleon
+  'forest', // python
+  'meadow', // cobra
+  'meadow', // viper
+  'water', // axolotl
+  'water', // newt
+  'forest', // salamander
+  'forest', // treefrog
+  'sky', // dragonfly
+  'sky', // firefly
+  'meadow', // bumblebee
+  'meadow', // grasshopper
 ];
 
 export interface HabitatMeta {
