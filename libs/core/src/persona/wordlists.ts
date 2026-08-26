@@ -12,7 +12,8 @@
 // therefore widens the mint space without touching a single existing phrase —
 // proven by the vectors in hatch/phrase-compat.spec.ts.
 //
-// Grown 64 → 128 (ANIMALS → 108; see the note on that list). Every table that
+// Grown 64 → 128 (ANIMALS → 108 with emoji, then onward by name; see the
+// note on that list and docs/animal-plan.md). Every table that
 // is index-ALIGNED with one of these must grow in the same commit: ADJ_B_HUES
 // (adjb-hues.ts) with ADJECTIVES_B, ANIMAL_HABITATS (habitat.ts) with ANIMALS.
 // The lockstep is asserted by length-equality tests, not by magic numbers.
@@ -290,19 +291,29 @@ export const ADJECTIVES_B: readonly string[] = [
 
 export interface AnimalEntry {
   readonly name: string;
-  readonly emoji: string;
+  /**
+   * OPTIONAL, and no longer the identity. Art is keyed by `name` (see
+   * creatures/pixel-grids.ts), which is what let this list grow past the
+   * point where distinct single-codepoint animal emoji ran out. Where an
+   * emoji exists it is still the fallback glyph and still travels in boops,
+   * so entries that have one keep it and it stays unique among them.
+   */
+  readonly emoji?: string;
 }
 
 /**
- * 108 entries, each with a single-codepoint emoji (no VS16 sequences, and no
- * default-text-presentation codepoints like U+1F54A DOVE, which render as a
- * monochrome glyph without VS16). Asserted in persona.spec.ts.
+ * The first 108 entries each carry a single-codepoint emoji (no VS16
+ * sequences, and no default-text-presentation codepoints like U+1F54A DOVE,
+ * which render as a monochrome glyph without VS16). Asserted in
+ * persona.spec.ts — for the entries that have one.
  *
- * 108, not 128: the supply of emoji meeting that rule is genuinely exhausted
- * around here. Padding the list with near-duplicates (a second cat, a second
- * baby chick) would buy fractions of a bit at the cost of a creature identity
- * you can't tell apart from another — so the list stops where the good entries
- * stop, and the head-bit accounting is stated honestly rather than rounded up.
+ * The list stopped at 108 because that supply is genuinely exhausted: a scan
+ * of the creature codepoint ranges turns up only a handful of usable glyphs
+ * left, and the rest are near-duplicates (a second cat, a second baby chick)
+ * that would buy fractions of a bit at the cost of a creature you can't tell
+ * from another. Growth past 108 therefore carries no emoji and is identified
+ * by NAME, with a hand-drawn sprite that a spec requires. See
+ * docs/animal-plan.md and docs/pixel-art-guide.md.
  */
 export const ANIMALS: readonly AnimalEntry[] = [
   { name: 'fox', emoji: '🦊' },
@@ -414,6 +425,27 @@ export const ANIMALS: readonly AnimalEntry[] = [
   { name: 'moose', emoji: '🫎' },
   { name: 'donkey', emoji: '🫏' },
   { name: 'nautilus', emoji: '🐚' },
+
+  // --- batch 1 (no emoji: the supply ran out at 108; identified by name) ---
+  { name: 'lynx' },
+  { name: 'caracal' },
+  { name: 'ocelot' },
+  { name: 'puma' },
+  { name: 'cheetah' },
+  { name: 'coyote' },
+  { name: 'dingo' },
+  { name: 'fennec' },
+  { name: 'hyena' },
+  { name: 'marten' },
+  { name: 'wolverine' },
+  { name: 'ferret' },
+  { name: 'mongoose' },
+  { name: 'meerkat' },
+  { name: 'coati' },
+  { name: 'kinkajou' },
+  { name: 'ringtail' },
+  { name: 'fossa' },
+  { name: 'binturong' },
 ];
 
 /**

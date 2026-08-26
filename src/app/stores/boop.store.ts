@@ -80,7 +80,11 @@ export class BoopStore {
     const persona = this.session.persona();
     const content = buildBoop(
       'boop',
-      { label: persona?.name ?? 'a creature', emoji: persona?.emoji ?? '🥚' },
+      {
+        label: persona?.name ?? 'a creature',
+        emoji: persona?.emoji ?? '🥚',
+        animal: persona?.words[2],
+      },
       intents,
       attachments,
       entry.replyBox,
@@ -144,7 +148,11 @@ export class BoopStore {
     const persona = this.session.persona();
     const content = buildBoop(
       'reply',
-      { label: persona?.name ?? 'a creature', emoji: persona?.emoji ?? '🥚' },
+      {
+        label: persona?.name ?? 'a creature',
+        emoji: persona?.emoji ?? '🥚',
+        animal: persona?.words[2],
+      },
       intents,
       attachments,
     );

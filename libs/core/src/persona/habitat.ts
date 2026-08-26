@@ -23,7 +23,7 @@ import { ANIMALS } from './wordlists';
 
 export type Habitat = 'forest' | 'water' | 'sky' | 'meadow' | 'mythic';
 
-/** 108 entries — habitat for the same index in ANIMALS (lockstep asserted). */
+/** One habitat per ANIMALS entry, same index (lockstep asserted). */
 export const ANIMAL_HABITATS: readonly Habitat[] = [
   'forest', // fox
   'water', // otter
@@ -134,6 +134,27 @@ export const ANIMAL_HABITATS: readonly Habitat[] = [
   'forest', // moose
   'meadow', // donkey
   'water', // nautilus
+
+  // --- batch 1, in ANIMALS order ---
+  'forest', // lynx
+  'meadow', // caracal
+  'forest', // ocelot
+  'forest', // puma
+  'meadow', // cheetah
+  'meadow', // coyote
+  'meadow', // dingo
+  'meadow', // fennec
+  'meadow', // hyena
+  'forest', // marten
+  'forest', // wolverine
+  'forest', // ferret
+  'meadow', // mongoose
+  'meadow', // meerkat
+  'forest', // coati
+  'forest', // kinkajou
+  'forest', // ringtail
+  'forest', // fossa
+  'forest', // binturong
 ];
 
 export interface HabitatMeta {
