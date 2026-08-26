@@ -155,6 +155,27 @@ export const ANIMAL_HABITATS: readonly Habitat[] = [
   'forest', // ringtail
   'forest', // fossa
   'forest', // binturong
+
+  // --- batch 2, in ANIMALS order ---
+  'forest', // chipmunk
+  'meadow', // marmot
+  'meadow', // gopher
+  'forest', // mole
+  'meadow', // jerboa
+  'meadow', // chinchilla
+  'forest', // porcupine
+  'water', // capybara
+  'meadow', // pika
+  'forest', // agouti
+  'meadow', // hyrax
+  'forest', // pangolin
+  'meadow', // armadillo
+  'forest', // anteater
+  'meadow', // aardvark
+  'forest', // echidna
+  'water', // platypus
+  'forest', // wombat
+  'forest', // quokka
 ];
 
 export interface HabitatMeta {
