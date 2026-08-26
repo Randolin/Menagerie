@@ -93,6 +93,11 @@ These are the mistakes that actually happened, in order of how often:
 - **Silhouette beats detail.** The mammoth failed twice while I fussed over
   shading; it worked the moment the tusks broke the outline. Ask what shape
   says the animal, then spend pixels there.
+- **Pure white shapes vanish.** The colobus's white mantle rendered as
+  nothing at all on the light surface these sprites sit on, and would have
+  disappeared inside the QR badge too. White is safe for eye highlights, which
+  sit inside a dark pupil; for anything with an exposed edge, tint it (`GRL`)
+  or give it its own `o` outline.
 - **Two similar species need one deliberate difference each.** `hound`,
   `retriever` and `poodle` share a head; they are told apart by ear length,
   ear colour, and a topknot. Decide that difference before drawing, not after.

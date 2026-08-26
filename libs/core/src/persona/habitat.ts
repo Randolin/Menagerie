@@ -176,6 +176,29 @@ export const ANIMAL_HABITATS: readonly Habitat[] = [
   'water', // platypus
   'forest', // wombat
   'forest', // quokka
+
+  // --- batch 3, in ANIMALS order ---
+  'meadow', // gazelle
+  'meadow', // kudu
+  'meadow', // oryx
+  'meadow', // ibex
+  'meadow', // yak
+  'meadow', // markhor
+  'meadow', // saiga
+  'meadow', // springbok
+  'forest', // tapir
+  'forest', // okapi
+  'meadow', // wallaby
+  'forest', // lemur
+  'forest', // gibbon
+  'forest', // tarsier
+  'forest', // mandrill
+  'forest', // chimp
+  'forest', // tamarin
+  'forest', // galago
+  'forest', // colobus
+  'forest', // sifaka
+  'forest', // indri
 ];
 
 export interface HabitatMeta {

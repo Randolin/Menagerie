@@ -467,6 +467,29 @@ export const ANIMALS: readonly AnimalEntry[] = [
   { name: 'platypus' },
   { name: 'wombat' },
   { name: 'quokka' },
+
+  // --- batch 3 ---
+  { name: 'gazelle' },
+  { name: 'kudu' },
+  { name: 'oryx' },
+  { name: 'ibex' },
+  { name: 'yak' },
+  { name: 'markhor' },
+  { name: 'saiga' },
+  { name: 'springbok' },
+  { name: 'tapir' },
+  { name: 'okapi' },
+  { name: 'wallaby' },
+  { name: 'lemur' },
+  { name: 'gibbon' },
+  { name: 'tarsier' },
+  { name: 'mandrill' },
+  { name: 'chimp' },
+  { name: 'tamarin' },
+  { name: 'galago' },
+  { name: 'colobus' },
+  { name: 'sifaka' },
+  { name: 'indri' },
 ];
 
 /**
