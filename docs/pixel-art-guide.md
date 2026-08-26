@@ -98,6 +98,10 @@ These are the mistakes that actually happened, in order of how often:
   disappeared inside the QR badge too. White is safe for eye highlights, which
   sit inside a dark pupil; for anything with an exposed edge, tint it (`GRL`)
   or give it its own `o` outline.
+- **A side-on body is much harder than a face.** Eight of the 26 aquatic
+  sprites failed their first cut against roughly one in five elsewhere. A face
+  has landmarks that survive at 16px; a fish is a silhouette plus one feature,
+  and the silhouette has to do nearly all of it.
 - **Two similar species need one deliberate difference each.** `hound`,
   `retriever` and `poodle` share a head; they are told apart by ear length,
   ear colour, and a topknot. Decide that difference before drawing, not after.

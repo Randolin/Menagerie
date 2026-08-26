@@ -199,6 +199,34 @@ export const ANIMAL_HABITATS: readonly Habitat[] = [
   'forest', // colobus
   'forest', // sifaka
   'forest', // indri
+
+  // --- batch 4, in ANIMALS order ---
+  'water', // walrus
+  'water', // narwhal
+  'water', // orca
+  'water', // beluga
+  'water', // manatee
+  'water', // sealion
+  'water', // trout
+  'water', // salmon
+  'water', // koi
+  'water', // pike
+  'water', // eel
+  'water', // marlin
+  'water', // tuna
+  'water', // seahorse
+  'water', // stingray
+  'water', // betta
+  'water', // discus
+  'water', // wrasse
+  'water', // lionfish
+  'water', // sailfish
+  'water', // manta
+  'water', // seadragon
+  'water', // sunfish
+  'water', // starfish
+  'water', // anemone
+  'water', // cuttlefish
 ];
 
 export interface HabitatMeta {
