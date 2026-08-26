@@ -23,7 +23,10 @@ export class ToastService {
   }
 
   /** Copy to the clipboard and toast the outcome. */
-  async copy(text: string, okMessage: string): Promise<void> {
-    this.show((await copyText(text)) ? okMessage : 'Copy failed — select it manually');
+  /** Returns whether the copy actually landed, for callers that gate on it. */
+  async copy(text: string, okMessage: string): Promise<boolean> {
+    const copied = await copyText(text);
+    this.show(copied ? okMessage : 'Copy failed — select it manually');
+    return copied;
   }
 }

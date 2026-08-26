@@ -844,15 +844,43 @@ textarea {
   z-index: 15;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  gap: 14px;
   width: fit-content;
-  margin: 12px auto 0;
-  padding: 8px 14px;
-  border: 1px solid var(--border);
+  max-width: 100%;
+  margin: 16px auto 0;
+  padding: 12px 20px;
+  border: 2px solid var(--accent);
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  /* Tint layered ON the surface, not the bare token: --accent-soft carries
+     alpha, and a sticky bar that lets the answers show through it reads as
+     decoration rather than as the thing standing between you and losing them. */
+  background: linear-gradient(var(--accent-soft), var(--accent-soft)), var(--surface);
   backdrop-filter: blur(8px);
   box-shadow: var(--shadow);
+  font-weight: 600;
+}
+.save-bar .save-bar-label {
+  color: var(--ink);
+  font-size: 15px;
+}
+/* The result of saving, held briefly where the prompt was — a toast alone
+   left the act with no visible consequence at the point of action. */
+.save-bar-done {
+  border-color: var(--accent);
+  background: var(--surface);
+  color: var(--accent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .save-bar {
+    animation: save-bar-in 160ms ease-out;
+  }
+}
+@keyframes save-bar-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 
 @media (max-width: 640px) {
@@ -909,6 +937,42 @@ textarea {
   max-height: 130px;
   overflow: auto;
   color: var(--ink-2);
+}
+
+/* ---------- irreversible-credential notice ---------- */
+
+/* Reserved for the one card whose dismissal loses something unrecoverable.
+   Everything else that merely wants attention uses .card with --accent. */
+.card-danger {
+  border: 2px solid var(--danger);
+  background: var(--danger-soft);
+}
+.card-danger h2 {
+  color: var(--danger);
+}
+.ack-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 14px 0 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+  font-weight: 600;
+}
+.card-danger .passphrase-box {
+  border-color: var(--danger);
+  background: var(--surface);
+}
+.ack-row input {
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: var(--danger);
+  cursor: pointer;
 }
 
 .passphrase-box {
