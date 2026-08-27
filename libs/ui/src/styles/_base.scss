@@ -450,6 +450,27 @@ p {
     transform 0.05s ease,
     background 0.15s ease;
 }
+/* Square icon-only action. Same pill and border as .btn so a row of them
+   reads as one control group; the label lives in aria-label and title. */
+.btn-icon {
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  font-size: 17px;
+}
+.btn-icon.btn-small {
+  width: 32px;
+  height: 32px;
+  font-size: 15px;
+}
+/* Confirmation after a copy: the icon swaps to a tick and the button holds
+   the accent for a moment, so the action has a result where it happened. */
+.btn-icon.is-done {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .btn:hover {
   background: var(--surface-2);
 }
@@ -950,12 +971,30 @@ textarea {
 .card-danger h2 {
   color: var(--danger);
 }
+/* Phrase and its copy button as one unit, so the action sits on the thing it
+   acts on rather than in a row of buttons below it. */
+.phrase-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  margin: 14px 0;
+}
+.phrase-row .passphrase-box {
+  flex: 1;
+  margin: 0;
+  padding: 14px;
+}
+.phrase-row .btn-icon {
+  height: auto;
+  align-self: stretch;
+}
+
 .ack-row {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  margin: 14px 0 4px;
-  padding: 12px 14px;
+  margin: 10px 0 4px;
+  padding: 10px 12px;
   border: 1px solid var(--danger);
   border-radius: var(--radius);
   background: var(--surface);

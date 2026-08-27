@@ -7,7 +7,13 @@ import {
   signal,
 } from '@angular/core';
 import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN, SECTIONS, coreItems } from '@moxy/core';
-import { QrCodeComponent, RingComponent, SubjectCardComponent, ToastService } from '@moxy/ui';
+import {
+  IconComponent,
+  QrCodeComponent,
+  RingComponent,
+  SubjectCardComponent,
+  ToastService,
+} from '@moxy/ui';
 import { CategoryCardComponent } from '../profile/category-card.component';
 import { AddCategoryComponent } from '../profile/add-category.component';
 import { SaveBarComponent } from '../profile/save-bar.component';
@@ -24,46 +30,41 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
     SaveBarComponent,
     SubjectCardComponent,
     QrCodeComponent,
+    IconComponent,
     RingComponent,
   ],
   template: `
     @if (!noticeDismissed()) {
       <div class="card card-danger" role="alert" aria-labelledby="edit-phrase-heading">
-        <h2 id="edit-phrase-heading">⚠️ Save your edit phrase before you do anything else</h2>
+        <h2 id="edit-phrase-heading">⚠️ Save your edit phrase</h2>
         <p class="sub">
-          This phrase is the <strong>only</strong> way to edit this profile. It is shown here once.
-          Dismiss this notice and it lives nowhere but where you put it — no account, no email, no
-          reset. Lose it and this profile can never be edited again.
+          The only way to edit this profile. Shown once — no account, no reset. Lose it and this
+          profile can never be edited again.
         </p>
-        <div class="passphrase-box">{{ session.editPhrase() }}</div>
-        <p class="fine">
-          Housekeeping: profiles with no saved answers are deleted after
-          {{ gcEmpty }}; profiles untouched and unviewed for {{ gcIdle }} are deleted too. Saving
-          anything, or anyone viewing you, keeps yours alive.
-        </p>
-        <div class="btn-row">
+        <div class="phrase-row">
+          <div class="passphrase-box">{{ session.editPhrase() }}</div>
           <button
-            class="btn btn-primary"
+            class="btn btn-icon"
+            [class.is-done]="copied()"
             (click)="copyEditPhrase()"
             [attr.aria-label]="copied() ? 'Edit phrase copied' : 'Copy edit phrase'"
+            [title]="copied() ? 'Copied' : 'Copy edit phrase'"
           >
-            {{ copied() ? '✓ Copied' : '📋 Copy edit phrase' }}
+            <moxy-icon [name]="copied() ? 'check' : 'copy'" />
           </button>
         </div>
         <label class="ack-row">
           <input type="checkbox" [checked]="acknowledged()" (change)="toggleAck($event)" />
-          <span>
-            I have saved my edit phrase somewhere I can get back to — a password manager, or written
-            down.
-          </span>
+          <span>I’ve saved it somewhere I can get back to.</span>
         </label>
         <div class="btn-row">
           <button class="btn btn-primary" [disabled]="!acknowledged()" (click)="dismissNotice()">
-            I’ve saved it — hide this
+            I’ve saved it
           </button>
-          @if (!acknowledged()) {
-            <span class="fine">Tick the box above to dismiss.</span>
-          }
+          <span class="fine">
+            Profiles with no saved answers are deleted after {{ gcEmpty }}; untouched and unviewed
+            for {{ gcIdle }}, also deleted.
+          </span>
         </div>
       </div>
     }
@@ -74,7 +75,7 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
       title="My profile"
     >
       <button subject-head class="btn btn-ghost btn-small" (click)="regenerate()">
-        🎲 New creature
+        New creature
       </button>
       <p class="sub">
         Share the phrase, the link, or the QR code — all three carry the same view-only credential.
@@ -85,11 +86,21 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
         <div>
           <div class="code-box">{{ session.viewPhrase() }}</div>
           <div class="btn-row" style="margin-top:12px">
-            <button class="btn btn-primary" (click)="copy(session.viewUrl()!, 'View link copied')">
-              📋 Copy view link
+            <button
+              class="btn btn-icon"
+              (click)="copy(session.viewUrl()!, 'View link copied')"
+              aria-label="Copy view link"
+              title="Copy view link"
+            >
+              <moxy-icon name="link" />
             </button>
-            <button class="btn" (click)="copy(session.viewPhrase()!, 'View phrase copied')">
-              Copy just the phrase
+            <button
+              class="btn btn-icon"
+              (click)="copy(session.viewPhrase()!, 'View phrase copied')"
+              aria-label="Copy the phrase on its own"
+              title="Copy the phrase on its own"
+            >
+              <moxy-icon name="copy" />
             </button>
           </div>
           <p class="fine" style="margin-top:10px">
@@ -101,7 +112,11 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
           </p>
         </div>
         @if (session.viewUrl(); as url) {
-          <moxy-qr-code [text]="url" [persona]="session.persona()" />
+          <moxy-qr-code
+            [text]="url"
+            [persona]="session.persona()"
+            [shareAs]="session.persona()?.name ?? null"
+          />
         }
       </div>
     </moxy-subject-card>

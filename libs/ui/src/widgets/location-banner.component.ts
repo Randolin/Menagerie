@@ -42,11 +42,6 @@ import { locationPattern, PATTERN_HEIGHT, PATTERN_WIDTH } from '../patterns/loca
             />
           }
         </svg>
-        <span class="location-motifs">
-          @for (i of motifs(); track i) {
-            <span class="location-motif">{{ s.motif }}</span>
-          }
-        </span>
       </div>
     }
   `,
@@ -68,13 +63,5 @@ export class LocationBannerComponent {
   protected readonly shapes = computed(() => {
     const s = this.banner();
     return s ? locationPattern(s.family, s.seed, s.scale, s.density) : [];
-  });
-
-  /** density 0..3 → 1..4 motifs; every banner keeps at least one. */
-  protected readonly motifs = computed(() => {
-    const s = this.banner();
-    // Array.from, not `new Array(n)`: a sparse array has length but no
-    // elements, which some iteration paths skip entirely.
-    return s ? Array.from({ length: (s.density % 4) + 1 }, (_, i) => i) : [];
   });
 }

@@ -18,12 +18,13 @@ export { AgreementStripComponent, type AgreementRow } from './charts/agreement-s
 export { ToastService } from './widgets/toast.service';
 export { ToastComponent } from './widgets/toast.component';
 export { QrCodeComponent } from './widgets/qr-code.component';
-export { PersonaChipComponent } from './widgets/persona-chip.component';
+export { svgToPngBlob, shareOrDownload } from './util/svg-png';
+export { IconComponent, type IconName } from './widgets/icon.component';
 export { CreatureAvatarComponent } from './widgets/creature-avatar.component';
 export { CreatureIconComponent } from './widgets/creature-icon.component';
 export { LocationBannerComponent } from './widgets/location-banner.component';
 export { SubjectCardComponent } from './widgets/subject-card.component';
-export { habitatClass, habitatMotif, type HabitatMotif } from './widgets/persona-decor';
+export { habitatClass } from './widgets/persona-decor';
 
 export { copyText } from './util/clipboard';
 export { errorText } from './util/errors';

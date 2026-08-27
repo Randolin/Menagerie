@@ -1,25 +1,17 @@
-// Shared persona decoration helpers.
+// Shared persona decoration helper.
 //
-// These four lines lived identically in view, dashboard and group components.
-// They're pure functions of a persona, so they're plain exports rather than an
-// injectable — DI would add a lifetime and a token to something with neither.
-import { HABITAT_META, personaHabitat, type Persona } from '@moxy/core';
-
-export interface HabitatMotif {
-  readonly glyph: string;
-  readonly title: string;
-}
+// This lived identically in view, dashboard and group components. It's a pure
+// function of a persona, so it's a plain export rather than an injectable —
+// DI would add a lifetime and a token to something with neither.
+//
+// The habitat MOTIF glyph that used to live here is gone: the creature is now
+// drawn as an avatar, and an emoji beside it was a second, worse picture of
+// the same animal. Habitat still shows — as the avatar's backdrop texture and
+// the card's accent class — just not as a glyph.
+import { personaHabitat, type Persona } from '@moxy/core';
 
 /** `habitat-<name>` for the card's motif, or '' when there's no persona. */
 export function habitatClass(persona: Persona | null | undefined): string {
   const habitat = personaHabitat(persona);
   return habitat ? `habitat-${habitat}` : '';
-}
-
-/** The creature's nature glyph — its animal's habitat, never its location. */
-export function habitatMotif(persona: Persona | null | undefined): HabitatMotif | null {
-  const habitat = personaHabitat(persona);
-  if (!habitat) return null;
-  const meta = HABITAT_META[habitat];
-  return { glyph: meta.motif, title: `a creature ${meta.label}` };
 }
