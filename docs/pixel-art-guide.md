@@ -115,6 +115,18 @@ These are the mistakes that actually happened, in order of how often:
   cobra took three passes: hood-above-head read as ears, and it only became a
   cobra when the hood went wider than the head and the head dropped in front
   of it. Check what the silhouette resembles, not what it depicts.
+- **A dark cap over a pale stem is a MUSHROOM.** The ibis had a dark head
+  and a light grey bill and read as a toadstool for three passes. Inverting
+  the value — pale nape, mid-tone bill, narrower crown — fixed it without
+  changing the shape. Watch the light-to-dark relationship, not just the
+  outline.
+- **A fat body with a short tail is a WHALE.** The eel's first re-cut had a
+  bulbous head and a stubby tail and read as a dolphin. It became an eel when
+  the tail grew longer than the head and the body thinned to three rows.
+- **A wide round head with two high eyes and a coloured band is a FROG.** The
+  pheasant read as one through four passes; a green face made it worse and
+  red eye-rings made it worse still. It became a bird when the green moved
+  off the face and onto the nape, below the eyes.
 - **Two similar species need one deliberate difference each.** `hound`,
   `retriever` and `poodle` share a head; they are told apart by ear length,
   ear colour, and a topknot. Decide that difference before drawing, not after.
