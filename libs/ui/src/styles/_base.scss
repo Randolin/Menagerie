@@ -118,23 +118,14 @@ a {
   line-height: 1;
 }
 
-/* Signed-in identity, visible on every page. */
-.session-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px 4px 7px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--hairline);
-  text-decoration: none;
-  color: var(--ink-2);
-  font-size: 13.5px;
-  font-weight: 600;
-  max-width: 150px;
-}
-.session-chip:hover {
-  border-color: var(--accent);
-  color: var(--ink);
+/* Signed-in identity, visible on every page — a nav link like its siblings,
+   so it hovers and highlights like one. It carries no border of its own: the
+   avatar already wears a ring, and a pill around a ring was two nested
+   outlines that read as a dead button. */
+.nav a.session-chip {
+  gap: 7px;
+  padding-left: 6px;
+  max-width: 190px;
 }
 .session-name {
   overflow: hidden;
@@ -143,9 +134,15 @@ a {
 }
 
 @media (max-width: 720px) {
-  /* The creature is the identity; the name is the part that can go. */
+  /* The creature is the identity; the name is the part that can go. Padding
+     goes symmetric with it — an icon in a chip still sized for a name is the
+     off-centre pill this replaced. */
   .session-name {
     display: none;
+  }
+  .nav a.session-chip {
+    padding-left: 6px;
+    padding-right: 6px;
   }
 }
 

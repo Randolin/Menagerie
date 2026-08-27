@@ -48,8 +48,11 @@ describe('App shell', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const el: HTMLElement = fixture.nativeElement;
+    // The creature IS the profile link: identity and destination used to be
+    // two controls, and the identity one read as a button that went where the
+    // Profile link already went.
     expect(navLabels(el)).toEqual([
-      'Profile',
+      'amber-azure-fox',
       'Menagerie',
       'Groups',
       'Compare',
@@ -58,7 +61,10 @@ describe('App shell', () => {
     ]);
     // The session is legible from every page — the thing that used to make
     // navigating to Compare feel like being logged out.
-    expect(el.querySelector('.session-chip')?.textContent).toContain('amber-azure-fox');
+    const chip = el.querySelector('.session-chip');
+    expect(chip?.textContent).toContain('amber-azure-fox');
+    expect(chip?.getAttribute('href')).toBe('/me');
+    expect(chip?.querySelector('moxy-creature-avatar')).not.toBeNull();
     expect(el.textContent).toContain('Log out');
   });
 });
