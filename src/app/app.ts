@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { CreatureIconComponent, ToastComponent, ToastService } from '@moxy/ui';
+import { CreatureAvatarComponent, ToastComponent, ToastService } from '@moxy/ui';
 import { ThemeStore } from './stores/theme.store';
 import { ProfileSessionStore } from './stores/profile-session.store';
 import { BoopStore } from './stores/boop.store';
@@ -9,7 +9,7 @@ import { MetricsStore } from './stores/metrics.store';
 @Component({
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CreatureIconComponent, ToastComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CreatureAvatarComponent, ToastComponent],
   templateUrl: './app.html',
 })
 export class App {

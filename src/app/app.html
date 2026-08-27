@@ -11,7 +11,18 @@
   </a>
   <nav class="nav" aria-label="Main">
     @if (session.active()) {
-      <a routerLink="/me" routerLinkActive="active">Profile</a>
+      <!-- Who you are AND the way to your profile, in one control. These used
+           to be two: a "Profile" link here and a bordered identity pill after
+           the nav, which read as a button that did nothing (it went to /me,
+           where the Profile link already went) and squeezed the brand. -->
+      <a class="session-chip" routerLink="/me" routerLinkActive="active" title="My profile">
+        @if (session.persona(); as persona) {
+          <moxy-creature-avatar [persona]="persona" [size]="22" />
+          <span class="session-name">{{ persona.name }}</span>
+        } @else {
+          Profile
+        }
+      </a>
       <a routerLink="/menagerie" routerLinkActive="active">
         Menagerie
         @if (boopCount() > 0) {
@@ -29,13 +40,7 @@
     <a routerLink="/about" routerLinkActive="active">How it works</a>
   </nav>
 
-  <!-- Who you are, wherever you are: the session used to be invisible outside
-       /me, so navigating to Compare felt like being logged out. -->
-  @if (session.persona(); as persona) {
-    <a class="session-chip" routerLink="/me" title="Signed in — go to my profile">
-      <moxy-creature-icon [emoji]="persona.emoji" [size]="16" />
-      <span class="session-name">{{ persona.name }}</span>
-    </a>
+  @if (session.active()) {
     <button class="btn btn-ghost btn-small" style="white-space: nowrap" (click)="logout()">
       Log out
     </button>
