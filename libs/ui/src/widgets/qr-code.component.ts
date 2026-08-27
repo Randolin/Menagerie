@@ -4,12 +4,16 @@ import {
   computed,
   inject,
   input,
+  signal,
   ViewEncapsulation,
 } from '@angular/core';
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
 import type { Persona } from '@moxy/core';
 import qrcode from 'qrcode-generator';
 import { blobPath } from './qr-path';
+import { IconComponent } from './icon.component';
+import { shareOrDownload, svgToPngBlob } from '../util/svg-png';
+import { ToastService } from './toast.service';
 import { creatureSpriteRects } from '../creatures/pixel-art';
 
 let gradientSeq = 0;
@@ -37,10 +41,22 @@ let gradientSeq = 0;
 @Component({
   selector: 'moxy-qr-code',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [IconComponent],
   template: `
     <div class="qr-box">
       @if (svg(); as s) {
         <div class="qr-svg" [innerHTML]="s"></div>
+        @if (shareAs(); as name) {
+          <button
+            class="btn btn-small qr-share"
+            [disabled]="busy()"
+            (click)="shareImage(name)"
+            title="Save or share the QR code as an image"
+          >
+            <moxy-icon [name]="canShare ? 'share' : 'download'" />
+            {{ busy() ? 'Working…' : canShare ? 'Share QR' : 'Save QR' }}
+          </button>
+        }
       } @else {
         <p class="fine">This profile is too large for a QR code — share the link instead.</p>
       }
@@ -55,31 +71,64 @@ let gradientSeq = 0;
       height: 208px;
       display: block;
     }
+    moxy-qr-code .qr-share {
+      margin-top: 10px;
+      width: 100%;
+    }
   `,
 })
 export class QrCodeComponent {
+  /**
+   * Filename stem for the shared image, e.g. `brave-amber-otter`. Absent means
+   * no share button — the compare and group views embed QRs they do not own.
+   */
+  readonly shareAs = input<string | null>(null);
+
+  private readonly toast = inject(ToastService);
+  protected readonly busy = signal(false);
+  /** Read once: it decides the button's verb, and it cannot change mid-session. */
+  protected readonly canShare = typeof navigator !== 'undefined' && 'share' in navigator;
+
+  protected async shareImage(name: string): Promise<void> {
+    const markup = this.markup();
+    if (!markup || this.busy()) return;
+    this.busy.set(true);
+    try {
+      const png = await svgToPngBlob(markup);
+      if (!png) throw new Error('Could not render the QR code.');
+      const how = await shareOrDownload(png, `menagerie-${name}.png`);
+      if (how === 'saved') this.toast.show('QR code saved');
+    } catch (err) {
+      this.toast.error(err);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
   readonly text = input.required<string>();
   readonly persona = input<Persona | null>(null);
   private readonly sanitizer = inject(DomSanitizer);
 
-  protected readonly svg = computed<SafeHtml | null>(() => {
+  /**
+   * The raw markup, kept separate from the sanitized value: the template needs
+   * SafeHtml, and the PNG exporter needs the string it was made from.
+   */
+  private readonly markup = computed<string | null>(() => {
     const persona = this.persona();
     if (!persona) {
       const plain = this.make('M');
-      if (!plain) return null;
-      return this.sanitizer.bypassSecurityTrustHtml(
-        plain.createSvgTag({ cellSize: 3, margin: 2, scalable: true }),
-      );
+      return plain ? plain.createSvgTag({ cellSize: 3, margin: 2, scalable: true }) : null;
     }
     const high = this.make('H');
-    if (high) {
-      return this.sanitizer.bypassSecurityTrustHtml(this.styledSvg(high, persona, true));
-    }
+    if (high) return this.styledSvg(high, persona, true);
     const medium = this.make('M');
-    if (medium) {
-      return this.sanitizer.bypassSecurityTrustHtml(this.styledSvg(medium, persona, false));
-    }
+    if (medium) return this.styledSvg(medium, persona, false);
     return null;
+  });
+
+  protected readonly svg = computed<SafeHtml | null>(() => {
+    const raw = this.markup();
+    return raw === null ? null : this.sanitizer.bypassSecurityTrustHtml(raw);
   });
 
   private make(level: 'M' | 'H'): ReturnType<typeof qrcode> | null {

@@ -1,9 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { bannerStyleFor, tailPlaceOf, type Persona } from '@moxy/core';
 import { LocationBannerComponent } from './location-banner.component';
-import { PersonaChipComponent } from './persona-chip.component';
 import { CreatureAvatarComponent } from './creature-avatar.component';
-import { habitatClass, habitatMotif } from './persona-decor';
+import { habitatClass } from './persona-decor';
 
 /**
  * The card that introduces a subject the viewer holds a phrase for: location
@@ -18,22 +17,16 @@ import { habitatClass, habitatMotif } from './persona-decor';
 @Component({
   selector: 'moxy-subject-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LocationBannerComponent, PersonaChipComponent, CreatureAvatarComponent],
+  imports: [LocationBannerComponent, CreatureAvatarComponent],
   host: { '[class]': 'hostClass()' },
   template: `
     <moxy-location-banner [banner]="banner()" />
     <h2 class="profile-head">
       @if (persona(); as persona) {
         <moxy-creature-avatar [persona]="persona" [size]="44" />
-      }
-      {{ title() }}
-      @if (persona(); as persona) {
-        <moxy-persona-chip [persona]="persona" />
-      }
-      @if (motif(); as motif) {
-        <span class="habitat-motif" [title]="motif.title" aria-hidden="true">{{
-          motif.glyph
-        }}</span>
+        <span class="persona-name">{{ persona.name }}</span>
+      } @else {
+        {{ title() }}
       }
       <ng-content select="[subject-head]" />
     </h2>
@@ -54,7 +47,6 @@ export class SubjectCardComponent {
   protected readonly banner = computed(() =>
     bannerStyleFor(this.persona(), tailPlaceOf(this.phrase())),
   );
-  protected readonly motif = computed(() => habitatMotif(this.persona()));
   protected readonly hostClass = computed(
     () => `card habitat-accent ${habitatClass(this.persona())}`,
   );

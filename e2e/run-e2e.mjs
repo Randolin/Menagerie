@@ -402,8 +402,14 @@ try {
   step = 'view-fresh-context';
   const viewer = await freshPage();
   await viewer.goto(viewUrl);
-  // The creature IS the display name — no nickname exists anywhere.
-  await viewer.waitForSelector(`text=${personaName}’s profile`, { timeout: 30000 });
+  // The creature IS the display name — no nickname exists anywhere, and the
+  // subject card's heading is now the creature name itself rather than
+  // "<name>'s profile", so assert the name element directly.
+  await viewer.waitForSelector('.persona-name', { timeout: 30000 });
+  const viewedName = (await viewer.textContent('.persona-name')).trim();
+  if (viewedName !== personaName) {
+    fail(`view page heading is "${viewedName}", expected "${personaName}"`);
+  }
   const viewerBody = await viewer.textContent('body');
   if (viewerBody.includes('Rope') || viewerBody.includes('Impact play')) {
     fail('desires leaked into the public view page');
@@ -550,7 +556,7 @@ try {
   // --- boops: sealed first contact, one reply, rotation closes the door -----
   step = 'boop-send';
   await pageB.goto(viewUrl); // B on A's profile
-  await pageB.waitForSelector(`text=${personaName}’s profile`, { timeout: 30000 });
+  await pageB.waitForSelector(`text=${personaName}`, { timeout: 30000 });
   await pageB.click('text=👉 Boop');
   await pageB.waitForSelector('text=What are you hoping for?', { timeout: 30000 });
   await pageB.locator('.boop-check', { hasText: 'Curious to connect' }).locator('input').check();
@@ -605,13 +611,13 @@ try {
   // Park B on A's (still-current) profile page: after A regenerates, this
   // stale page's boop attempt must be turned away.
   await pageB.goto(viewUrl);
-  await pageB.waitForSelector(`text=${personaName}’s profile`, { timeout: 30000 });
+  await pageB.waitForSelector(`text=${personaName}`, { timeout: 30000 });
 
   // --- regenerate: new creature, old links and QRs die ----------------------
   step = 'regenerate';
   await page.goto(`${BASE}#/me`);
   await page.waitForSelector('.profile-head');
-  await page.click('text=🎲 New creature'); // confirm dialog auto-accepted
+  await page.click('text=New creature'); // confirm dialog auto-accepted
   await page.waitForFunction(
     (old) => document.querySelector('.code-box')?.textContent?.trim() !== old,
     viewPhrase,
@@ -631,7 +637,7 @@ try {
   await deadViewer.waitForSelector('text=Couldn’t open that profile', { timeout: 30000 });
   const newViewer = await freshPage();
   await newViewer.goto(`${BASE}#/view/${viewPhrase2}`);
-  await newViewer.waitForSelector(`text=${personaName2}’s profile`, { timeout: 30000 });
+  await newViewer.waitForSelector(`text=${personaName2}`, { timeout: 30000 });
 
   // Rotation closed the boop address: B's stale copy of A's profile still
   // shows the button, but the send must come back "no longer accepting".
@@ -669,7 +675,7 @@ try {
   await gcViewer.goto(`${BASE}#/view/${gcEmptyPhrase}`);
   await gcViewer.waitForSelector('text=Couldn’t open that profile', { timeout: 30000 });
   await gcViewer.goto(`${BASE}#/view/${gcAlivePhrase}`);
-  await gcViewer.waitForSelector(`text=${gcAlivePersona}’s profile`, { timeout: 30000 });
+  await gcViewer.waitForSelector(`text=${gcAlivePersona}`, { timeout: 30000 });
 
   // --- anonymous metrics: opt-in submit, k-floor, community page ------------
   step = 'metrics';
@@ -718,7 +724,7 @@ try {
   step = 'dark';
   const dark = await freshPage(main.url, { colorScheme: 'dark' });
   await dark.goto(`${BASE}#/view/${viewPhrase2}`);
-  await dark.waitForSelector(`text=${personaName2}’s profile`, { timeout: 30000 });
+  await dark.waitForSelector(`text=${personaName2}`, { timeout: 30000 });
   await shot(dark, '07-view-dark.png');
 
   step = 'mobile';
