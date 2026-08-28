@@ -51,13 +51,8 @@ import { BoopStore } from '../stores/boop.store';
           </div>
           <div class="grid-answers" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <span class="fine">{{ c.viewPhrase }}</span>
-            <button class="btn btn-small" (click)="compareWith(c.viewPhrase, c.id)">Compare</button>
-            <a
-              class="btn btn-ghost btn-small"
-              [routerLink]="['/view', c.viewPhrase]"
-              (click)="markSeen(c.id)"
-              >View</a
-            >
+            <button class="btn btn-small" (click)="compareWith(c.viewPhrase)">Compare</button>
+            <a class="btn btn-ghost btn-small" [routerLink]="['/view', c.viewPhrase]">View</a>
             <button
               class="btn btn-ghost btn-small"
               [attr.aria-label]="'Remove ' + c.label"
@@ -242,11 +237,6 @@ export class MenagerieComponent {
     }
   }
 
-  /** Looking at it is what makes it seen — that is what clears the badge. */
-  protected markSeen(id: string): void {
-    void this.session.markConnectionSeen(id).catch(() => undefined);
-  }
-
   protected readonly revealed = signal<ReadonlySet<string>>(new Set());
 
   protected reveal(id: string): void {
@@ -311,8 +301,7 @@ export class MenagerieComponent {
     }
   }
 
-  protected compareWith(theirPhrase: string, connectionId?: string): void {
-    if (connectionId) this.markSeen(connectionId);
+  protected compareWith(theirPhrase: string): void {
     const mine = this.session.viewPhrase();
     if (mine) this.compare.addPhrase(mine);
     this.compare.addPhrase(theirPhrase);

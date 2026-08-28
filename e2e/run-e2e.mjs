@@ -639,10 +639,13 @@ try {
   await pageB.waitForSelector('text=new answers', { timeout: 60000 });
 
   step = 'menagerie-seen';
-  // Looking is what clears it — and it stays cleared across a reload, which
-  // is the part that only works because the baseline is persisted.
+  // Reading the profile is what clears it — and it stays cleared across a
+  // reload, which is the part that only works because the baseline reached
+  // the server. Wait for the page to stop talking before reloading, or the
+  // reload races the very write being asserted.
   await pageB.click('a:has-text("View")');
   await pageB.waitForSelector(`text=${personaName}`, { timeout: 60000 });
+  await pageB.waitForLoadState('networkidle');
   await pageB.goto(`${BASE}#/menagerie`);
   await pageB.reload();
   await pageB.waitForSelector(`text=${personaName}`, { timeout: 60000 });

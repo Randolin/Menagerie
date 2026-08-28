@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   resource,
   signal,
@@ -204,6 +205,22 @@ export class ViewComponent {
       };
     },
   });
+
+  constructor() {
+    // Reading a kept creature's profile is what marks it seen — here, where
+    // the answers are actually on screen, and with the version this page just
+    // fetched. The page then sits still long enough for the write to land.
+    effect(() => {
+      // error() first: value() THROWS when the resource failed, which is why
+      // the template branches on error() before it ever touches value(). An
+      // effect that skips this check throws on every dead phrase and takes
+      // the "couldn't open that profile" card down with it.
+      if (this.view.error()) return;
+      const loaded = this.view.value();
+      if (!loaded) return;
+      void this.session.noteProfileSeen(loaded.phrase, loaded.version).catch(() => undefined);
+    });
+  }
 
   protected errorMessage(): string {
     return errorText(this.view.error());

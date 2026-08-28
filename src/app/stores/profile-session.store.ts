@@ -468,23 +468,30 @@ export class ProfileSessionStore {
   }
 
   /**
-   * Record that this creature has now been looked at, so the badge clears and
-   * stays cleared. Persists the baseline without touching the draft: opening
-   * someone's profile is not a reason to commit your own half-finished
-   * answers. Best-effort — a failure costs a badge, not data.
+   * Record that a kept creature's profile has now been read, at the version
+   * that was read, so the badge clears and stays cleared.
+   *
+   * Called from the page that actually shows the answers rather than from the
+   * link that leads there. A click handler racing its own navigation may not
+   * survive long enough to finish the write — and opening a kept profile by
+   * URL or QR is just as much "looking at it" as arriving from the list.
+   *
+   * Persists the baseline without touching the draft: reading someone's
+   * profile is not a decision to commit your own half-finished answers.
+   * Best-effort — a failure costs a badge, not data.
    */
-  async markConnectionSeen(id: string): Promise<void> {
-    const version = this.connectionFreshness().get(id)?.version;
-    if (version === undefined || version === null) return;
-    const connection = this.connections().find((c) => c.id === id);
+  async noteProfileSeen(rawViewPhrase: string, version: number): Promise<void> {
+    if (!this.active()) return;
+    const viewPhrase = canonicalViewPhrase(rawViewPhrase);
+    const connection = this.connections().find((c) => c.viewPhrase === viewPhrase);
     if (!connection || connection.lastSeenVersion === version) return;
 
     this.mutateConnections((list) =>
-      list.map((c) => (c.id === id ? { ...c, lastSeenVersion: version } : c)),
+      list.map((c) => (c.id === connection.id ? { ...c, lastSeenVersion: version } : c)),
     );
     this.connectionFreshness.update((map) => {
       const next = new Map(map);
-      next.set(id, { state: 'current', version });
+      next.set(connection.id, { state: 'current', version });
       return next;
     });
     try {
