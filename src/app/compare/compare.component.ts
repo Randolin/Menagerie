@@ -1,30 +1,13 @@
-import { NgComponentOutlet } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  signal,
-  type Type,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { ToastService, seriesVar } from '@moxy/ui';
 import { CompareStore } from '../stores/compare.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
-import {
-  COMPARE_PANELS,
-  type ComparePanelComponent,
-  type ComparePanelDescriptor,
-} from './compare-panels.token';
-
-interface ResolvedPanel {
-  readonly descriptor: ComparePanelDescriptor;
-  readonly component: Type<ComparePanelComponent>;
-}
+import { ComparePanelsComponent } from './compare-panels.component';
 
 @Component({
   selector: 'moxy-compare',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgComponentOutlet],
+  imports: [ComparePanelsComponent],
   template: `
     <h1>Compare profiles</h1>
 
@@ -93,9 +76,7 @@ interface ResolvedPanel {
 
     @if (store.model(); as m) {
       @if (m.payloads.length >= 2) {
-        @for (panel of visiblePanels(); track panel.descriptor.id) {
-          <ng-container *ngComponentOutlet="panel.component; inputs: { model: m }" />
-        }
+        <moxy-compare-panels [model]="m" />
       } @else {
         <div class="card">
           <p class="sub">
@@ -113,14 +94,6 @@ export class CompareComponent {
   private readonly toast = inject(ToastService);
   protected readonly color = seriesVar;
 
-  private readonly resolved = signal<readonly ResolvedPanel[]>([]);
-
-  protected readonly visiblePanels = computed(() => {
-    const m = this.store.model();
-    if (!m) return [];
-    return this.resolved().filter((p) => !p.descriptor.visible || p.descriptor.visible(m));
-  });
-
   protected readonly canAddMine = computed(() => {
     const mine = this.session.viewPhrase();
     return (
@@ -129,18 +102,6 @@ export class CompareComponent {
       !this.store.entries().some((e) => e.kind === 'phrase' && e.phrase === mine)
     );
   });
-
-  constructor() {
-    const descriptors = [...(inject(COMPARE_PANELS, { optional: true }) ?? [])].sort(
-      (a, b) => a.order - b.order,
-    );
-    void Promise.all(
-      descriptors.map(async (descriptor) => ({
-        descriptor,
-        component: await descriptor.loadComponent(),
-      })),
-    ).then((panels) => this.resolved.set(panels));
-  }
 
   protected slotName(slotIndex: number): string {
     const m = this.store.model();

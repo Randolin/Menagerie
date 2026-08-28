@@ -18,6 +18,12 @@ import { ServerConfigStore } from '../stores/server-config.store';
         reveals overlap — and intimate interests only when they’re mutual. No accounts, no email, no
         names required. <a routerLink="/about">How it works</a>
       </p>
+      <!-- The payoff is a comparison, and a comparison needs two finished
+           profiles — so the only way to show it up front is a fictional pair.
+           This works with no session and no server. -->
+      <a class="btn btn-primary" routerLink="/demo" style="margin-top:14px"
+        >🔍 See a comparison first</a
+      >
     </div>
 
     @if (config.state() === 'unconfigured') {

@@ -258,6 +258,24 @@ try {
   }
   await shot(page, '01-landing-unconfigured.png');
 
+  // The demo is the one page that must survive a missing server: it is what a
+  // newcomer is shown before they commit to anything, and it never fetches.
+  step = 'demo-unconfigured';
+  await page.click('text=See a comparison first');
+  await page.waitForSelector('text=brave-azure-otter', { timeout: 30000 });
+  const demoBody = await page.textContent('body');
+  for (const expected of ['Overall alignment', 'Mutual desires', 'Fit, each way']) {
+    if (!demoBody.includes(expected)) fail(`demo is missing "${expected}" with no server`);
+  }
+  // The dealbreaker alert and the mutual reveal are the two moments the demo
+  // exists to show; a demo that quietly lost them would still look fine.
+  if (!demoBody.includes('Alcohol')) fail('demo does not name the violated dealbreaker');
+  if (!demoBody.includes('Cuddling')) fail('demo does not reveal the mutual desire');
+  // Desires are mutual-only: a one-sided answer must not appear anywhere.
+  if (demoBody.includes('Massage')) fail('demo revealed a one-sided desire');
+  await shot(page, '01b-demo-unconfigured.png');
+  await page.goto(BASE);
+
   step = 'landing-configure';
   await page.fill('input[aria-label="Profile server URL"]', main.url);
   await page.click('text=Use this server');

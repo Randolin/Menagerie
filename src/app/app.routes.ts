@@ -53,6 +53,13 @@ export const routes: Routes = [
     title: 'Settings',
     loadComponent: () => import('./settings/settings.component').then((m) => m.SettingsComponent),
   },
+  // Deliberately guard-free and server-free: the whole point is that someone
+  // with no profile and no reachable server can still see the payoff.
+  {
+    path: 'demo',
+    title: 'Demo comparison',
+    loadComponent: () => import('./demo/demo.component').then((m) => m.DemoComponent),
+  },
   {
     path: 'compare',
     title: 'Compare',

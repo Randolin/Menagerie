@@ -58,6 +58,9 @@ export * from './hatch/keys';
 export * from './hatch/phrases';
 export { encryptBlob, decryptBlob } from './hatch/blob';
 export * from './hatch/priv-data';
+
+// The fictional pair the demo comparison renders.
+export { buildDemoCast, type DemoProfile } from './demo/demo-cast';
 export * from './hatch/hatch-api';
 export {
   HatchClient,
