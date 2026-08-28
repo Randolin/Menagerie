@@ -1,12 +1,14 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import type { AnswerValue, ChoiceItem } from '@moxy/core';
+import { OptionGroupDirective } from '@moxy/ui';
 
 /** Single-select pills; clicking the selected pill clears the answer. */
 @Component({
   selector: 'moxy-choice-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [OptionGroupDirective],
   template: `
-    <div class="opt-grid" role="group" [attr.aria-label]="item().label">
+    <div class="opt-grid" moxyOptionGroup role="group" [attr.aria-label]="item().label">
       @for (opt of item().options; track $index) {
         <button class="opt" [attr.aria-pressed]="value() === $index" (click)="toggle($index)">
           {{ opt }}
