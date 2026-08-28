@@ -13,6 +13,7 @@ import {
   RingComponent,
   SubjectCardComponent,
   ToastService,
+  shareText,
 } from '@moxy/ui';
 import { RouterLink } from '@angular/router';
 import { CategoryCardComponent } from '../profile/category-card.component';
@@ -91,6 +92,18 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
         <div>
           <div class="code-box">{{ session.viewPhrase() }}</div>
           <div class="btn-row" style="margin-top:12px">
+            <!-- Only where there is a share sheet to open. Copy stays either
+                 way: sharing is an upgrade on it, never a replacement. -->
+            @if (canShare) {
+              <button
+                class="btn btn-icon"
+                (click)="shareView()"
+                aria-label="Share view link"
+                title="Share view link"
+              >
+                <moxy-icon name="share" />
+              </button>
+            }
             <button
               class="btn btn-icon"
               (click)="copy(session.viewUrl()!, 'View link copied')"
@@ -304,6 +317,26 @@ export class DashboardComponent {
 
   private milestoneKey(personaName: string): string {
     return `moxy.core.milestone.${personaName}`;
+  }
+
+  /** Read once: it decides whether a button exists, and cannot change. */
+  protected readonly canShare = typeof navigator !== 'undefined' && 'share' in navigator;
+
+  /**
+   * The share sheet is how a phrase actually reaches someone on a phone —
+   * into a message, not onto a clipboard they then have to paste somewhere.
+   * Falls back to copying if the sheet is missing or fails.
+   */
+  protected async shareView(): Promise<void> {
+    const url = this.session.viewUrl();
+    const persona = this.session.persona();
+    if (!url) return;
+    const outcome = await shareText({
+      title: 'My Menagerie profile',
+      text: persona ? `I'm ${persona.name} on Menagerie — compare with me?` : undefined,
+      url,
+    });
+    if (outcome === 'unavailable') await this.copy(url, 'View link copied');
   }
 
   protected async copy(text: string, okMessage: string): Promise<void> {

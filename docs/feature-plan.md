@@ -412,7 +412,32 @@ Two more notes:
   hues that eyeballing two had missed.
 
 **Wave 5 — reach.** D1 PWA · D2 share and print. Multiply the loop after
-it works.
+it works. **D2 shipped. D1 shipped in half, and the other half is a
+question for the product, not a caching problem:**
+
+D1 promised "the survey fillable offline". It cannot be built without
+breaking an invariant `DraftStore` states outright — answers are in memory
+only, "so a shared computer holds no plaintext answers after the tab
+closes". Filling the survey offline means writing plaintext intimate
+answers to disk, on a device that may be shared, for an audience that
+chose this app partly because it does not do that. That is a trade for
+the product to make deliberately, not a caching detail to slip in behind
+a service worker.
+
+What shipped is the half with no such cost: the app installs, and its own
+shell survives losing the network. The cache holds this origin's static
+files and nothing else — the profile server is a different origin and is
+never touched — so there is no "what does the cache know about me"
+question to answer, and logging out has nothing to clear. The e2e proves
+both halves of that: the shell comes back offline, and the cache contains
+no foreign origin.
+
+**If the offline draft is wanted**, the honest shapes are: an explicit
+opt-in per device ("keep my answers on this device"), mirroring how the
+edit phrase is already remembered only on request; or encrypting the
+draft under a key held in memory, which protects a closed tab but not a
+running one. Both are product decisions with a real threat-model
+argument, and both belong to whoever owns that argument.
 
 **Unscheduled.** D3 i18n.
 

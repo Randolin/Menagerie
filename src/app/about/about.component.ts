@@ -179,6 +179,14 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
         repository.
       </p>
       <p class="sub">
+        Installed or not, this app keeps a copy of its own files on your device so it opens without
+        the network. That cache holds the page, its code and its fonts — never a profile, because
+        profiles come from the server on a different address and the cache never touches it. There
+        is nothing in it about you or anyone else, which is why logging out has nothing to clear
+        there. Your answers stay in memory while you work and go nowhere but the encrypted record: a
+        shared computer holds no readable answers once the tab closes.
+      </p>
+      <p class="sub">
         Your menagerie adds one read per kept creature when you open that page, so it can tell you
         which of them have new answers. The server can’t read a word of what comes back — it
         compares a save counter — but those reads look exactly like views, and they say that someone

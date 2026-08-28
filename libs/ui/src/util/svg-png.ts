@@ -64,3 +64,28 @@ export async function shareOrDownload(blob: Blob, filename: string): Promise<'sh
   URL.revokeObjectURL(url);
   return 'saved';
 }
+
+/**
+ * Hand a phrase or link to the OS share sheet. Returns 'unavailable' rather
+ * than throwing when there is no sheet, or when the sheet itself fails, so a
+ * caller can fall back to the copy button that has always been there —
+ * sharing is an upgrade on desktop-era copying, never a replacement for it.
+ *
+ * A cancelled sheet counts as shared: the person did something deliberate,
+ * and falling back to a surprise clipboard write would undo their choice.
+ */
+export async function shareText(data: {
+  title?: string;
+  text?: string;
+  url?: string;
+}): Promise<'shared' | 'unavailable'> {
+  const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void> };
+  if (!nav.share) return 'unavailable';
+  try {
+    await nav.share(data);
+    return 'shared';
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') return 'shared';
+    return 'unavailable';
+  }
+}

@@ -11,7 +11,10 @@ import { ComparePanelsComponent } from './compare-panels.component';
   template: `
     <h1>Compare profiles</h1>
 
-    <div class="card">
+    <!-- The picker is a screen affordance; on paper it is a dead form. The
+         panels below are the document someone actually wants to bring to a
+         conversation. -->
+    <div class="card no-print">
       <div class="slot-list">
         @for (slot of store.model()?.slots ?? []; track slot.ref; let i = $index) {
           <div class="slot">
