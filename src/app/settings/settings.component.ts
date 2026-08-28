@@ -39,7 +39,8 @@ import { MetricsStore } from '../stores/metrics.store';
       <p class="sub">
         Housekeeping: profiles with no saved answers are deleted after {{ gcEmpty }}; profiles
         untouched and unviewed for {{ gcIdle }} are deleted too. Saving anything, or anyone viewing
-        you, keeps yours alive.
+        you, keeps yours alive. There is no account and no reset, so the
+        <a routerLink="/backup">backup card</a> is worth printing while you still can.
       </p>
       <label class="fine" style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
         <input type="checkbox" [checked]="session.remembered()" (change)="toggleRemember($event)" />
@@ -52,6 +53,7 @@ import { MetricsStore } from '../stores/metrics.store';
         </div>
       }
       <div class="btn-row">
+        <a class="btn btn-primary" routerLink="/backup">🖨️ Backup card</a>
         <button class="btn" (click)="changeEditPhrase()">Change edit phrase</button>
         <button class="btn btn-ghost" (click)="logout()">Log out on this device</button>
         <button class="btn btn-danger" (click)="deleteProfile()">Delete profile forever</button>
