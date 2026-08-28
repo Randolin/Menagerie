@@ -117,6 +117,17 @@ a {
   .qr-share {
     display: none !important;
   }
+
+  /* A printed comparison is for two people to read together, which is the one
+     form that does not need both of them holding a phone. Keep each panel
+     whole rather than letting a page break land mid-chart. */
+  .chart-table > summary {
+    display: none;
+  }
+  .grid-section,
+  .stat-row {
+    break-inside: avoid;
+  }
 }
 
 /* ---------- shell ---------- */

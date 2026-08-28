@@ -33,6 +33,8 @@ const MIME = {
   '.css': 'text/css',
   '.ico': 'image/x-icon',
   '.json': 'application/json',
+  '.svg': 'image/svg+xml',
+  '.webmanifest': 'application/manifest+json',
 };
 const server = createServer((req, res) => {
   const path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
@@ -282,6 +284,35 @@ try {
   if (demoBody.includes('Massage')) fail('demo revealed a one-sided desire');
   await shot(page, '01b-demo-unconfigured.png');
   await page.goto(BASE);
+
+  // --- the app survives losing the network -----------------------------
+  // The service worker caches this origin's static files and nothing else,
+  // so the shell has to come back offline while the profile server does not.
+  step = 'offline-shell';
+  const offline = await freshPage();
+  await offline.waitForFunction(() => navigator.serviceWorker.controller !== null, {
+    timeout: 30000,
+  });
+  await offline.context().setOffline(true);
+  await offline.reload();
+  await offline.waitForSelector('.brand', { timeout: 30000 });
+  if (!(await offline.textContent('body')).includes('Menagerie')) {
+    fail('the app shell did not come back offline');
+  }
+  // A cached profile would be a cached profile: the worker must never have
+  // touched the profile server's origin.
+  const cachedOrigins = await offline.evaluate(async () => {
+    const names = await caches.keys();
+    const urls = [];
+    for (const name of names) {
+      for (const request of await (await caches.open(name)).keys()) urls.push(request.url);
+    }
+    return [...new Set(urls.map((u) => new URL(u).origin))];
+  });
+  await offline.context().setOffline(false);
+  if (cachedOrigins.some((origin) => origin !== new URL(BASE).origin)) {
+    fail(`the cache holds a foreign origin: ${cachedOrigins.join(', ')}`);
+  }
 
   step = 'landing-configure';
   await page.fill('input[aria-label="Profile server URL"]', main.url);
@@ -684,9 +715,16 @@ try {
   // reload, which is the part that only works because the baseline reached
   // the server. Wait for the page to stop talking before reloading, or the
   // reload races the very write being asserted.
+  // Wait for the write itself, not for the network to look quiet: a service
+  // worker serves cached assets without touching the network, so "networkidle"
+  // can arrive before the PUT that persists the baseline has even been sent.
+  const seenPersisted = pageB.waitForResponse(
+    (res) => res.request().method() === 'PUT' && res.url().includes('/v2/profiles/edit/'),
+    { timeout: 60000 },
+  );
   await pageB.click('a:has-text("View")');
   await pageB.waitForSelector(`text=${personaName}`, { timeout: 60000 });
-  await pageB.waitForLoadState('networkidle');
+  await seenPersisted;
   await pageB.goto(`${BASE}#/menagerie`);
   await pageB.reload();
   await pageB.waitForSelector(`text=${personaName}`, { timeout: 60000 });
