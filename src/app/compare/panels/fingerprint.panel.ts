@@ -1,6 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { SCALE_MAX, getSection, type ScaleItem } from '@moxy/core';
-import { PersonKeyComponent, RadarComponent, type RadarSeries } from '@moxy/ui';
+import {
+  ChartTableComponent,
+  PersonKeyComponent,
+  RadarComponent,
+  type RadarSeries,
+} from '@moxy/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
 
@@ -12,7 +17,7 @@ import type { ComparePanelComponent } from '../compare-panels.token';
 @Component({
   selector: 'moxy-fingerprint-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PersonKeyComponent, RadarComponent],
+  imports: [ChartTableComponent, PersonKeyComponent, RadarComponent],
   template: `
     <div class="card">
       <h2>Values fingerprint</h2>
@@ -22,6 +27,11 @@ import type { ComparePanelComponent } from '../compare-panels.token';
       </p>
       <moxy-person-key [names]="model().names" [emojis]="personaEmojis()" />
       <moxy-radar [axes]="axes()" [series]="series()" />
+      <moxy-chart-table
+        caption="Each values scale, with every profile's answer out of the scale maximum"
+        [columns]="tableColumns()"
+        [rows]="tableRows()"
+      />
     </div>
   `,
 })
@@ -42,6 +52,16 @@ export class FingerprintPanel implements ComparePanelComponent {
   });
 
   protected readonly axes = computed(() => this.sharedScales().map((s) => s.right));
+
+  /** The shape's own numbers: one row per axis, one column per person. */
+  protected readonly tableColumns = computed(() => ['Value', ...this.model().names]);
+
+  protected readonly tableRows = computed(() =>
+    this.sharedScales().map((scale) => [
+      `${scale.left} → ${scale.right}`,
+      ...this.model().payloads.map((p) => `${p.a[scale.id] as number}/${SCALE_MAX}`),
+    ]),
+  );
 
   protected readonly series = computed<RadarSeries[]>(() =>
     this.model().payloads.map((p, i) => ({

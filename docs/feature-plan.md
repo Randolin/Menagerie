@@ -387,7 +387,29 @@ it got rather than the retype challenge, which would have taxed the instant
 hatch the plan also asks us to protect.
 
 **Wave 4 — the sweep.** C3 chart alternatives · C4 contrast · C5 control
-audit. Best done together, as one audit with one vocabulary.
+audit. Best done together, as one audit with one vocabulary. **Shipped.**
+
+C5 found two things worth recording, since neither was what the item
+predicted. It guessed the controls needed radio semantics; they do not —
+every answer control here is deselectable (clicking the chosen option clears
+it, because every question is optional), and ARIA radios may not behave that
+way. `aria-pressed` toggles are the honest match, so the roles stayed and the
+navigation changed instead. What was actually broken:
+
+- **462 tab stops** in a fully expanded survey, one per option button — 70
+  to cross "What I value" alone. A roving tabindex (`OptionGroupDirective`)
+  makes each question one stop with arrows inside it.
+- **The importance control exposed no state at all.** Which tier was
+  selected lived in a highlight class, so a screen reader was told nothing.
+
+Two more notes:
+
+- The interest matrix needed nothing — it was already a real table with
+  scoped headers and a visible level in every cell. Check before adding;
+  a second table is worse for a screen reader than one.
+- Contrast is measurable, so `libs/ui/src/styles/contrast.spec.ts` now
+  measures it on every run. It found a failure by testing all four series
+  hues that eyeballing two had missed.
 
 **Wave 5 — reach.** D1 PWA · D2 share and print. Multiply the loop after
 it works.

@@ -1,5 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { IMPORTANCE_WEIGHTS, INTEREST_LEVELS, type ImportanceWeight, type Item } from '@moxy/core';
+import {
+  IMPORTANCE_WEIGHTS,
+  INTEREST_LEVELS,
+  itemLabel,
+  type ImportanceWeight,
+  type Item,
+} from '@moxy/core';
+import { OptionGroupDirective } from '@moxy/ui';
 import { DraftStore } from '../../stores/draft.store';
 
 /**
@@ -11,13 +18,17 @@ import { DraftStore } from '../../stores/draft.store';
 @Component({
   selector: 'moxy-weight-control',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [OptionGroupDirective],
   template: `
-    <div class="weight-row">
+    <!-- aria-pressed, not just a class: which importance is set was visible
+         only as a highlight, so a screen reader could not tell at all. -->
+    <div class="weight-row" moxyOptionGroup role="group" [attr.aria-label]="importanceLabel()">
       <span class="fine">Importance:</span>
       <button
         type="button"
         class="btn btn-ghost btn-small"
         [class.weight-on]="!weight()"
+        [attr.aria-pressed]="!weight()"
         (click)="setWeight(undefined)"
       >
         Default
@@ -27,6 +38,7 @@ import { DraftStore } from '../../stores/draft.store';
           type="button"
           class="btn btn-ghost btn-small"
           [class.weight-on]="weight() === def.value"
+          [attr.aria-pressed]="weight() === def.value"
           (click)="setWeight(def.value)"
         >
           {{ def.value === 3 ? '⛔ ' + def.label : def.label }}
@@ -34,13 +46,14 @@ import { DraftStore } from '../../stores/draft.store';
       }
     </div>
     @if (weight() === 3) {
-      <div class="weight-accept">
+      <div class="weight-accept" moxyOptionGroup role="group" [attr.aria-label]="acceptLabel()">
         <span class="fine">I could match with:</span>
         @for (opt of acceptOptions(); track $index) {
           <button
             type="button"
             class="opt"
             [class.selected]="isAcceptable($index)"
+            [attr.aria-pressed]="isAcceptable($index)"
             (click)="toggleAcceptable($index)"
           >
             {{ opt }}
@@ -76,6 +89,12 @@ import { DraftStore } from '../../stores/draft.store';
 export class WeightControlComponent {
   readonly item = input.required<Item>();
   private readonly draft = inject(DraftStore);
+
+  /** Names the group, so the row is not an unlabelled cluster of buttons. */
+  protected readonly importanceLabel = computed(() => `Importance: ${itemLabel(this.item())}`);
+  protected readonly acceptLabel = computed(
+    () => `Answers I could match with: ${itemLabel(this.item())}`,
+  );
 
   protected readonly weight = computed(() => this.draft.weights()[this.item().id]);
 

@@ -1,11 +1,13 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { INTEREST_LEVELS, type AnswerValue, type InterestItem } from '@moxy/core';
+import { OptionGroupDirective } from '@moxy/ui';
 
 @Component({
   selector: 'moxy-interest-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [OptionGroupDirective],
   template: `
-    <div class="pip-row" role="group" [attr.aria-label]="item().label">
+    <div class="pip-row" moxyOptionGroup role="group" [attr.aria-label]="item().label">
       @for (level of levels; track level.value) {
         <button
           type="button"
