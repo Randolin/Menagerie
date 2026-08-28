@@ -67,4 +67,49 @@ describe('App shell', () => {
     expect(chip?.querySelector('moxy-creature-avatar')).not.toBeNull();
     expect(el.textContent).toContain('Log out');
   });
+
+  // A hash-routed SPA announces nothing on its own and leaves focus on the
+  // link that was activated, so the shell has to do both jobs itself.
+  describe('keyboard and screen-reader shell', () => {
+    it('offers a skip link that moves focus into the content', () => {
+      const fixture = TestBed.createComponent(App);
+      fixture.detectChanges();
+      const el: HTMLElement = fixture.nativeElement;
+
+      const skip = el.querySelector<HTMLButtonElement>('button.skip-link');
+      expect(skip?.textContent?.trim()).toBe('Skip to content');
+
+      skip?.click();
+      expect(document.activeElement?.id).toBe('view');
+    });
+
+    it('makes the content focusable without putting it in the tab order', () => {
+      const fixture = TestBed.createComponent(App);
+      fixture.detectChanges();
+      const main = fixture.nativeElement.querySelector('main#view');
+      expect(main?.getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('carries a polite live region for route announcements', () => {
+      const fixture = TestBed.createComponent(App);
+      fixture.detectChanges();
+      const live = fixture.nativeElement.querySelector('[aria-live]');
+      expect(live?.getAttribute('aria-live')).toBe('polite');
+      expect(live?.getAttribute('role')).toBe('status');
+      // Screen-reader only: it must never be visible.
+      expect(live?.classList.contains('sr-only')).toBe(true);
+    });
+  });
+});
+
+// Every page needs a name: the tab, browser history, and the live region all
+// read it. Only the landing page opts out — its name is the brand.
+describe('route titles', () => {
+  it('names every route but the landing page and the catch-all', () => {
+    const unnamed = routes
+      .filter((route) => route.path !== '' && route.path !== '**')
+      .filter((route) => !route.title)
+      .map((route) => route.path);
+    expect(unnamed).toEqual([]);
+  });
 });
