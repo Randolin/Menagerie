@@ -32,6 +32,18 @@ export const appConfig: ApplicationConfig = {
       order: 10,
       loadComponent: () => import('./compare/panels/headline.panel').then((m) => m.HeadlinePanel),
     }),
+    // Right after the headline: the sentences come before the shapes, because
+    // they are what a screen reader gets, and what anyone reading under
+    // stress reads first.
+    provideComparePanel({
+      id: 'narrative',
+      order: 12,
+      loadComponent: () => import('./compare/panels/narrative.panel').then((m) => m.NarrativePanel),
+      // Pair comparisons only — with three or more profiles the honest
+      // sentence is a paragraph of caveats, and the pairwise matrix says it
+      // better.
+      visible: (model) => model.payloads.length === 2 && model.pair !== null,
+    }),
     provideComparePanel({
       id: 'fingerprint',
       order: 15,

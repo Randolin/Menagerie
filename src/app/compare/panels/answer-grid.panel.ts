@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import type { GridSection } from '@moxy/core';
+import { itemLabel, type GridSection } from '@moxy/core';
 import { AnswerTextComponent, SimDotComponent, seriesVar } from '@moxy/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
@@ -55,6 +55,6 @@ export class AnswerGridPanel implements ComparePanelComponent {
   }
 
   protected label(item: GridSection['rows'][number]['item']): string {
-    return 'label' in item ? item.label : `${item.left} ↔ ${item.right}`;
+    return itemLabel(item);
   }
 }
