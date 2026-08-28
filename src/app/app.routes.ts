@@ -47,11 +47,27 @@ export const routes: Routes = [
     title: 'Groups',
     loadComponent: () => import('./groups/groups.component').then((m) => m.GroupsComponent),
   },
+  // Behind the session guard on purpose: this page prints the edit phrase,
+  // so a view-only visitor must never be able to reach it.
+  {
+    path: 'backup',
+    title: 'Backup card',
+    canActivate: [hatchSessionGuard],
+    loadComponent: () =>
+      import('./backup/backup-card.component').then((m) => m.BackupCardComponent),
+  },
   {
     path: 'settings',
     canActivate: [hatchSessionGuard],
     title: 'Settings',
     loadComponent: () => import('./settings/settings.component').then((m) => m.SettingsComponent),
+  },
+  // Deliberately guard-free and server-free: the whole point is that someone
+  // with no profile and no reachable server can still see the payoff.
+  {
+    path: 'demo',
+    title: 'Demo comparison',
+    loadComponent: () => import('./demo/demo.component').then((m) => m.DemoComponent),
   },
   {
     path: 'compare',

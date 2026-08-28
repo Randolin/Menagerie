@@ -75,6 +75,50 @@ a {
   outline: none;
 }
 
+/* ---------- print ---------- */
+
+/* Printing is a real output format here: the backup card exists to leave the
+   screen. Chrome to paper, or Chrome to PDF — both go through this. */
+@media print {
+  .app-header,
+  .app-footer,
+  .skip-link,
+  moxy-toast,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  /* The creature, its QR and the accent rules are the card's identity, not
+     decoration — browsers drop backgrounds when printing unless told. */
+  * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .card {
+    border: 1px solid #999;
+    box-shadow: none;
+    break-inside: avoid;
+    margin: 0;
+  }
+
+  /* Never split a phrase across a page break — half a phrase is worthless. */
+  .code-box,
+  .passphrase-box {
+    break-inside: avoid;
+  }
+
+  /* The share button is a screen affordance; on paper it is a dead rectangle. */
+  .qr-share {
+    display: none !important;
+  }
+}
+
 /* ---------- shell ---------- */
 
 /* Six nav links plus the session chip, logout and theme is a full row; keep

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { describePhrase, diagnoseEditPhrase } from '@moxy/core';
 import { ToastService } from '@moxy/ui';
 import { ProfileSessionStore } from '../stores/profile-session.store';
 
@@ -26,7 +27,11 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
           autocomplete="off"
           aria-label="Edit phrase"
           [disabled]="busy()"
+          (input)="problem.set(null)"
         />
+        @if (problem(); as message) {
+          <p class="notice-warn notice" style="margin:0">{{ message }}</p>
+        }
         <label class="fine" style="display:flex;gap:8px;align-items:center">
           <input type="checkbox" #rememberBox />
           Remember on this device — stores the phrase unencrypted in this browser
@@ -50,9 +55,19 @@ export class EditLoginComponent {
   private readonly toast = inject(ToastService);
 
   protected readonly busy = signal(false);
+  /** Inline, not a toast: it is a correction to read while retyping. */
+  protected readonly problem = signal<string | null>(null);
 
   protected async login(event: Event, phrase: string, remember: boolean): Promise<void> {
     event.preventDefault();
+    // A phrase with a word the EFF list doesn't have cannot open anything, and
+    // saying so takes microseconds where the KDF below takes seconds.
+    const message = describePhrase(await diagnoseEditPhrase(phrase), 'edit phrase');
+    if (message) {
+      this.problem.set(message);
+      return;
+    }
+    this.problem.set(null);
     this.busy.set(true);
     try {
       if (await this.session.login(phrase)) {

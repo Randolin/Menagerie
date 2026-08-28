@@ -258,6 +258,24 @@ try {
   }
   await shot(page, '01-landing-unconfigured.png');
 
+  // The demo is the one page that must survive a missing server: it is what a
+  // newcomer is shown before they commit to anything, and it never fetches.
+  step = 'demo-unconfigured';
+  await page.click('text=See a comparison first');
+  await page.waitForSelector('text=brave-azure-otter', { timeout: 30000 });
+  const demoBody = await page.textContent('body');
+  for (const expected of ['Overall alignment', 'Mutual desires', 'Fit, each way']) {
+    if (!demoBody.includes(expected)) fail(`demo is missing "${expected}" with no server`);
+  }
+  // The dealbreaker alert and the mutual reveal are the two moments the demo
+  // exists to show; a demo that quietly lost them would still look fine.
+  if (!demoBody.includes('Alcohol')) fail('demo does not name the violated dealbreaker');
+  if (!demoBody.includes('Cuddling')) fail('demo does not reveal the mutual desire');
+  // Desires are mutual-only: a one-sided answer must not appear anywhere.
+  if (demoBody.includes('Massage')) fail('demo revealed a one-sided desire');
+  await shot(page, '01b-demo-unconfigured.png');
+  await page.goto(BASE);
+
   step = 'landing-configure';
   await page.fill('input[aria-label="Profile server URL"]', main.url);
   await page.click('text=Use this server');
@@ -421,6 +439,22 @@ try {
   step = 'edit-login-fresh-context';
   const editor = await freshPage();
   await editor.goto(`${BASE}#/edit`);
+
+  // A typo must be caught before Argon2id charges seconds for it, and must
+  // say which word is wrong. Append a letter rather than dropping one:
+  // dropping a letter can land on another real EFF word, and the phrase would
+  // then be well-formed and go through the KDF on some runs and not others.
+  const typo = editPhrase.replace(/^(\S+)/, '$1q');
+  await editor.fill('input[aria-label="Edit phrase"]', typo);
+  const beforeTypo = Date.now();
+  await editor.click('text=Open my profile');
+  await editor.waitForSelector('.notice-warn', { timeout: 10000 });
+  const spent = Date.now() - beforeTypo;
+  const complaint = await editor.textContent('.notice-warn');
+  if (!complaint.includes('word 1')) fail(`typo complaint does not locate the word: ${complaint}`);
+  // A derivation would take seconds; this path must never reach one.
+  if (spent > 5000) fail(`typo took ${spent}ms — it went through the KDF`);
+
   await editor.fill('input[aria-label="Edit phrase"]', editPhrase);
   await editor.click('text=Open my profile');
   await editor.waitForSelector('.profile-head', { timeout: 30000 });
