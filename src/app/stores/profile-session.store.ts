@@ -4,11 +4,15 @@ import {
   buildMatchTokens,
   buildSharePayload,
   canonicalViewPhrase,
+  // Aliased: this class also exposes a `connectionFreshness` signal, and a
+  // bare call next to it would read as the signal.
+  connectionFreshness as freshnessState,
   decryptBlob,
   deriveEditKeys,
   deriveViewKeys,
   emptyPrivData,
   encryptBlob,
+  fetchViewVersion,
   generateBoopKeyPair,
   HatchError,
   migratePrivData,
@@ -24,8 +28,10 @@ import {
   type Answers,
   type BoopContent,
   type BoopCreds,
+  type ConnectionFreshnessState,
   type Weights,
   type EditKeys,
+  type HatchClient,
   type Persona,
   type PrivData,
   type ProfilePayload,
@@ -45,6 +51,18 @@ const SESSION_KEY = 'moxy.hatch.session.v1';
 const REMEMBER_KEY = 'moxy.hatch.remember.v1';
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'conflict' | 'error';
+
+/**
+ * What a freshness check learned about one saved connection.
+ *
+ * `unknown` covers both "not checked yet" and "the check failed" — a server
+ * that is down must not be reported as a profile that is gone.
+ */
+export interface ConnectionFreshness {
+  state: ConnectionFreshnessState | 'unknown';
+  /** The version the server holds now; null when unknown or gone. */
+  version: number | null;
+}
 
 /** A knock from my inbox, opened and validated. */
 export interface IncomingBoop {
@@ -79,6 +97,15 @@ export class ProfileSessionStore {
   readonly saveState = signal<SaveState>('idle');
   readonly remembered = signal(false);
 
+  /**
+   * What the last freshness check found, keyed by connection id. Deliberately
+   * not persisted: it is derived from the server on demand, and the thing
+   * worth remembering across sessions — the version you last looked at — is
+   * the baseline stored on the connection itself.
+   */
+  readonly connectionFreshness = signal<ReadonlyMap<string, ConnectionFreshness>>(new Map());
+  readonly refreshingConnections = signal(false);
+
   /** Draft state as last persisted to the server — drives the dirty flag. */
   private readonly savedSnapshot = signal(ProfileSessionStore.draftSnapshot({}, {}, {}));
   readonly dirty = computed(
@@ -97,6 +124,8 @@ export class ProfileSessionStore {
   private editKeys: EditKeys | null = null;
   private viewKeys: ViewKeys | null = null;
   private priv: PrivData | null = null;
+  /** Locators derived for connections that predate the cached field. */
+  private readonly sessionLocators = new Map<string, string>();
   /** Serializes saves so two rapid clicks can't race the CAS version. */
   private chain: Promise<unknown> = Promise.resolve();
 
@@ -325,8 +354,27 @@ export class ProfileSessionStore {
     this.remembered.set(on && Boolean(phrase));
   }
 
-  async addConnection(label: string, rawViewPhrase: string): Promise<void> {
+  /**
+   * Keep a creature. The locator is derived here, once, at the one moment the
+   * cost is explainable — it buys a phrase that is checked before it is kept
+   * (a mistyped phrase is caught now instead of failing later on the view
+   * page) and every freshness check afterwards for free.
+   *
+   * A server that cannot be reached is not a bad phrase: the connection is
+   * kept unchecked and the next refresh fills in what is missing.
+   *
+   * `known` is for callers that just fetched the profile themselves — adding
+   * a creature from the page displaying it should not re-derive a locator
+   * that page already paid seconds for.
+   */
+  async addConnection(
+    label: string,
+    rawViewPhrase: string,
+    known?: { viewLocator: string; version: number },
+  ): Promise<void> {
     const viewPhrase = canonicalViewPhrase(rawViewPhrase);
+    if (this.connections().some((c) => c.viewPhrase === viewPhrase)) return;
+
     const now = Date.now();
     const connection: SavedConnection = {
       id: crypto.randomUUID(),
@@ -336,15 +384,126 @@ export class ProfileSessionStore {
       addedAt: now,
       updatedAt: now,
     };
-    this.mutateConnections((list) =>
-      list.some((c) => c.viewPhrase === viewPhrase) ? [...list] : [...list, connection],
-    );
+
+    // undefined: the check never happened. null: it happened and found
+    // nothing — the two must not read the same.
+    let version: number | null | undefined;
+    if (known) {
+      connection.viewLocator = known.viewLocator;
+      version = known.version;
+    } else {
+      try {
+        const { viewLocator } = await deriveViewKeys(viewPhrase);
+        connection.viewLocator = viewLocator;
+        version = await fetchViewVersion(this.requireClient(), viewLocator);
+      } catch {
+        version = undefined;
+      }
+    }
+    if (version === null) {
+      throw new Error('That phrase doesn’t open anything — check it for a typo.');
+    }
+    // Seen as of now: a creature you just added is not "updated".
+    if (version !== undefined) connection.lastSeenVersion = version;
+
+    this.mutateConnections((list) => [...list, connection]);
     await this.save();
   }
 
   async removeConnection(id: string): Promise<void> {
     this.mutateConnections((list) => list.filter((c) => c.id !== id));
+    this.forgetFreshness(id);
     await this.save();
+  }
+
+  /**
+   * Ask the server what version each kept creature is on now. Read-only by
+   * design: this runs on page load, and every write in this app is something
+   * a person chose to do — an automatic save would both commit a half-edited
+   * draft and hand another tab a conflict.
+   *
+   * A connection saved before locators were cached derives one here and keeps
+   * it in memory for the session; it costs an Argon2id pass once, and never
+   * again after its next deliberate save.
+   */
+  async refreshConnections(): Promise<void> {
+    if (!this.active() || this.refreshingConnections()) return;
+    const client = this.config.client();
+    if (!client) return;
+
+    this.refreshingConnections.set(true);
+    try {
+      const found = new Map<string, ConnectionFreshness>();
+      for (const connection of this.connections()) {
+        found.set(connection.id, await this.checkConnection(client, connection));
+      }
+      this.connectionFreshness.set(found);
+    } finally {
+      this.refreshingConnections.set(false);
+    }
+  }
+
+  private async checkConnection(
+    client: HatchClient,
+    connection: SavedConnection,
+  ): Promise<ConnectionFreshness> {
+    try {
+      const locator = await this.locatorFor(connection);
+      const version = await fetchViewVersion(client, locator);
+      return { state: freshnessState(connection, version), version };
+    } catch {
+      // An unreachable server is not a missing profile.
+      return { state: 'unknown', version: null };
+    }
+  }
+
+  /** Cached on the connection, else derived once and remembered for the tab. */
+  private async locatorFor(connection: SavedConnection): Promise<string> {
+    if (connection.viewLocator) return connection.viewLocator;
+    const cached = this.sessionLocators.get(connection.viewPhrase);
+    if (cached) return cached;
+    const { viewLocator } = await deriveViewKeys(connection.viewPhrase);
+    this.sessionLocators.set(connection.viewPhrase, viewLocator);
+    return viewLocator;
+  }
+
+  /**
+   * Record that this creature has now been looked at, so the badge clears and
+   * stays cleared. Persists the baseline without touching the draft: opening
+   * someone's profile is not a reason to commit your own half-finished
+   * answers. Best-effort — a failure costs a badge, not data.
+   */
+  async markConnectionSeen(id: string): Promise<void> {
+    const version = this.connectionFreshness().get(id)?.version;
+    if (version === undefined || version === null) return;
+    const connection = this.connections().find((c) => c.id === id);
+    if (!connection || connection.lastSeenVersion === version) return;
+
+    this.mutateConnections((list) =>
+      list.map((c) => (c.id === id ? { ...c, lastSeenVersion: version } : c)),
+    );
+    this.connectionFreshness.update((map) => {
+      const next = new Map(map);
+      next.set(id, { state: 'current', version });
+      return next;
+    });
+    try {
+      // Through the same chain as save(): two writers racing the CAS version
+      // is exactly what the chain exists to prevent.
+      const run = this.chain.then(() => this.persistPriv());
+      this.chain = run.catch(() => undefined);
+      await run;
+    } catch {
+      /* the badge will come back; nothing was lost */
+    }
+  }
+
+  private forgetFreshness(id: string): void {
+    this.connectionFreshness.update((map) => {
+      const next = new Map(map);
+      next.delete(id);
+      return next;
+    });
   }
 
   // ---- boop inbox lifecycle (the messaging flows live in BoopStore) -------
@@ -524,6 +683,24 @@ export class ProfileSessionStore {
     // Legacy profiles become boopable on their next login; fire-and-forget
     // (save() serializes internally, so this can't race the user's edits).
     void this.ensureBoopInbox().catch(() => undefined);
+  }
+
+  /**
+   * Write the record as it already stands on this device — bookkeeping only,
+   * with the draft left exactly where it is. `doSave` is the deliberate act
+   * that commits answers; this is for the things a person changes without
+   * meaning to save a survey, like which creature they have now looked at.
+   */
+  private async persistPriv(): Promise<void> {
+    const client = this.requireClient();
+    const { editKeys, viewKeys, priv } = this.requireSession();
+    const { blobView, blobPriv, populated } = await this.encryptState(priv, viewKeys);
+    const version = await client.put(editKeys.editLocator, editKeys.editToken, this.version(), {
+      blob_view: blobView,
+      blob_priv: blobPriv,
+      populated,
+    });
+    this.version.set(version);
   }
 
   /** Records what the server now holds, for the dirty comparison. */

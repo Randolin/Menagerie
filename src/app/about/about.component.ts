@@ -178,6 +178,13 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
         phrases and tiny QR codes possible. You can self-host it — one dependency-free file in the
         repository.
       </p>
+      <p class="sub">
+        Your menagerie adds one read per kept creature when you open that page, so it can tell you
+        which of them have new answers. The server can’t read a word of what comes back — it
+        compares a save counter — but those reads look exactly like views, and they say that someone
+        is still interested in that profile. That’s why nothing checks in the background: the
+        requests happen when you open the page, and never while you’re away.
+      </p>
     </div>
 
     <div class="card">
