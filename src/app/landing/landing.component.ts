@@ -1,6 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { extractViewPhrase } from '@moxy/core';
+import {
+  describePhrase,
+  diagnoseEditPhrase,
+  diagnoseViewPhrase,
+  extractViewPhrase,
+} from '@moxy/core';
 import { ToastService } from '@moxy/ui';
 import { ProfileSessionStore } from '../stores/profile-session.store';
 import { ServerConfigStore } from '../stores/server-config.store';
@@ -75,7 +80,11 @@ import { ServerConfigStore } from '../stores/server-config.store';
             placeholder="correct horse battery staple luck"
             autocomplete="off"
             aria-label="Edit phrase"
+            (input)="editProblem.set(null)"
           />
+          @if (editProblem(); as message) {
+            <p class="notice-warn notice" style="margin:0">{{ message }}</p>
+          }
           <button class="btn" [disabled]="config.state() !== 'ready'">Open my profile</button>
         </form>
       </div>
@@ -87,10 +96,14 @@ import { ServerConfigStore } from '../stores/server-config.store';
           <input
             #viewInput
             type="text"
-            placeholder="amber-azure-fox-canal-stove-plume"
+            placeholder="amber-azure-fox-mistwoven-emberlit-fernhollow"
             autocomplete="off"
             aria-label="View phrase"
+            (input)="viewProblem.set(null)"
           />
+          @if (viewProblem(); as message) {
+            <p class="notice-warn notice" style="margin:0">{{ message }}</p>
+          }
           <button class="btn" [disabled]="config.state() !== 'ready'">View profile</button>
         </form>
       </div>
@@ -119,6 +132,9 @@ export class LandingComponent {
   private readonly toast = inject(ToastService);
 
   protected readonly hatching = signal(false);
+  /** Inline and per-field: a correction belongs beside the box it fixes. */
+  protected readonly editProblem = signal<string | null>(null);
+  protected readonly viewProblem = signal<string | null>(null);
 
   protected async hatch(): Promise<void> {
     this.hatching.set(true);
@@ -134,6 +150,12 @@ export class LandingComponent {
 
   protected async edit(event: Event, input: HTMLInputElement): Promise<void> {
     event.preventDefault();
+    const message = describePhrase(await diagnoseEditPhrase(input.value), 'edit phrase');
+    if (message) {
+      this.editProblem.set(message);
+      return;
+    }
+    this.editProblem.set(null);
     try {
       if (await this.session.login(input.value)) {
         await this.router.navigate(['/me']);
@@ -149,9 +171,15 @@ export class LandingComponent {
     event.preventDefault();
     const phrase = extractViewPhrase(input.value);
     if (!phrase) {
-      this.toast.show('That doesn’t look like a Menagerie view phrase or link.', 'error');
+      // The grammar check already knows which word is wrong; "that doesn't
+      // look like a phrase" made the person hunt for it themselves.
+      this.viewProblem.set(
+        describePhrase(diagnoseViewPhrase(input.value), 'view phrase') ??
+          'That doesn’t look like a Menagerie view phrase or link.',
+      );
       return;
     }
+    this.viewProblem.set(null);
     void this.router.navigate(['/view', phrase]);
   }
 

@@ -56,6 +56,7 @@ export { bannerStyleFor, type BannerStyle, type BannerPersonaLike } from './pers
 export * from './hatch/constants';
 export * from './hatch/keys';
 export * from './hatch/phrases';
+export * from './hatch/phrase-check';
 export { encryptBlob, decryptBlob } from './hatch/blob';
 export * from './hatch/priv-data';
 

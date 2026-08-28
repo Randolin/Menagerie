@@ -439,6 +439,22 @@ try {
   step = 'edit-login-fresh-context';
   const editor = await freshPage();
   await editor.goto(`${BASE}#/edit`);
+
+  // A typo must be caught before Argon2id charges seconds for it, and must
+  // say which word is wrong. Append a letter rather than dropping one:
+  // dropping a letter can land on another real EFF word, and the phrase would
+  // then be well-formed and go through the KDF on some runs and not others.
+  const typo = editPhrase.replace(/^(\S+)/, '$1q');
+  await editor.fill('input[aria-label="Edit phrase"]', typo);
+  const beforeTypo = Date.now();
+  await editor.click('text=Open my profile');
+  await editor.waitForSelector('.notice-warn', { timeout: 10000 });
+  const spent = Date.now() - beforeTypo;
+  const complaint = await editor.textContent('.notice-warn');
+  if (!complaint.includes('word 1')) fail(`typo complaint does not locate the word: ${complaint}`);
+  // A derivation would take seconds; this path must never reach one.
+  if (spent > 5000) fail(`typo took ${spent}ms — it went through the KDF`);
+
   await editor.fill('input[aria-label="Edit phrase"]', editPhrase);
   await editor.click('text=Open my profile');
   await editor.waitForSelector('.profile-head', { timeout: 30000 });
