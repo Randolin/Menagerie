@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { answerChips, type AnswerValue, type Item } from '@moxy/core';
+import { answerChips, itemLabel, type AnswerValue, type Item } from '@moxy/core';
 import { AgreementStripComponent, type AgreementRow } from '@moxy/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
@@ -36,8 +36,8 @@ export class AgreementPanel implements ComparePanelComponent {
           .map((r) => ({
             sim: r.sim!,
             title:
-              ('label' in r.item ? r.item.label : `${r.item.left} ↔ ${r.item.right}`) +
-              `: ${answerText(r.item, r.answers[0]!)} vs ${answerText(r.item, r.answers[1]!)}`,
+              `${itemLabel(r.item)}: ` +
+              `${answerText(r.item, r.answers[0]!)} vs ${answerText(r.item, r.answers[1]!)}`,
           })),
       }))
       .filter((row) => row.dots.length > 0),

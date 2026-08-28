@@ -380,7 +380,11 @@ planned; it now has somewhere to send people.
 
 **Wave 3 — the words.** C2 narrative panel · A4 core-tier milestone · B3
 phrase confirmation. The copy-heavy work, once the structure around it is
-settled.
+settled. **Shipped.** B3 turned out to be half-built already — the
+acknowledgement gate existed, and what it lacked was the destination this
+plan's own wording named ("next to the backup-card link"), so that is what
+it got rather than the retype challenge, which would have taxed the instant
+hatch the plan also asks us to protect.
 
 **Wave 4 — the sweep.** C3 chart alternatives · C4 contrast · C5 control
 audit. Best done together, as one audit with one vocabulary.

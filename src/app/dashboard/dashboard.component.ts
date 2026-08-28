@@ -14,6 +14,7 @@ import {
   SubjectCardComponent,
   ToastService,
 } from '@moxy/ui';
+import { RouterLink } from '@angular/router';
 import { CategoryCardComponent } from '../profile/category-card.component';
 import { AddCategoryComponent } from '../profile/add-category.component';
 import { SaveBarComponent } from '../profile/save-bar.component';
@@ -25,6 +26,7 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
   selector: 'moxy-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    RouterLink,
     CategoryCardComponent,
     AddCategoryComponent,
     SaveBarComponent,
@@ -61,6 +63,9 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
           <button class="btn btn-primary" [disabled]="!acknowledged()" (click)="dismissNotice()">
             I’ve saved it
           </button>
+          <!-- "Somewhere I can get back to" is easier to tick than to do.
+               This is the somewhere. -->
+          <a class="btn" routerLink="/backup">🖨️ Print a backup card</a>
           <span class="fine">
             Profiles with no saved answers are deleted after {{ gcEmpty }}; untouched and unviewed
             for {{ gcIdle }}, also deleted.
@@ -120,6 +125,24 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
         }
       </div>
     </moxy-subject-card>
+
+    @if (showMilestone()) {
+      <div class="card" role="status">
+        <h2>🎉 Your core set is done</h2>
+        <p class="sub">
+          Every question a comparison leans on is answered, so yours is worth sharing now. The other
+          half is someone else's: a comparison needs two profiles, and nothing happens until one of
+          you sends a phrase.
+        </p>
+        <div class="btn-row">
+          <button class="btn btn-primary" (click)="copy(session.viewUrl()!, 'View link copied')">
+            Copy my view link
+          </button>
+          <a class="btn" routerLink="/menagerie">Keep someone's phrase</a>
+          <button class="btn btn-ghost" (click)="dismissMilestone()">Dismiss</button>
+        </div>
+      </div>
+    }
 
     <div class="profile-head">
       <h2>My answers</h2>
@@ -240,6 +263,47 @@ export class DashboardComponent {
 
   private noticeKey(personaName: string): string {
     return `moxy.hatch.notice.${personaName}`;
+  }
+
+  /**
+   * Finishing the core tier is the moment a profile first becomes worth
+   * sharing, and it used to pass as a label quietly changing wording. This is
+   * the one time it says so — and says the part people miss, which is that a
+   * finished profile on its own still compares against nothing.
+   *
+   * Held back until the edit-phrase notice is gone: two loud cards competing
+   * on the same screen would cost the more important one its attention.
+   * Dismissal is per creature and survives reloads, like the notice above.
+   */
+  protected readonly showMilestone = computed(
+    () => this.coreDone() && this.noticeDismissed() && !this.milestoneDismissed(),
+  );
+
+  private readonly milestoneSeen = signal(0);
+  private readonly milestoneDismissed = computed(() => {
+    this.milestoneSeen();
+    const persona = this.session.persona();
+    if (!persona) return true;
+    try {
+      return this.storage.getItem(this.milestoneKey(persona.name)) === '1';
+    } catch {
+      return true;
+    }
+  });
+
+  protected dismissMilestone(): void {
+    const persona = this.session.persona();
+    if (!persona) return;
+    try {
+      this.storage.setItem(this.milestoneKey(persona.name), '1');
+    } catch {
+      /* fine */
+    }
+    this.milestoneSeen.update((n) => n + 1);
+  }
+
+  private milestoneKey(personaName: string): string {
+    return `moxy.core.milestone.${personaName}`;
   }
 
   protected async copy(text: string, okMessage: string): Promise<void> {

@@ -5,6 +5,7 @@ import {
   debiasDesireRate,
   getItem,
   getSection,
+  itemLabel,
   type MetricsRecord,
 } from '@moxy/core';
 import { errorText } from '@moxy/ui';
@@ -200,7 +201,7 @@ export class CommunityComponent {
       const n = buckets[`${band}|${item.id}|_n`];
       const positive = buckets[`${band}|${item.id}|1`];
       if (!n || !positive) return [];
-      const label = 'label' in item ? item.label : item.id;
+      const label = itemLabel(item);
       return [{ label, pct: Math.round((100 * positive) / n), n }];
     });
   });
@@ -217,7 +218,7 @@ export class CommunityComponent {
       if (!n || !positive) return [];
       const rate = debiasDesireRate(positive, n);
       if (rate === null) return [];
-      const label = 'label' in item ? item.label : item.id;
+      const label = itemLabel(item);
       return [{ label, pct: Math.round(rate * 100), n }];
     });
   });

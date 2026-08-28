@@ -270,6 +270,13 @@ try {
   // The dealbreaker alert and the mutual reveal are the two moments the demo
   // exists to show; a demo that quietly lost them would still look fine.
   if (!demoBody.includes('Alcohol')) fail('demo does not name the violated dealbreaker');
+  // The narrative is the only part of a comparison a screen reader can read,
+  // so it has to be present, not just present in a unit test.
+  if (!demoBody.includes('In words')) fail('demo is missing the narrative panel');
+  if (!demoBody.includes('conversation to have, not a score to fix')) {
+    fail('narrative does not frame the dealbreaker as a conversation');
+  }
+  if (demoBody.includes('On Pronouns')) fail('narrative frames identity as a difference');
   if (!demoBody.includes('Cuddling')) fail('demo does not reveal the mutual desire');
   // Desires are mutual-only: a one-sided answer must not appear anywhere.
   if (demoBody.includes('Massage')) fail('demo revealed a one-sided desire');

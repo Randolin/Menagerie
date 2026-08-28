@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { interestLabel, type GridRow } from '@moxy/core';
+import { interestLabel, itemLabel, type GridRow } from '@moxy/core';
 import { seriesVar } from './series';
 
 interface MatrixRow {
@@ -83,7 +83,7 @@ export class InterestMatrixComponent {
         if (min >= 2) badge = 'mutual';
         else if (min >= 1) badge = 'possible';
       }
-      const label = 'label' in row.item ? (row.item.label as string) : row.item.id;
+      const label = itemLabel(row.item);
       return { label, levels, badge };
     }),
   );

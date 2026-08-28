@@ -49,6 +49,15 @@ export function interestLabel(level: number): string {
   return INTEREST_LEVELS.find((l) => l.value === level)?.label ?? String(level);
 }
 
+/**
+ * What to call an item on screen. Scales have no single label — they are two
+ * opposed anchors — so they render as the pair, which is what a person needs
+ * to read a scale's answer at all.
+ */
+export function itemLabel(item: Item): string {
+  return 'label' in item ? item.label : `${item.left} ↔ ${item.right}`;
+}
+
 export function importanceLabel(weight: ImportanceWeight | undefined): string | undefined {
   return IMPORTANCE_WEIGHTS.find((d) => d.value === weight)?.label;
 }
