@@ -608,6 +608,52 @@ try {
   if (!(await pageB.locator('a', { hasText: 'Their profile' }).count())) {
     fail('reply view-phrase attachment missing');
   }
+  // --- freshness: B keeps A, A answers something, B is told ----------------
+  // The whole point of keeping a creature: noticing it changed without having
+  // to ask its owner out of band.
+  step = 'menagerie-keep';
+  await pageB.goto(viewUrl);
+  await pageB.waitForSelector(`text=${personaName}`, { timeout: 30000 });
+  await pageB.click('text=💾 Add to my menagerie');
+  await pageB.waitForSelector('text=joined your menagerie', { timeout: 30000 });
+  await pageB.goto(`${BASE}#/menagerie`);
+  await pageB.waitForSelector(`text=${personaName}`, { timeout: 60000 });
+  await pageB.waitForSelector('text=Check for updates', { timeout: 60000 });
+  if ((await pageB.textContent('body')).includes('new answers')) {
+    fail('a creature kept a moment ago is reported as having new answers');
+  }
+
+  step = 'menagerie-updated';
+  await page.goto(`${BASE}#/me`);
+  await page.waitForSelector('.profile-head');
+  await editCategory(page, 'What I value', async (card) => {
+    await card.locator('.q-row', { hasText: 'Togetherness' }).locator('.pip-scale').nth(5).click();
+  });
+  // reload(), not goto(): B is already on this URL and the browser treats a
+  // same-fragment goto as nothing at all. Reloading also proves the point —
+  // the baseline came back from the server, not from a signal still in memory.
+  // Two waits, because the page has to finish an Argon2id session restore
+  // before the refresh it kicks off can say anything.
+  await pageB.reload();
+  await pageB.waitForSelector(`text=${personaName}`, { timeout: 60000 });
+  await pageB.waitForSelector('text=new answers', { timeout: 60000 });
+
+  step = 'menagerie-seen';
+  // Reading the profile is what clears it — and it stays cleared across a
+  // reload, which is the part that only works because the baseline reached
+  // the server. Wait for the page to stop talking before reloading, or the
+  // reload races the very write being asserted.
+  await pageB.click('a:has-text("View")');
+  await pageB.waitForSelector(`text=${personaName}`, { timeout: 60000 });
+  await pageB.waitForLoadState('networkidle');
+  await pageB.goto(`${BASE}#/menagerie`);
+  await pageB.reload();
+  await pageB.waitForSelector(`text=${personaName}`, { timeout: 60000 });
+  await pageB.waitForSelector('text=Check for updates', { timeout: 60000 });
+  if ((await pageB.textContent('body')).includes('new answers')) {
+    fail('the badge came back after the profile was looked at');
+  }
+
   // Park B on A's (still-current) profile page: after A regenerates, this
   // stale page's boop attempt must be turned away.
   await pageB.goto(viewUrl);

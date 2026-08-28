@@ -4,10 +4,11 @@ import {
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
-import { provideRouter, withHashLocation } from '@angular/router';
+import { provideRouter, TitleStrategy, withHashLocation } from '@angular/router';
 import { getSection } from '@moxy/core';
 import { routes } from './app.routes';
 import { provideComparePanel } from './compare/compare-panels.token';
+import { PageTitleStrategy } from './page-title.strategy';
 import { ServerConfigStore } from './stores/server-config.store';
 
 export const appConfig: ApplicationConfig = {
@@ -16,6 +17,10 @@ export const appConfig: ApplicationConfig = {
     // Hash location keeps the site deployable on any static host with no
     // rewrite rules — #/view/<phrase> works from a QR scan anywhere.
     provideRouter(routes, withHashLocation()),
+
+    // Names every route once: browser tab, history, and the shell's live
+    // region all read the same string.
+    { provide: TitleStrategy, useExisting: PageTitleStrategy },
 
     // Resolve the profile server address before anything routes.
     provideAppInitializer(() => inject(ServerConfigStore).init()),

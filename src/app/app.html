@@ -1,3 +1,7 @@
+<!-- A button, not an <a href="#view">: hash routing owns the fragment, so a
+     real anchor would navigate to the "view" route instead of jumping. -->
+<button class="skip-link" type="button" (click)="skipToContent()">Skip to content</button>
+
 <header class="app-header">
   <a class="brand" routerLink="/">
     <span class="brand-mark" aria-hidden="true">
@@ -58,9 +62,16 @@
   </button>
 </header>
 
-<main id="view">
+<!-- tabindex="-1" makes this focusable programmatically (never by Tab), which
+     is what lets a navigation land here instead of stranding focus on the
+     link that was just activated. -->
+<main id="view" tabindex="-1">
   <router-outlet />
 </main>
+
+<!-- The browser announces a page change on a real navigation; a hash-routed
+     SPA has to say it itself. -->
+<p class="sr-only" role="status" aria-live="polite">{{ announcement() }}</p>
 
 <footer class="app-footer">
   <p>

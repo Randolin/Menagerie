@@ -370,17 +370,55 @@ export class HatchClient {
   }
 }
 
+/** Everything one view fetch learned, for callers that want more than answers. */
+export interface FetchedView {
+  readonly payload: ProfilePayload;
+  /** The derived locator — worth keeping, it cost an Argon2id pass. */
+  readonly viewLocator: string;
+  /** Save count, the same number freshness checks compare against. */
+  readonly version: number;
+}
+
 /**
- * Fetch and decrypt the open payload a view phrase points at — the one
- * derive→fetch→decrypt→migrate pipeline every viewer shares. Null when the
- * server has no record (deleted, expired, or re-minted).
+ * The one derive→fetch→decrypt→migrate pipeline every viewer shares. Null
+ * when the server has no record (deleted, expired, or re-minted).
  */
+export async function fetchView(
+  client: HatchClient,
+  viewPhrase: string,
+): Promise<FetchedView | null> {
+  const { viewLocator, viewKey } = await deriveViewKeys(viewPhrase);
+  const record = await client.getView(viewLocator);
+  if (!record) return null;
+  return {
+    payload: migrateToCurrent(await decryptBlob(record.blob_view, viewKey)),
+    viewLocator,
+    version: record.version,
+  };
+}
+
+/** Just the answers, for the callers that want nothing else. */
 export async function fetchViewPayload(
   client: HatchClient,
   viewPhrase: string,
 ): Promise<ProfilePayload | null> {
-  const { viewLocator, viewKey } = await deriveViewKeys(viewPhrase);
+  return (await fetchView(client, viewPhrase))?.payload ?? null;
+}
+
+/**
+ * How many times the profile behind a locator has been saved, or null when
+ * nothing answers to it (deleted, expired, or re-minted). No key needed: the
+ * version is metadata beside the ciphertext, so a viewer can tell that a
+ * profile changed without being able to read a word of it.
+ *
+ * Takes a locator rather than a phrase so callers holding a cached one skip
+ * the Argon2id derivation. The read still transfers the whole blob — the API
+ * has no metadata-only route — so this is cheap in CPU, not in bytes.
+ */
+export async function fetchViewVersion(
+  client: HatchClient,
+  viewLocator: string,
+): Promise<number | null> {
   const record = await client.getView(viewLocator);
-  if (!record) return null;
-  return migrateToCurrent(await decryptBlob(record.blob_view, viewKey));
+  return record ? record.version : null;
 }

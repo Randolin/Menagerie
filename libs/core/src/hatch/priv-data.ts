@@ -14,6 +14,45 @@ export interface SavedConnection {
   notes: string;
   addedAt: number;
   updatedAt: number;
+  /**
+   * The view locator derived from `viewPhrase`, cached because deriving it
+   * costs a full Argon2id pass — a menagerie of eight would otherwise spend
+   * half a minute just working out what to ask the server about. It is no
+   * more secret than the phrase sitting beside it in this same blob.
+   *
+   * Optional: connections saved before freshness checks existed have none,
+   * and `migratePrivData` fills absent fields rather than versioning them.
+   */
+  viewLocator?: string;
+  /**
+   * The profile's version the last time this person actually looked at it.
+   * The server bumps a profile's version on every save, so anything higher
+   * means new answers since. Absent means never looked — which reads as
+   * "nothing new", not "everything is new".
+   */
+  lastSeenVersion?: number;
+}
+
+/** Where a kept creature stands relative to the last time you looked. */
+export type ConnectionFreshnessState = 'current' | 'updated' | 'gone';
+
+/**
+ * Compare a kept connection against what the server holds now.
+ *
+ * `currentVersion` is null only for a profile that genuinely answers to
+ * nothing — deleted, expired, or re-minted. A failed request is not that, and
+ * callers must not collapse the two: an unreachable server would otherwise
+ * report every creature you know as gone.
+ */
+export function connectionFreshness(
+  connection: Pick<SavedConnection, 'lastSeenVersion'>,
+  currentVersion: number | null,
+): ConnectionFreshnessState {
+  if (currentVersion === null) return 'gone';
+  // No baseline means it has never been opened from here, and a change you
+  // were never shown is not a change you missed.
+  const seen = connection.lastSeenVersion ?? currentVersion;
+  return currentVersion > seen ? 'updated' : 'current';
 }
 
 /**

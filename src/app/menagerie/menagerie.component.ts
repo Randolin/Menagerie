@@ -25,9 +25,30 @@ import { BoopStore } from '../stores/boop.store';
         against your own profile. Your menagerie is encrypted with your edit key; the server never
         sees who’s in it.
       </p>
+      @if (session.connections().length) {
+        <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+          <button
+            class="btn btn-ghost btn-small"
+            [disabled]="session.refreshingConnections()"
+            (click)="refresh()"
+          >
+            {{ session.refreshingConnections() ? 'Checking…' : 'Check for updates' }}
+          </button>
+        </div>
+      }
       @for (c of session.connections(); track c.id) {
         <div class="grid-row" style="align-items:center">
-          <div class="grid-item-label">{{ c.label }}</div>
+          <div class="grid-item-label">
+            {{ c.label }}
+            @switch (freshness(c.id)) {
+              @case ('updated') {
+                <span class="badge badge-close" style="margin-left:6px">new answers</span>
+              }
+              @case ('gone') {
+                <span class="fine" style="margin-left:6px">· no longer opens</span>
+              }
+            }
+          </div>
           <div class="grid-answers" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <span class="fine">{{ c.viewPhrase }}</span>
             <button class="btn btn-small" (click)="compareWith(c.viewPhrase)">Compare</button>
@@ -196,6 +217,24 @@ export class MenagerieComponent {
     // moment a refresh is actually wanted.
     void this.boops.pollBoops().catch(() => undefined);
     void this.boops.pollSentBoops().catch(() => undefined);
+    // Same reasoning for kept creatures: this page is where "did they answer
+    // anything?" gets asked, and asking on arrival is one round of requests
+    // indistinguishable from a visit. Nothing polls in the background.
+    void this.session.refreshConnections().catch(() => undefined);
+  }
+
+  /** '' when there is nothing to say, so the template can @switch on it. */
+  protected freshness(id: string): string {
+    const found = this.session.connectionFreshness().get(id);
+    return found && found.state !== 'current' && found.state !== 'unknown' ? found.state : '';
+  }
+
+  protected async refresh(): Promise<void> {
+    try {
+      await this.session.refreshConnections();
+    } catch (err) {
+      this.toast.error(err);
+    }
   }
 
   protected readonly revealed = signal<ReadonlySet<string>>(new Set());

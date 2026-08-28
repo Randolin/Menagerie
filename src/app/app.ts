@@ -1,6 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter } from 'rxjs';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { CreatureAvatarComponent, ToastComponent, ToastService } from '@moxy/ui';
+import { PageTitleStrategy } from './page-title.strategy';
 import { ThemeStore } from './stores/theme.store';
 import { ProfileSessionStore } from './stores/profile-session.store';
 import { BoopStore } from './stores/boop.store';
@@ -19,11 +22,34 @@ export class App {
   private readonly boops = inject(BoopStore);
   private readonly metrics = inject(MetricsStore);
   private readonly router = inject(Router);
+  private readonly pageTitle = inject(PageTitleStrategy);
 
   /** Waiting boops, for the nav badge. */
   protected readonly boopCount = computed(() => this.session.incomingBoops().length);
 
+  /** What the live region says: the name of the page just navigated to. */
+  protected readonly announcement = this.pageTitle.announcement;
+
   constructor() {
+    // Focus follows navigation. Without this, activating a nav link leaves
+    // focus on the link, so the next Tab continues through the header and a
+    // screen reader never enters the page it just opened. The first
+    // navigation is the page load itself — the browser's own focus is right
+    // there, and moving it would be a jump the user did not ask for.
+    let firstNavigation = true;
+    this.router.events
+      .pipe(
+        filter((event) => event instanceof NavigationEnd),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => {
+        if (firstNavigation) {
+          firstNavigation = false;
+          return;
+        }
+        this.focusContent();
+      });
+
     // Header paw tint follows the logged-in creature (nothing persisted;
     // clears itself on logout/regenerate because the signal drives it).
     effect(() => {
@@ -54,6 +80,15 @@ export class App {
       void this.boops.pollBoops().catch(() => undefined);
       void this.boops.pollSentBoops().catch(() => undefined);
     });
+  }
+
+  /** Skip-link target: jump the keyboard past the header into the page. */
+  protected skipToContent(): void {
+    this.focusContent();
+  }
+
+  private focusContent(): void {
+    document.getElementById('view')?.focus();
   }
 
   protected logout(): void {

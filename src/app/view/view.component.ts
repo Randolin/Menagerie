@@ -1,8 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, inject, resource } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  resource,
+  signal,
+} from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
-  fetchViewPayload,
+  fetchView,
   extractViewPhrase,
   hasDesiresTokens,
   importanceLabel,
@@ -30,6 +38,9 @@ import { ServerConfigStore } from '../stores/server-config.store';
 interface LoadedProfile {
   readonly phrase: string;
   readonly payload: ProfilePayload;
+  /** Kept from the fetch so saving this creature costs no second derivation. */
+  readonly viewLocator: string;
+  readonly version: number;
   readonly name: string;
   readonly persona: Persona | null;
   readonly hasDesires: boolean;
@@ -76,7 +87,9 @@ interface LoadedProfile {
           @if (session.active()) {
             <button class="btn" (click)="saveConnection(v)">💾 Add to my menagerie</button>
           } @else {
-            <a class="btn btn-ghost" routerLink="/">Hatch your own creature to compare</a>
+            <button class="btn" [disabled]="hatching()" (click)="hatchAndKeep(v)">
+              {{ hatching() ? 'Hatching…' : '🥚 Hatch mine and keep ' + v.name }}
+            </button>
           }
         </div>
         @if (session.active()) {
@@ -147,6 +160,8 @@ export class ViewComponent {
   });
   private readonly phrase = computed(() => String(this.params()['phrase'] ?? ''));
 
+  protected readonly hatching = signal(false);
+
   protected readonly view = resource({
     params: () => ({ phrase: this.phrase(), state: this.config.state() }),
     loader: async ({ params }): Promise<LoadedProfile> => {
@@ -158,12 +173,13 @@ export class ViewComponent {
       if (!phrase) throw new Error('That’s not a valid Menagerie view phrase.');
       const client = this.config.client();
       if (!client) throw new Error('No profile server is configured.');
-      const payload = await fetchViewPayload(client, phrase);
-      if (!payload) {
+      const fetched = await fetchView(client, phrase);
+      if (!fetched) {
         throw new Error(
           'No profile answers to that phrase. It may have been deleted, expired, or replaced by a new creature.',
         );
       }
+      const payload = fetched.payload;
       const sections = SECTIONS.filter((s) => s.privacy === 'open')
         .map((s) => ({
           title: s.title,
@@ -180,6 +196,8 @@ export class ViewComponent {
       return {
         phrase,
         payload,
+        viewLocator: fetched.viewLocator,
+        version: fetched.version,
         name: persona?.name ?? 'Someone',
         persona,
         hasDesires: hasDesiresTokens(payload),
@@ -187,6 +205,22 @@ export class ViewComponent {
       };
     },
   });
+
+  constructor() {
+    // Reading a kept creature's profile is what marks it seen — here, where
+    // the answers are actually on screen, and with the version this page just
+    // fetched. The page then sits still long enough for the write to land.
+    effect(() => {
+      // error() first: value() THROWS when the resource failed, which is why
+      // the template branches on error() before it ever touches value(). An
+      // effect that skips this check throws on every dead phrase and takes
+      // the "couldn't open that profile" card down with it.
+      if (this.view.error()) return;
+      const loaded = this.view.value();
+      if (!loaded) return;
+      void this.session.noteProfileSeen(loaded.phrase, loaded.version).catch(() => undefined);
+    });
+  }
 
   protected errorMessage(): string {
     return errorText(this.view.error());
@@ -209,10 +243,42 @@ export class ViewComponent {
 
   protected async saveConnection(v: LoadedProfile): Promise<void> {
     try {
-      await this.session.addConnection(v.name, v.phrase);
+      await this.session.addConnection(v.name, v.phrase, {
+        viewLocator: v.viewLocator,
+        version: v.version,
+      });
       this.toast.show(`${v.name} joined your menagerie`);
     } catch (err) {
       this.toast.error(err);
+    }
+  }
+
+  /**
+   * The dead end this closes: someone scans a QR, reads a profile, and the
+   * only way onward is the landing page — which forgets the creature they
+   * came for, at the exact moment they were most interested in it.
+   *
+   * A fresh profile has no answers, so there is nothing to compare yet. The
+   * honest destination is the survey, with this creature already kept and
+   * already queued for the comparison that becomes possible once they answer.
+   */
+  protected async hatchAndKeep(v: LoadedProfile): Promise<void> {
+    this.hatching.set(true);
+    try {
+      await this.session.hatch();
+      await this.session.addConnection(v.name, v.phrase, {
+        viewLocator: v.viewLocator,
+        version: v.version,
+      });
+      this.compare.addPhrase(v.phrase);
+      const mine = this.session.viewPhrase();
+      if (mine) this.compare.addPhrase(mine);
+      await this.router.navigate(['/me']);
+      this.toast.show(`Hatched — ${v.name} is in your menagerie. Answer a few, then compare.`);
+    } catch (err) {
+      this.toast.error(err);
+    } finally {
+      this.hatching.set(false);
     }
   }
 }
