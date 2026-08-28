@@ -387,7 +387,15 @@ it got rather than the retype challenge, which would have taxed the instant
 hatch the plan also asks us to protect.
 
 **Wave 4 — the sweep.** C3 chart alternatives · C4 contrast · C5 control
-audit. Best done together, as one audit with one vocabulary.
+audit. Best done together, as one audit with one vocabulary. **C3 and C4
+shipped.** Two notes for whoever picks up C5:
+
+- The interest matrix needed nothing — it was already a real table with
+  scoped headers and a visible level in every cell. Check before adding;
+  a second table is worse for a screen reader than one.
+- Contrast is measurable, so `libs/ui/src/styles/contrast.spec.ts` now
+  measures it on every run. It found a failure by testing all four series
+  hues that eyeballing two had missed.
 
 **Wave 5 — reach.** D1 PWA · D2 share and print. Multiply the loop after
 it works.

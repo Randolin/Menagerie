@@ -20,7 +20,9 @@
   --surface-2: #f2efe8;
   --ink: #0b0b0b;
   --ink-2: #52514e;
-  --muted: #898781;
+  /* Was #898781 — 3.4:1 on --page, which fails AA for the .fine text this
+     colour exists for. Recessive is a design intent; unreadable is not. */
+  --muted: #6b6964;
   --hairline: #e1e0d9;
   --baseline: #c3c2b7;
   --border: rgba(11, 11, 11, 0.1);
@@ -35,8 +37,13 @@
 
   --series-1: #2a78d6;
   --series-2: #eb6834;
-  --series-3: #1baf7a;
-  --series-4: #eda100;
+  /* Was #1baf7a — 2.7:1, under the same bar. Found by the spec across all
+     four hues, not by eye: the ones that fail are not the ones that look
+     faint, they are the ones whose luminance happens to sit near the page's. */
+  --series-3: #158f63;
+  /* Was #eda100 — 2.1:1, below even the 3:1 that non-text graphics need, so
+     a fourth person's line was effectively invisible on a light background. */
+  --series-4: #ad7500;
 
   --ramp-1: #86b6ef;
   --ramp-2: #2a78d6;
@@ -91,4 +98,67 @@
 
 :root[data-theme='dark'] {
   @include dark-tokens;
+}
+
+/* ---------- contrast preferences ---------- */
+
+/* "More contrast" is a real setting people turn on, usually because the
+   default is not working for them. Recessive greys are the first thing to
+   give up: --muted stops being a shade of the ink and becomes the ink, and
+   the hairlines that separate rows get strong enough to actually separate
+   them. Series hues stay put — they carry identity, and darkening them all
+   toward each other would cost the distinguishability they exist for. */
+@media (prefers-contrast: more) {
+  :root {
+    --muted: var(--ink-2);
+    --hairline: var(--baseline);
+    --border: rgba(11, 11, 11, 0.32);
+  }
+}
+
+/* Dark's stronger border, in the same two-selector shape the theme itself
+   uses: the system preference, then the explicit toggle that must beat it. */
+@media (prefers-contrast: more) and (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme='light'])) {
+    --border: rgba(255, 255, 255, 0.32);
+  }
+}
+@media (prefers-contrast: more) {
+  :root[data-theme='dark'] {
+    --border: rgba(255, 255, 255, 0.32);
+  }
+}
+
+/* Forced colours (Windows high contrast and friends) replaces the palette
+   wholesale, and anything painted with a custom colour stops meaning
+   anything. Map the tokens onto the system keywords so the app keeps its
+   structure, and let charts keep their own hues via forced-color-adjust:
+   a four-line chart where every line is CanvasText is four identical lines. */
+@media (forced-colors: active) {
+  :root {
+    --page: Canvas;
+    --surface: Canvas;
+    --surface-2: Canvas;
+    --ink: CanvasText;
+    --ink-2: CanvasText;
+    --muted: CanvasText;
+    --hairline: CanvasText;
+    --baseline: GrayText;
+    --border: CanvasText;
+    --accent: LinkText;
+    --accent-ink: Canvas;
+    --accent-soft: Canvas;
+    --danger: LinkText;
+  }
+
+  svg {
+    forced-color-adjust: none;
+  }
+
+  /* The focus ring must survive: it is the only thing telling a keyboard
+     user where they are, and the system palette will not draw one for a
+     custom control. */
+  :focus-visible {
+    outline: 2px solid Highlight;
+  }
 }

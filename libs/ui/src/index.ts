@@ -5,6 +5,7 @@ export { PersonKeyComponent } from './charts/person-key.component';
 export { ScaleStripComponent } from './charts/scale-strip.component';
 export { InterestMatrixComponent } from './charts/interest-matrix.component';
 export { MeterComponent } from './charts/meter.component';
+export { ChartTableComponent } from './charts/chart-table.component';
 export { StatTileComponent } from './charts/stat-tile.component';
 export { SimDotComponent } from './charts/sim-dot.component';
 export { AnswerTextComponent } from './charts/answer-text.component';
