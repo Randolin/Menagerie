@@ -371,10 +371,12 @@ between features rather than a slot in a wave.
 
 **Wave 1 — the loop.** A1 freshness · A3 viewer CTA · C1 focus and
 announcements. The two ends of the share loop, plus the accessibility fix
-that costs almost nothing and unblocks the most people.
+that costs almost nothing and unblocks the most people. **Shipped.**
 
 **Wave 2 — the front door.** A2 demo compare · B1 backup card · B2 phrase
 entry. What a newcomer meets, and what keeps them from losing everything.
+**Shipped.** B3 (confirm the edit phrase at hatch) was left in wave 3 as
+planned; it now has somewhere to send people.
 
 **Wave 3 — the words.** C2 narrative panel · A4 core-tier milestone · B3
 phrase confirmation. The copy-heavy work, once the structure around it is
