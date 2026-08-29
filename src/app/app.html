@@ -1,6 +1,6 @@
 <!-- A button, not an <a href="#view">: hash routing owns the fragment, so a
      real anchor would navigate to the "view" route instead of jumping. -->
-<button class="skip-link" type="button" (click)="skipToContent()">Skip to content</button>
+<button i18n class="skip-link" type="button" (click)="skipToContent()">Skip to content</button>
 
 <header class="app-header">
   <a class="brand" routerLink="/">
@@ -13,18 +13,24 @@
       </svg> </span
     >Menagerie
   </a>
-  <nav class="nav" aria-label="Main">
+  <nav class="nav" i18n-aria-label aria-label="Main">
     @if (session.active()) {
       <!-- Who you are AND the way to your profile, in one control. These used
            to be two: a "Profile" link here and a bordered identity pill after
            the nav, which read as a button that did nothing (it went to /me,
            where the Profile link already went) and squeezed the brand. -->
-      <a class="session-chip" routerLink="/me" routerLinkActive="active" title="My profile">
+      <a
+        class="session-chip"
+        routerLink="/me"
+        routerLinkActive="active"
+        i18n-title
+        title="My profile"
+      >
         @if (session.persona(); as persona) {
           <moxy-creature-avatar [persona]="persona" [size]="22" />
           <span class="session-name">{{ persona.name }}</span>
         } @else {
-          Profile
+          <span i18n>Profile</span>
         }
       </a>
       <a routerLink="/menagerie" routerLinkActive="active">
@@ -35,26 +41,28 @@
           }}</span>
         }
       </a>
-      <a routerLink="/groups" routerLinkActive="active">Groups</a>
+      <a i18n routerLink="/groups" routerLinkActive="active">Groups</a>
     }
-    <a routerLink="/compare" routerLinkActive="active">Compare</a>
+    <a i18n routerLink="/compare" routerLinkActive="active">Compare</a>
     @if (session.active()) {
-      <a routerLink="/settings" routerLinkActive="active">Settings</a>
+      <a i18n routerLink="/settings" routerLinkActive="active">Settings</a>
     }
-    <a routerLink="/about" routerLinkActive="active">How it works</a>
+    <a i18n routerLink="/about" routerLinkActive="active">How it works</a>
   </nav>
 
   @if (session.active()) {
-    <button class="btn btn-ghost btn-small" style="white-space: nowrap" (click)="logout()">
+    <button i18n class="btn btn-ghost btn-small" style="white-space: nowrap" (click)="logout()">
       Log out
     </button>
   } @else {
-    <a class="btn btn-ghost btn-small" routerLink="/edit">Log in</a>
+    <a i18n class="btn btn-ghost btn-small" routerLink="/edit">Log in</a>
   }
 
   <button
     class="btn btn-ghost btn-small"
+    i18n-title
     title="Theme"
+    i18n-aria-label
     aria-label="Toggle theme"
     (click)="cycleTheme()"
   >
@@ -74,7 +82,7 @@
 <p class="sr-only" role="status" aria-live="polite">{{ announcement() }}</p>
 
 <footer class="app-footer">
-  <p>
+  <p i18n>
     No accounts, no names, no analytics — the server stores only ciphertext it can’t read.
     <a routerLink="/about">See exactly how</a>.
   </p>

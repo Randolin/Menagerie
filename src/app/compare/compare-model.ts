@@ -8,6 +8,7 @@ import {
   interlockScore,
   pairScores,
   revealMutualDesires,
+  optionLabels,
   type ComplementPair,
   type DesireReveal,
   type GridSection,
@@ -85,7 +86,8 @@ function interlockDetail(
   if (!Array.isArray(gives) || !Array.isArray(needs) || needs.length === 0) {
     return undefined;
   }
-  const options = (getItem(cp.receive)?.item as { options?: readonly string[] })?.options ?? [];
+  const receiveItem = getItem(cp.receive)?.item;
+  const options = receiveItem ? optionLabels(receiveItem) : [];
   const asc = (a: number, b: number) => a - b;
   const given = new Set(gives);
   return {

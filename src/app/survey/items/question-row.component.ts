@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import { importanceLabel, type Item } from '@moxy/core';
+import { importanceLabel, itemLabel, scaleEnds, type Item } from '@moxy/core';
 import { DraftStore } from '../../stores/draft.store';
 import { ItemEditorComponent } from './item-editor.component';
 import { WeightControlComponent } from './weight-control.component';
@@ -63,7 +63,9 @@ export class QuestionRowComponent {
    */
   protected readonly label = computed(() => {
     const i = this.item();
-    return i.type === 'scale' ? `${i.left} → ${i.right}` : i.label;
+    if (i.type !== 'scale') return itemLabel(i);
+    const [left, right] = scaleEnds(i)!;
+    return `${left} → ${right}`;
   });
 
   protected readonly answered = computed(() => {

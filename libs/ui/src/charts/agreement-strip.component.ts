@@ -18,8 +18,8 @@ export interface AgreementRow {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="agree-head">
-      <span class="fine">← differ</span>
-      <span class="fine">aligned →</span>
+      <span i18n class="fine">← differ</span>
+      <span i18n class="fine">aligned →</span>
     </div>
     @for (row of rows(); track row.label) {
       <div class="agree-row">

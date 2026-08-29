@@ -51,14 +51,21 @@ let gradientSeq = 0;
             class="btn btn-small qr-share"
             [disabled]="busy()"
             (click)="shareImage(name)"
+            i18n-title
             title="Save or share the QR code as an image"
           >
             <moxy-icon [name]="canShare ? 'share' : 'download'" />
-            {{ busy() ? 'Working…' : canShare ? 'Share QR' : 'Save QR' }}
+            @if (busy()) {
+              <span i18n>Working…</span>
+            } @else if (canShare) {
+              <span i18n>Share QR</span>
+            } @else {
+              <span i18n>Save QR</span>
+            }
           </button>
         }
       } @else {
-        <p class="fine">This profile is too large for a QR code — share the link instead.</p>
+        <p i18n class="fine">This profile is too large for a QR code — share the link instead.</p>
       }
     </div>
   `,
@@ -97,7 +104,7 @@ export class QrCodeComponent {
       const png = await svgToPngBlob(markup);
       if (!png) throw new Error('Could not render the QR code.');
       const how = await shareOrDownload(png, `menagerie-${name}.png`);
-      if (how === 'saved') this.toast.show('QR code saved');
+      if (how === 'saved') this.toast.show($localize`QR code saved`);
     } catch (err) {
       this.toast.error(err);
     } finally {

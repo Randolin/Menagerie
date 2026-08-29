@@ -9,7 +9,7 @@ import { ComparePanelsComponent } from './compare-panels.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ComparePanelsComponent],
   template: `
-    <h1>Compare profiles</h1>
+    <h1 i18n>Compare profiles</h1>
 
     <!-- The picker is a screen affordance; on paper it is a dead form. The
          panels below are the document someone actually wants to bring to a
@@ -49,16 +49,18 @@ import { ComparePanelsComponent } from './compare-panels.component';
           <input
             #pasteInput
             type="text"
+            i18n-placeholder
             placeholder="Paste a view phrase or link…"
+            i18n-aria-label
             aria-label="Paste a view phrase or link"
           />
         </div>
-        <button class="btn" [disabled]="store.full">Add</button>
+        <button i18n class="btn" [disabled]="store.full">Add</button>
       </form>
 
       <div class="btn-row" style="margin-top:12px">
         @if (canAddMine()) {
-          <button class="btn btn-small" (click)="addMine()">＋ My profile</button>
+          <button i18n class="btn btn-small" (click)="addMine()">＋ My profile</button>
         }
         @for (c of session.connections(); track c.id) {
           @if (!store.full) {
@@ -68,10 +70,10 @@ import { ComparePanelsComponent } from './compare-panels.component';
           }
         }
         @if (store.entries().length >= 1) {
-          <button class="btn btn-ghost btn-small" (click)="store.clear()">Clear all</button>
+          <button i18n class="btn btn-ghost btn-small" (click)="store.clear()">Clear all</button>
         }
       </div>
-      <p class="fine" style="margin-top:10px">
+      <p i18n class="fine" style="margin-top:10px">
         Comparisons happen entirely in this tab and vanish when you leave — the server only ever
         sees encrypted lookups.
       </p>
@@ -82,7 +84,7 @@ import { ComparePanelsComponent } from './compare-panels.component';
         <moxy-compare-panels [model]="m" />
       } @else {
         <div class="card">
-          <p class="sub">
+          <p i18n class="sub">
             Add at least two profiles to see the comparison — your own, people you’ve saved, or any
             view phrase you’ve been given.
           </p>
@@ -133,7 +135,7 @@ export class CompareComponent {
     event.preventDefault();
     try {
       if (!this.store.addFromText(input.value)) {
-        this.toast.show('That profile is already here');
+        this.toast.show($localize`That profile is already here`);
         return;
       }
       input.value = '';
@@ -144,10 +146,11 @@ export class CompareComponent {
 
   protected addMine(): void {
     const mine = this.session.viewPhrase();
-    if (mine && !this.store.addPhrase(mine)) this.toast.show('That profile is already here');
+    if (mine && !this.store.addPhrase(mine))
+      this.toast.show($localize`That profile is already here`);
   }
 
   protected addPhrase(phrase: string): void {
-    if (!this.store.addPhrase(phrase)) this.toast.show('That profile is already here');
+    if (!this.store.addPhrase(phrase)) this.toast.show($localize`That profile is already here`);
   }
 }

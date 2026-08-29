@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { SCALE_MAX, type AnswerValue, type ScaleItem } from '@moxy/core';
+import { SCALE_MAX, scaleEnds, type AnswerValue, type ScaleItem } from '@moxy/core';
 import { seriesVar } from './series';
 
 interface StripDot {
@@ -19,7 +19,7 @@ interface StripDot {
   template: `
     <div class="strip-row">
       <div class="strip-anchors">
-        <span class="anchor">{{ item().left }}</span>
+        <span class="anchor">{{ ends()[0] }}</span>
         @if (gapBadge(); as badge) {
           <span
             class="badge"
@@ -28,7 +28,7 @@ interface StripDot {
             >{{ badge }}</span
           >
         }
-        <span class="anchor anchor-right">{{ item().right }}</span>
+        <span class="anchor anchor-right">{{ ends()[1] }}</span>
       </div>
       <div class="strip-track">
         @for (dot of dots(); track dot.personIdx) {
@@ -45,6 +45,8 @@ interface StripDot {
   `,
 })
 export class ScaleStripComponent {
+  /** Both anchors through the message layer, never off the item. */
+  protected readonly ends = computed(() => scaleEnds(this.item())!);
   protected readonly max = SCALE_MAX;
   readonly item = input.required<ScaleItem>();
   readonly answers = input.required<readonly (AnswerValue | null)[]>();

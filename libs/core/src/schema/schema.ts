@@ -8,6 +8,8 @@ import {
   type Section,
 } from './types';
 import { SECTIONS } from './sections';
+import { message } from '../i18n/messages';
+import { optionLabel, scaleEnds } from './labels';
 
 export interface ItemRef {
   readonly section: Section;
@@ -46,7 +48,8 @@ export function coreItems(): ItemRef[] {
 }
 
 export function interestLabel(level: number): string {
-  return INTEREST_LEVELS.find((l) => l.value === level)?.label ?? String(level);
+  const found = INTEREST_LEVELS.find((l) => l.value === level);
+  return found ? message(`lvl.${found.value}`, found.label) : String(level);
 }
 
 /**
@@ -55,11 +58,14 @@ export function interestLabel(level: number): string {
  * to read a scale's answer at all.
  */
 export function itemLabel(item: Item): string {
-  return 'label' in item ? item.label : `${item.left} ↔ ${item.right}`;
+  if ('label' in item) return message(`it.${item.id}.label`, item.label);
+  const [left, right] = scaleEnds(item)!;
+  return `${left} ↔ ${right}`;
 }
 
 export function importanceLabel(weight: ImportanceWeight | undefined): string | undefined {
-  return IMPORTANCE_WEIGHTS.find((d) => d.value === weight)?.label;
+  const found = IMPORTANCE_WEIGHTS.find((d) => d.value === weight);
+  return found && message(`imp.${found.value}`, found.label);
 }
 
 /**
@@ -71,9 +77,9 @@ export function answerChips(item: Item, value: AnswerValue | null | undefined): 
   if (value === null || value === undefined) return null;
   switch (item.type) {
     case 'choice':
-      return [item.options[value as number] ?? '?'];
+      return [optionLabel(item, value as number)];
     case 'multi':
-      return (Array.isArray(value) ? value : []).map((i) => item.options[i] ?? '?');
+      return (Array.isArray(value) ? value : []).map((i) => optionLabel(item, i));
     case 'scale':
       return [`${value}/${SCALE_MAX}`];
     case 'interest':

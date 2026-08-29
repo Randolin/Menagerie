@@ -28,20 +28,25 @@ type Phase = 'idle' | 'staging' | 'composing' | 'sending' | 'done';
     @switch (phase()) {
       @case ('idle') {
         <button class="btn btn-primary" (click)="open()">
-          {{ replyTo() ? '↩️ Reply once' : '👉 Boop' }}
+          @if (replyTo()) {
+            <span i18n>↩️ Reply once</span>
+          } @else {
+            <span i18n>👉 Boop</span>
+          }
         </button>
       }
       @case ('staging') {
-        <button class="btn" disabled>Preparing…</button>
+        <button i18n class="btn" disabled>Preparing…</button>
       }
       @case ('done') {
         <p class="sub">
-          {{
-            replyTo()
-              ? 'Reply sent — this exchange is complete.'
-              : 'Booped! If they’re
-          interested, their one reply will appear on your dashboard.'
-          }}
+          @if (replyTo()) {
+            <span i18n>Reply sent — this exchange is complete.</span>
+          } @else {
+            <span i18n
+              >Booped! If they’re interested, their one reply will appear on your dashboard.</span
+            >
+          }
         </p>
       }
       @default {
@@ -55,7 +60,7 @@ type Phase = 'idle' | 'staging' | 'composing' | 'sending' | 'done';
             }}
           </p>
           <fieldset class="boop-intents">
-            <legend class="fine">What are you hoping for?</legend>
+            <legend i18n class="fine">What are you hoping for?</legend>
             @for (intent of intents; track $index) {
               <label class="boop-check">
                 <input
@@ -75,10 +80,10 @@ type Phase = 'idle' | 'staging' | 'composing' | 'sending' | 'done';
                 [checked]="attachView()"
                 (change)="attachView.set(!attachView())"
               />
-              Include my view phrase
+              <span i18n>Include my view phrase</span>
             </label>
             @if (attachView()) {
-              <p class="fine">
+              <p i18n class="fine">
                 They’ll see your full open profile and can boop you back. Your creature stays
                 anonymous — but a shared view phrase can’t be unshared (regenerating your creature
                 is the only undo).
@@ -92,10 +97,10 @@ type Phase = 'idle' | 'staging' | 'composing' | 'sending' | 'done';
               [checked]="attachContact()"
               (change)="attachContact.set(!attachContact())"
             />
-            Include a contact card
+            <span i18n>Include a contact card</span>
           </label>
           @if (attachContact()) {
-            <p class="fine boop-warn">
+            <p i18n class="fine boop-warn">
               ⚠️ A contact card leaves Menagerie’s protection: it ties this boop to who you are on
               another platform, permanently, for this person. Menagerie can’t take it back, and
               can’t verify who reads it.
@@ -109,6 +114,7 @@ type Phase = 'idle' | 'staging' | 'composing' | 'sending' | 'done';
               <input
                 type="text"
                 [attr.maxlength]="handleMax"
+                i18n-placeholder
                 placeholder="your handle"
                 [value]="handle()"
                 #handleInput
@@ -121,7 +127,7 @@ type Phase = 'idle' | 'staging' | 'composing' | 'sending' | 'done';
                 [checked]="contactConfirmed()"
                 (change)="contactConfirmed.set(!contactConfirmed())"
               />
-              I understand this de-anonymizes me to this person
+              <span i18n>I understand this de-anonymizes me to this person</span>
             </label>
           }
 
@@ -134,9 +140,20 @@ type Phase = 'idle' | 'staging' | 'composing' | 'sending' | 'done';
               [disabled]="!canSend() || phase() === 'sending'"
               (click)="send()"
             >
-              {{ phase() === 'sending' ? 'Sending…' : replyTo() ? 'Send reply' : 'Send boop' }}
+              @if (phase() === 'sending') {
+                <span i18n>Sending…</span>
+              } @else if (replyTo()) {
+                <span i18n>Send reply</span>
+              } @else {
+                <span i18n>Send boop</span>
+              }
             </button>
-            <button class="btn btn-ghost" [disabled]="phase() === 'sending'" (click)="cancel()">
+            <button
+              i18n
+              class="btn btn-ghost"
+              [disabled]="phase() === 'sending'"
+              (click)="cancel()"
+            >
               Cancel
             </button>
           </div>
@@ -251,7 +268,7 @@ export class BoopComposerComponent {
         await this.boops.replyToBoop(reply, [...this.chosen()], attachments);
         // Success removes the boop's row — and this composer with it — so
         // the confirmation must outlive us as a toast.
-        this.toast.show('Reply sent — this exchange is complete.');
+        this.toast.show($localize`Reply sent — this exchange is complete.`);
       } else {
         const target = this.target();
         if (!target || !this.stagedId) throw new Error('Nothing to send to.');

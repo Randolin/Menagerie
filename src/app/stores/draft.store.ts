@@ -17,6 +17,11 @@ import type {
  * disk, so a shared computer holds no plaintext answers after the tab closes.
  * Importance weights and dealbreaker acceptable-sets live beside the answers
  * and follow the same lifecycle.
+ *
+ * That last promise is load-bearing and stays exactly as written. The opt-in
+ * that survives a closed tab (DraftVault) copies this state out under the
+ * edit key, so what reaches disk is ciphertext nobody on the device can open.
+ * Nothing may write these signals' contents anywhere in the clear.
  */
 @Injectable({ providedIn: 'root' })
 export class DraftStore {

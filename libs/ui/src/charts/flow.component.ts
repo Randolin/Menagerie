@@ -17,10 +17,24 @@ import { seriesVar } from './series';
       role="img"
       [attr.aria-label]="matched().length + ' of ' + needs().length + ' needs covered'"
     >
-      <text [attr.x]="LEFT_X" [attr.y]="12" text-anchor="end" font-size="10" fill="var(--muted)">
+      <text
+        i18n
+        [attr.x]="LEFT_X"
+        [attr.y]="12"
+        text-anchor="end"
+        font-size="10"
+        fill="var(--muted)"
+      >
         gives
       </text>
-      <text [attr.x]="RIGHT_X" [attr.y]="12" text-anchor="start" font-size="10" fill="var(--muted)">
+      <text
+        i18n
+        [attr.x]="RIGHT_X"
+        [attr.y]="12"
+        text-anchor="start"
+        font-size="10"
+        fill="var(--muted)"
+      >
         needs
       </text>
       @for (g of gives(); track g; let i = $index) {
@@ -48,6 +62,7 @@ import { seriesVar } from './series';
         </text>
         @if (!isMatched(n)) {
           <text
+            i18n
             [attr.x]="RIGHT_X"
             [attr.y]="rowY(i) + 11"
             text-anchor="start"

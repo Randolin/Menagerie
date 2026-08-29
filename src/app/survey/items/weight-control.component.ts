@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import {
   IMPORTANCE_WEIGHTS,
-  INTEREST_LEVELS,
+  importanceLabels,
+  interestLevelLabels,
+  optionLabels,
   itemLabel,
   type ImportanceWeight,
   type Item,
@@ -23,8 +25,9 @@ import { DraftStore } from '../../stores/draft.store';
     <!-- aria-pressed, not just a class: which importance is set was visible
          only as a highlight, so a screen reader could not tell at all. -->
     <div class="weight-row" moxyOptionGroup role="group" [attr.aria-label]="importanceLabel()">
-      <span class="fine">Importance:</span>
+      <span i18n class="fine">Importance:</span>
       <button
+        i18n
         type="button"
         class="btn btn-ghost btn-small"
         [class.weight-on]="!weight()"
@@ -47,7 +50,7 @@ import { DraftStore } from '../../stores/draft.store';
     </div>
     @if (weight() === 3) {
       <div class="weight-accept" moxyOptionGroup role="group" [attr.aria-label]="acceptLabel()">
-        <span class="fine">I could match with:</span>
+        <span i18n class="fine">I could match with:</span>
         @for (opt of acceptOptions(); track $index) {
           <button
             type="button"
@@ -60,7 +63,7 @@ import { DraftStore } from '../../stores/draft.store';
           </button>
         }
         @if (!hasAcceptable()) {
-          <span class="fine">— pick at least one, or this stays a soft weight</span>
+          <span i18n class="fine">— pick at least one, or this stays a soft weight</span>
         }
       </div>
     }
@@ -98,16 +101,18 @@ export class WeightControlComponent {
 
   protected readonly weight = computed(() => this.draft.weights()[this.item().id]);
 
-  protected readonly tiers = computed(() =>
-    this.item().type === 'scale'
-      ? IMPORTANCE_WEIGHTS.filter((d) => d.value !== 3)
-      : IMPORTANCE_WEIGHTS,
-  );
+  protected readonly tiers = computed(() => {
+    const named = importanceLabels().map((label, i) => ({
+      value: IMPORTANCE_WEIGHTS[i].value,
+      label,
+    }));
+    return this.item().type === 'scale' ? named.filter((d) => d.value !== 3) : named;
+  });
 
   protected readonly acceptOptions = computed<readonly string[]>(() => {
     const item = this.item();
-    if (item.type === 'choice' || item.type === 'multi') return item.options;
-    if (item.type === 'interest') return INTEREST_LEVELS.map((l) => l.label);
+    if (item.type === 'choice' || item.type === 'multi') return optionLabels(item);
+    if (item.type === 'interest') return interestLevelLabels();
     return [];
   });
 

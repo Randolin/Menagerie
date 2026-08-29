@@ -987,6 +987,15 @@ textarea {
   color: var(--ink);
   font-size: 15px;
 }
+/* Offline is not an error, and must not be dressed as one: the answers are
+   intact and the only thing to do is wait. Warm neutral, not red, and it
+   loses the accent border so it doesn't read as the same call to action the
+   unsaved bar is making. */
+.save-bar-offline {
+  border-color: var(--line);
+  background: linear-gradient(var(--warn-soft), var(--warn-soft)), var(--surface);
+}
+
 /* The result of saving, held briefly where the prompt was — a toast alone
    left the act with no visible consequence at the point of action. */
 .save-bar-done {

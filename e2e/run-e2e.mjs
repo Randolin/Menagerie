@@ -11,7 +11,15 @@ import { PNG } from 'pngjs';
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
-import { createReadStream, existsSync, statSync, readFileSync, mkdirSync, rmSync } from 'node:fs';
+import {
+  createReadStream,
+  existsSync,
+  statSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  rmSync,
+} from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -24,6 +32,22 @@ if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 if (!existsSync(join(DIST, 'index.html'))) {
   console.error('dist not found — run `npm run build` first');
   process.exit(1);
+}
+
+// --- a pseudo-locale, built here rather than checked in --------------------
+// Every extracted template message wrapped in guillemets. Loading it turns the
+// UI into a test of its own markup: anything still reading as plain English on
+// screen is a string nobody marked, which is the one i18n mistake no compiler
+// and no unit test can see. Generated from the catalogue on every run, so it
+// can never drift from the templates the way a committed fixture would.
+const CATALOGUE = join(root, 'locale', 'messages.json');
+if (existsSync(CATALOGUE)) {
+  const source = JSON.parse(readFileSync(CATALOGUE, 'utf8')).translations ?? {};
+  const template = Object.fromEntries(
+    Object.entries(source).map(([id, text]) => [id, `«${text}»`]),
+  );
+  mkdirSync(join(DIST, 'i18n'), { recursive: true });
+  writeFileSync(join(DIST, 'i18n', 'qps.json'), JSON.stringify({ template }));
 }
 
 // --- dumb static server (no rewrites: hash routing must need none) ---------
@@ -39,7 +63,16 @@ const MIME = {
 const server = createServer((req, res) => {
   const path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   let file = join(DIST, path === '/' ? 'index.html' : path);
-  if (!existsSync(file) || statSync(file).isDirectory()) file = join(DIST, 'index.html');
+  if (!existsSync(file) || statSync(file).isDirectory()) {
+    // Everything unknown is the shell — except a locale catalogue, which has
+    // to 404 honestly or the loader would parse index.html as JSON.
+    if (path.startsWith('/i18n/')) {
+      res.statusCode = 404;
+      res.end();
+      return;
+    }
+    file = join(DIST, 'index.html');
+  }
   res.setHeader('content-type', MIME[extname(file)] ?? 'application/octet-stream');
   createReadStream(file).pipe(res);
 });
@@ -317,6 +350,35 @@ try {
     fail(`the cache holds a foreign origin: ${cachedOrigins.join(', ')}`);
   }
 
+  // --- the pseudo-locale: proof the markup actually covers the UI ----------
+  step = 'pseudo-locale';
+  {
+    const pseudo = await freshPage();
+    await pseudo.goto(`${BASE}?lang=qps#/`);
+    await pseudo.waitForSelector('.brand', { timeout: 30000 });
+    const nav = await pseudo.textContent('.app-header');
+    // The header is the smallest surface that has to be fully marked: if the
+    // nav is bracketed, loadTranslations ran, the catalogue reached the page,
+    // and those strings are addressable by a translator.
+    for (const expected of ['«Compare»', '«How it works»', '«Log in»']) {
+      if (!nav.includes(expected)) fail(`header not translated: wanted ${expected} in ${nav}`);
+    }
+    const body = await pseudo.textContent('body');
+    if (!body.includes('«')) fail('the pseudo-locale did not load at all');
+    // Landing copy, the page a stranger meets first.
+    if (!body.includes('«Compatibility, minus the identity»')) {
+      fail('the landing headline is not translatable');
+    }
+    // And the default stays English, with no catalogue fetched.
+    const plain = await freshPage();
+    await plain.goto(`${BASE}#/`);
+    await plain.waitForSelector('.brand', { timeout: 30000 });
+    if ((await plain.textContent('body')).includes('«')) {
+      fail('the source locale loaded a catalogue it should have skipped');
+    }
+    await shot(pseudo, '01c-pseudo-locale.png');
+  }
+
   step = 'landing-configure';
   await page.fill('input[aria-label="Profile server URL"]', main.url);
   await page.click('text=Use this server');
@@ -416,6 +478,111 @@ try {
   step = 'pack-runner';
   await answerValues(page);
   await shot(page, '04-dashboard-filled.png');
+
+  // --- a save that dies in a tunnel, and finishes itself when it doesn't ----
+  // The claim under test is the one the bar makes to the person: the answers
+  // are not lost, and they will save when the network is back — without
+  // anyone clicking anything a second time.
+  step = 'offline-save';
+  {
+    // Orientation, deliberately: an item nothing else in this run asserts, so
+    // the offline round-trip proves itself without perturbing any other step.
+    const card = await addCategory(page, 'About me');
+    await card
+      .locator('.q-row', { hasText: 'Orientation' })
+      .locator('.opt', { hasText: 'Queer' })
+      .click();
+    await page.waitForSelector('.save-bar');
+
+    // Two mechanisms, because each does only half the job. setOffline drives
+    // navigator.onLine and the online/offline events the retry listens for,
+    // but Chromium's network emulation does not reliably cut loopback, so the
+    // request would otherwise succeed and prove nothing; the route abort is
+    // what actually makes the save fail.
+    const serverGlob = `${main.url}/**`;
+    await page.route(serverGlob, (route) => route.abort('internetdisconnected'));
+    await page.context().setOffline(true);
+    await page.click('.save-bar button');
+    await page.waitForSelector('.save-bar-offline', { timeout: 45000 });
+    const bar = await page.textContent('.save-bar-offline');
+    if (!bar.includes('Offline')) fail('the offline save bar does not say it is offline');
+    // Not kept on this device by default, so the honest advice is the tab.
+    if (!bar.includes('Leave it open')) fail('offline bar did not say to keep the tab open');
+    // A red toast on top of it would read as a second, worse problem.
+    if ((await page.textContent('body')).includes('Unknown error')) {
+      fail('an offline save produced a raw error message');
+    }
+    await shot(page, '04b-offline-save.png');
+
+    await page.unroute(serverGlob);
+    await page.context().setOffline(false);
+    // No second click: coming back online is what finishes the save.
+    await page.waitForSelector('.save-bar', { state: 'detached', timeout: 45000 });
+    await page.reload();
+    await page.waitForSelector('.category-card', { timeout: 30000 });
+    if (!(await page.textContent('body')).includes('Queer')) {
+      fail('the answer made offline did not reach the server on reconnect');
+    }
+  }
+
+  // --- unsaved answers that survive the tab, encrypted and opt-in ----------
+  step = 'kept-draft';
+  {
+    await page.goto(`${BASE}#/settings`);
+    await page
+      .locator('label', { hasText: 'Keep unsaved answers on this device' })
+      .locator('input')
+      .check();
+    // Both boxes unticked means one warning, not two: the compounding note
+    // only appears when the phrase is on this device as well.
+    if ((await page.textContent('body')).includes('both the lock and the key')) {
+      fail('the compounding warning showed with only one opt-in ticked');
+    }
+    await page.goto(`${BASE}#/me`);
+    const before = await page.evaluate(() => localStorage.getItem('moxy.draft.v1'));
+    const card = await addCategory(page, 'About me');
+    await card
+      .locator('.q-row', { hasText: 'Orientation' })
+      .locator('.opt', { hasText: 'Bisexual' })
+      .click();
+    await page.waitForSelector('.save-bar');
+
+    // Writes are debounced, so wait for the answer to actually land rather
+    // than for a blob that may still be the one written at opt-in time.
+    await page.waitForFunction(
+      (was) => {
+        const now = localStorage.getItem('moxy.draft.v1');
+        return Boolean(now) && now !== was;
+      },
+      before,
+      { timeout: 15000 },
+    );
+
+    // What reaches disk is the whole point of the opt-in being acceptable.
+    const stored = await page.evaluate(() => localStorage.getItem('moxy.draft.v1'));
+    if (stored.includes('ab.orient') || stored.includes('Bisexual')) {
+      fail('the kept draft is readable at rest');
+    }
+
+    // Close the tab's worth of state and come back: the answer returns, and
+    // returns as UNSAVED, because the server was never told about it.
+    await page.reload();
+    await page.waitForSelector('.save-bar', { timeout: 60000 });
+    if (!(await page.textContent('body')).includes('Bisexual')) {
+      fail('the kept draft did not come back after a reload');
+    }
+    await saveProfile(page);
+    if (await page.evaluate(() => localStorage.getItem('moxy.draft.v1'))) {
+      fail('the kept draft outlived the save that made it redundant');
+    }
+
+    await page.goto(`${BASE}#/settings`);
+    await page
+      .locator('label', { hasText: 'Keep unsaved answers on this device' })
+      .locator('input')
+      .uncheck();
+    await page.goto(`${BASE}#/me`);
+  }
 
   // --- a second profile to compare against ----------------------------------
   step = 'profile-b';

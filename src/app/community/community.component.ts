@@ -6,6 +6,7 @@ import {
   getItem,
   getSection,
   itemLabel,
+  optionLabels,
   type MetricsRecord,
 } from '@moxy/core';
 import { errorText } from '@moxy/ui';
@@ -29,8 +30,8 @@ interface RateRow {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
   template: `
-    <h1>The community, counted anonymously</h1>
-    <p class="sub" style="max-width:640px">
+    <h1 i18n>The community, counted anonymously</h1>
+    <p i18n class="sub" style="max-width:640px">
       Opted-in profiles contribute coarse monthly counts — never identities, phrases, or exact
       answers. Buckets with fewer than ten contributors stay hidden, and desire counts carry
       deliberate random noise, so what you see here are honest estimates about a crowd, never facts
@@ -40,7 +41,7 @@ interface RateRow {
     @if (view.value(); as v) {
       @if (bands().length === 0) {
         <div class="card">
-          <p class="sub">
+          <p i18n class="sub">
             Nothing to show yet — the counters need at least ten contributors in a bucket before it
             appears. Opt in from
             <a routerLink="/me">your profile</a> and check back as the menagerie grows.
@@ -48,7 +49,7 @@ interface RateRow {
         </div>
       } @else {
         <div class="card">
-          <h2>Age bands ({{ v.epoch }})</h2>
+          <h2 i18n>Age bands ({{ v.epoch }})</h2>
           @for (band of bands(); track band.label) {
             <div class="bar-row">
               <span class="bar-label">{{ band.label }}</span>
@@ -67,9 +68,9 @@ interface RateRow {
         @if (myBandLabel(); as bandLabel) {
           @if (seekingRows().length || desireRows().length) {
             <div class="card">
-              <h2>Creatures aged {{ bandLabel }}</h2>
+              <h2 i18n>Creatures aged {{ bandLabel }}</h2>
               @if (seekingRows().length) {
-                <h3>Open to…</h3>
+                <h3 i18n>Open to…</h3>
                 @for (row of seekingRows(); track row.label) {
                   <div class="bar-row">
                     <span class="bar-label">{{ row.label }}</span>
@@ -81,7 +82,7 @@ interface RateRow {
                 }
               }
               @if (desireRows().length) {
-                <h3>Desires <span class="fine">noisy estimates, by design</span></h3>
+                <h3 i18n>Desires <span class="fine">noisy estimates, by design</span></h3>
                 @for (row of desireRows(); track row.label) {
                   <div class="bar-row">
                     <span class="bar-label">{{ row.label }}</span>
@@ -96,7 +97,7 @@ interface RateRow {
           }
         } @else {
           <div class="card">
-            <p class="sub">
+            <p i18n class="sub">
               Answer your age band on <a routerLink="/me">your profile</a> to see how creatures in
               your band answered — computed right here in your tab.
             </p>
@@ -108,7 +109,7 @@ interface RateRow {
         <p class="sub">{{ errorMessage() }}</p>
       </div>
     } @else {
-      <div class="card"><p class="sub">Counting the menagerie…</p></div>
+      <div class="card"><p i18n class="sub">Counting the menagerie…</p></div>
     }
   `,
   styles: `
@@ -168,12 +169,11 @@ export class CommunityComponent {
     },
   });
 
-  private readonly ageOptions =
-    (getItem('ab.age')?.item as { options?: readonly string[] })?.options ?? [];
+  private readonly ageItem = getItem('ab.age')?.item;
 
   protected readonly bands = computed(() => {
     const buckets = this.view.value()?.buckets ?? {};
-    const rows = this.ageOptions
+    const rows = (this.ageItem ? optionLabels(this.ageItem) : [])
       .map((label, i) => ({ label, n: buckets[`age|${i}`] ?? 0 }))
       .filter((b) => b.n > 0);
     const max = Math.max(1, ...rows.map((b) => b.n));
@@ -186,10 +186,11 @@ export class CommunityComponent {
     return typeof age === 'number' ? age : null;
   });
 
-  protected myBandLabel(): string | null {
+  protected readonly myBandLabel = computed(() => {
     const band = this.myBand();
-    return band === null ? null : (this.ageOptions[band] ?? null);
-  }
+    if (band === null || !this.ageItem) return null;
+    return optionLabels(this.ageItem)[band] ?? null;
+  });
 
   protected readonly seekingRows = computed<RateRow[]>(() => {
     const band = this.myBand();

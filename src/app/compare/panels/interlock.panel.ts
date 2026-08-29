@@ -18,8 +18,8 @@ interface FlowView {
   imports: [FlowComponent],
   template: `
     <div class="card">
-      <h2>Care interlock</h2>
-      <p class="sub">
+      <h2 i18n>Care interlock</h2>
+      <p i18n class="sub">
         Not similarity — coverage: what one naturally gives, laid against what the other needs to
         receive. A ribbon is a need met; a dangling need is worth a conversation, not a verdict.
       </p>
@@ -28,7 +28,7 @@ interface FlowView {
           <h3 style="margin:0 0 6px">
             {{ flow.heading }}
             @if (flow.pct !== null) {
-              <span class="fine">{{ flow.pct }}% covered</span>
+              <span i18n class="fine">{{ flow.pct }}% covered</span>
             }
           </h3>
           <moxy-flow

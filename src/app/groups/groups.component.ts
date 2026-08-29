@@ -12,17 +12,19 @@ import { GroupMembershipStore } from '../stores/group-membership.store';
   imports: [RouterLink],
   template: `
     <div class="card">
-      <h2>My groups</h2>
-      <p class="sub">
+      <h2 i18n>My groups</h2>
+      <p i18n class="sub">
         A group is a shared, encrypted roster with its own creature and invite QR. Members deposit a
         snapshot of their open answers — pseudonymously, or openly with their creature — and
         everyone in it can compare across the roster.
       </p>
       @if (newGroup(); as created) {
         <div class="notice">
-          Your group is hatched. Share the <strong>invite link</strong>; keep the
-          <strong>admin phrase</strong> — it’s the only way to manage or re-mint the group (it’s
-          also saved inside your encrypted profile):
+          <span i18n
+            >Your group is hatched. Share the <strong>invite link</strong>; keep the
+            <strong>admin phrase</strong> — it’s the only way to manage or re-mint the group (it’s
+            also saved inside your encrypted profile):</span
+          >
           <div class="passphrase-box" style="margin-top:8px">{{ created.adminPhrase }}</div>
         </div>
       }
@@ -31,22 +33,22 @@ import { GroupMembershipStore } from '../stores/group-membership.store';
           <div class="grid-item-label">
             {{ groupName(g.groupPhrase) }}
             @if (g.adminPhrase) {
-              <span class="fine">creator</span>
+              <span i18n class="fine">creator</span>
             }
             @if (g.memberLocator) {
               <span class="fine">{{
                 g.tier === 2 ? 'open' : 'as ' + (g.emoji ?? '') + ' ' + (g.pseudonym ?? 'pseudonym')
               }}</span>
             } @else {
-              <span class="fine">not deposited</span>
+              <span i18n class="fine">not deposited</span>
             }
           </div>
           <div class="grid-answers" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <a class="btn btn-small" [routerLink]="['/group', g.groupPhrase]">Open</a>
+            <a i18n class="btn btn-small" [routerLink]="['/group', g.groupPhrase]">Open</a>
           </div>
         </div>
       } @empty {
-        <p class="fine">No groups yet. Paste an invite to join one, or hatch your own.</p>
+        <p i18n class="fine">No groups yet. Paste an invite to join one, or hatch your own.</p>
       }
       <form
         style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"
@@ -55,18 +57,24 @@ import { GroupMembershipStore } from '../stores/group-membership.store';
         <input
           #groupInput
           type="text"
+          i18n-placeholder
           placeholder="Paste a group invite link or phrase"
+          i18n-aria-label
           aria-label="Group invite link or phrase"
           style="flex:1;min-width:220px"
         />
-        <button class="btn">Open group</button>
+        <button i18n class="btn">Open group</button>
         <button
           class="btn btn-primary"
           type="button"
           [disabled]="creatingGroup()"
           (click)="createGroup()"
         >
-          {{ creatingGroup() ? 'Hatching…' : '🐣 Create a group' }}
+          @if (creatingGroup()) {
+            <span i18n>Hatching…</span>
+          } @else {
+            <span i18n>🐣 Create a group</span>
+          }
         </button>
       </form>
     </div>
@@ -90,7 +98,7 @@ export class GroupsComponent {
     this.creatingGroup.set(true);
     try {
       this.newGroup.set(await this.groupStore.createGroup());
-      this.toast.show('Group hatched — save the admin phrase');
+      this.toast.show($localize`Group hatched — save the admin phrase`);
     } catch (err) {
       this.toast.error(err);
     } finally {
@@ -102,7 +110,7 @@ export class GroupsComponent {
     event.preventDefault();
     const phrase = extractGroupPhrase(input.value);
     if (!phrase) {
-      this.toast.show('That doesn’t look like a Menagerie group link or phrase.', 'error');
+      this.toast.show($localize`That doesn’t look like a Menagerie group link or phrase.`, 'error');
       return;
     }
     input.value = '';

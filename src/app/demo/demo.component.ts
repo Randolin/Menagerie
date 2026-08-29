@@ -28,8 +28,8 @@ import { ServerConfigStore } from '../stores/server-config.store';
   imports: [RouterLink, ComparePanelsComponent, CreatureAvatarComponent],
   template: `
     <div class="hero">
-      <h1>What a comparison looks like</h1>
-      <p class="lede">
+      <h1 i18n>What a comparison looks like</h1>
+      <p i18n class="lede">
         Two profiles that don’t exist, compared for real. Every number below is computed by the same
         code your own comparisons use — nothing here is a screenshot, and nothing here is stored or
         sent anywhere.
@@ -39,9 +39,9 @@ import { ServerConfigStore } from '../stores/server-config.store';
     <!-- error() before value(): a resource throws from value() when it failed. -->
     @if (demo.error()) {
       <div class="card">
-        <h2>The demo didn’t build</h2>
-        <p class="sub">That’s a bug in Menagerie, not in anything you did.</p>
-        <a class="btn" routerLink="/">Go to the start</a>
+        <h2 i18n>The demo didn’t build</h2>
+        <p i18n class="sub">That’s a bug in Menagerie, not in anything you did.</p>
+        <a i18n class="btn" routerLink="/">Go to the start</a>
       </div>
     } @else if (demo.value(); as model) {
       <div class="card">
@@ -53,7 +53,7 @@ import { ServerConfigStore } from '../stores/server-config.store';
             </span>
           }
         </div>
-        <p class="fine" style="margin-top:10px">
+        <p i18n class="fine" style="margin-top:10px">
           Invented for this page. They have opposite ideas about drinking, and one of them made that
           a dealbreaker — which is the kind of thing worth knowing early, and the kind of thing this
           survey exists to surface.
@@ -63,25 +63,29 @@ import { ServerConfigStore } from '../stores/server-config.store';
       <moxy-compare-panels [model]="model" />
 
       <div class="card">
-        <h2>Your turn</h2>
-        <p class="sub">
+        <h2 i18n>Your turn</h2>
+        <p i18n class="sub">
           Hatching takes a second and needs no account, no email, and no name. Answer the core set,
           share your phrase with one person, and you get this — about the two of you.
         </p>
         @if (ready()) {
           <button class="btn btn-primary" [disabled]="hatching()" (click)="hatch()">
-            {{ hatching() ? 'Hatching…' : '🥚 Hatch my creature' }}
+            @if (hatching()) {
+              <span i18n>Hatching…</span>
+            } @else {
+              <span i18n>🥚 Hatch my creature</span>
+            }
           </button>
         } @else {
           <!-- This page works with no server; hatching does not. -->
-          <a class="btn btn-primary" routerLink="/">Get started</a>
-          <p class="fine" style="margin-top:8px">
+          <a i18n class="btn btn-primary" routerLink="/">Get started</a>
+          <p i18n class="fine" style="margin-top:8px">
             No profile server is configured yet, so this demo is all there is to see for now.
           </p>
         }
       </div>
     } @else {
-      <div class="card"><p class="sub">Building the comparison…</p></div>
+      <div class="card"><p i18n class="sub">Building the comparison…</p></div>
     }
   `,
 })

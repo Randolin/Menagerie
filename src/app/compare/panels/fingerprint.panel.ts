@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { SCALE_MAX, getSection, type ScaleItem } from '@moxy/core';
+import { SCALE_MAX, getSection, scaleEnds, type ScaleItem } from '@moxy/core';
 import {
   ChartTableComponent,
   PersonKeyComponent,
@@ -20,8 +20,8 @@ import type { ComparePanelComponent } from '../compare-panels.token';
   imports: [ChartTableComponent, PersonKeyComponent, RadarComponent],
   template: `
     <div class="card">
-      <h2>Values fingerprint</h2>
-      <p class="sub">
+      <h2 i18n>Values fingerprint</h2>
+      <p i18n class="sub">
         Each shape is one profile's values, drawn over the same axes — overlap is alignment you can
         see. An axis points toward the trait it names.
       </p>
@@ -51,14 +51,14 @@ export class FingerprintPanel implements ComparePanelComponent {
     );
   });
 
-  protected readonly axes = computed(() => this.sharedScales().map((s) => s.right));
+  protected readonly axes = computed(() => this.sharedScales().map((s) => scaleEnds(s)![1]));
 
   /** The shape's own numbers: one row per axis, one column per person. */
   protected readonly tableColumns = computed(() => ['Value', ...this.model().names]);
 
   protected readonly tableRows = computed(() =>
     this.sharedScales().map((scale) => [
-      `${scale.left} → ${scale.right}`,
+      scaleEnds(scale)!.join(' → '),
       ...this.model().payloads.map((p) => `${p.a[scale.id] as number}/${SCALE_MAX}`),
     ]),
   );

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { SECTIONS, type Section } from '@moxy/core';
+import { SECTIONS, sectionBlurb, sectionTitle, type Section } from '@moxy/core';
 import { DraftStore } from '../stores/draft.store';
 
 /**
@@ -17,28 +17,28 @@ import { DraftStore } from '../stores/draft.store';
     @if (missing().length) {
       <div class="card add-card">
         @if (!open()) {
-          <button type="button" class="btn btn-primary add-trigger" (click)="open.set(true)">
+          <button i18n type="button" class="btn btn-primary add-trigger" (click)="open.set(true)">
             ＋ Add a category
           </button>
-          <span class="fine">{{ missing().length }} left to add — all optional</span>
+          <span i18n class="fine">{{ missing().length }} left to add — all optional</span>
         } @else {
           <div class="add-head">
-            <h2>Add a category</h2>
-            <button type="button" class="btn btn-ghost btn-small" (click)="open.set(false)">
+            <h2 i18n>Add a category</h2>
+            <button i18n type="button" class="btn btn-ghost btn-small" (click)="open.set(false)">
               Cancel
             </button>
           </div>
           <div class="add-grid">
-            @for (s of missing(); track s.id) {
-              <button type="button" class="add-option" (click)="add(s)">
+            @for (s of missing(); track s.section.id) {
+              <button type="button" class="add-option" (click)="add(s.section)">
                 <span class="add-option-title">
                   {{ s.title }}
-                  @if (s.privacy === 'match') {
-                    <span class="fine">🔒 mutual-only</span>
+                  @if (s.section.privacy === 'match') {
+                    <span i18n class="fine">🔒 mutual-only</span>
                   }
                 </span>
                 <span class="fine add-option-blurb">{{ s.blurb }}</span>
-                <span class="fine">{{ s.items.length }} questions</span>
+                <span i18n class="fine">{{ s.section.items.length }} questions</span>
               </button>
             }
           </div>
@@ -51,7 +51,14 @@ export class AddCategoryComponent {
   private readonly draft = inject(DraftStore);
   protected readonly open = signal(false);
 
-  protected readonly missing = computed(() => SECTIONS.filter((s) => !this.draft.isAdded(s)));
+  /** Titles and blurbs come through the message layer, never off the schema. */
+  protected readonly missing = computed(() =>
+    SECTIONS.filter((s) => !this.draft.isAdded(s)).map((section) => ({
+      section,
+      title: sectionTitle(section),
+      blurb: sectionBlurb(section),
+    })),
+  );
 
   protected add(section: Section): void {
     this.draft.addSection(section.id);

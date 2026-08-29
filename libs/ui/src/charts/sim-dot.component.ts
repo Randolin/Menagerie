@@ -11,7 +11,7 @@ import { pct } from './series';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (sim() === null) {
-      <span class="sim-dot sim-none" title="Not comparable"></span>
+      <span class="sim-dot sim-none" i18n-title title="Not comparable"></span>
     } @else {
       <span class="sim-dot sim-{{ bucket() }}" [title]="pct(sim()!) + '% similar'"></span>
     }

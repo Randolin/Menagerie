@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { answerChips, itemLabel, type AnswerValue, type Item } from '@moxy/core';
+import { answerChips, itemLabel, sectionTitle, type AnswerValue, type Item } from '@moxy/core';
 import { AgreementStripComponent, type AgreementRow } from '@moxy/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
@@ -15,8 +15,8 @@ function answerText(item: Item, v: AnswerValue): string {
   imports: [AgreementStripComponent],
   template: `
     <div class="card">
-      <h2>Agreement, item by item</h2>
-      <p class="sub">
+      <h2 i18n>Agreement, item by item</h2>
+      <p i18n class="sub">
         Every question you both answered, placed by how closely your answers sit. Hover a dot to see
         the question and both answers.
       </p>
@@ -30,7 +30,7 @@ export class AgreementPanel implements ComparePanelComponent {
   protected readonly rows = computed<AgreementRow[]>(() =>
     this.model()
       .grid.map((g) => ({
-        label: g.section.title,
+        label: sectionTitle(g.section),
         dots: g.rows
           .filter((r) => r.sim !== null && r.answeredCount === 2)
           .map((r) => ({

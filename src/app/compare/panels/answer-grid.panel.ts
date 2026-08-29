@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { itemLabel, type GridSection } from '@moxy/core';
+import { itemLabel, sectionTitle, type GridSection } from '@moxy/core';
 import { AnswerTextComponent, SimDotComponent, seriesVar } from '@moxy/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
@@ -14,7 +14,7 @@ const GRID_SECTIONS = ['about', 'lifestyle', 'connection', 'structure', 'plans']
   template: `
     @for (g of sections(); track g.section.id) {
       <div class="card grid-section">
-        <h2>{{ g.section.title }}</h2>
+        <h2>{{ title(g.section) }}</h2>
         @for (row of answeredRows(g); track row.item.id) {
           <div class="grid-row">
             <div class="grid-item-label">
@@ -56,5 +56,9 @@ export class AnswerGridPanel implements ComparePanelComponent {
 
   protected label(item: GridSection['rows'][number]['item']): string {
     return itemLabel(item);
+  }
+
+  protected title(section: GridSection['section']): string {
+    return sectionTitle(section);
   }
 }

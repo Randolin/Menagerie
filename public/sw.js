@@ -76,8 +76,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Config must never be served stale while a network exists.
-  if (url.pathname.endsWith('moxy.config.json')) {
+  // Config and locale catalogues must never be served stale while a network
+  // exists: neither filename carries a content hash, so a cached copy would
+  // outlive the deploy that replaced it.
+  if (url.pathname.endsWith('moxy.config.json') || url.pathname.includes('/i18n/')) {
     event.respondWith(fromNetworkFirst(request));
     return;
   }

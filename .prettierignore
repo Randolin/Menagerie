@@ -4,3 +4,7 @@ package-lock.json
 
 # Vendored data kept byte-stable (EFF large wordlist, upstream formatting).
 libs/core/src/crypto/eff-wordlist.ts
+
+# Written by `ng extract-i18n`; its own formatting, and reformatting it would
+# fight the extractor on every run.
+locale/messages.json

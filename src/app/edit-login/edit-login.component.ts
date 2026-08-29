@@ -11,8 +11,8 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
   imports: [RouterLink],
   template: `
     <div class="card" style="max-width:540px;margin-inline:auto">
-      <h2>Open your profile</h2>
-      <p class="sub">
+      <h2 i18n>Open your profile</h2>
+      <p i18n class="sub">
         Enter the 5-word edit phrase you were given when you hatched. It’s the only key — there is
         no account and no reset.
       </p>
@@ -23,8 +23,10 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
         <input
           #phraseInput
           type="text"
+          i18n-placeholder
           placeholder="correct horse battery staple luck"
           autocomplete="off"
+          i18n-aria-label
           aria-label="Edit phrase"
           [disabled]="busy()"
           (input)="problem.set(null)"
@@ -34,16 +36,20 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
         }
         <label class="fine" style="display:flex;gap:8px;align-items:center">
           <input type="checkbox" #rememberBox />
-          Remember on this device — stores the phrase unencrypted in this browser
+          <span i18n>Remember on this device — stores the phrase unencrypted in this browser</span>
         </label>
         <div class="btn-row">
           <button class="btn btn-primary" [disabled]="busy()">
-            {{ busy() ? 'Opening…' : 'Open my profile' }}
+            @if (busy()) {
+              <span i18n>Opening…</span>
+            } @else {
+              <span i18n>Open my profile</span>
+            }
           </button>
-          <a class="btn btn-ghost" routerLink="/">Back</a>
+          <a i18n class="btn btn-ghost" routerLink="/">Back</a>
         </div>
       </form>
-      <p class="fine" style="margin-top:14px">
+      <p i18n class="fine" style="margin-top:14px">
         Don’t have a profile yet? <a routerLink="/">Hatch one</a> — it takes one click.
       </p>
     </div>
@@ -74,7 +80,7 @@ export class EditLoginComponent {
         if (remember) this.session.setRemember(true);
         await this.router.navigate(['/me']);
       } else {
-        this.toast.show('No profile answers to that phrase.', 'error');
+        this.toast.show($localize`No profile answers to that phrase.`, 'error');
       }
     } catch (err) {
       this.toast.error(err);
