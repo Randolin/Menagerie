@@ -3,9 +3,9 @@
 Two pieces: the **static app** (GitHub Pages at **menagerie.love**) and the
 **profile server** (**api.menagerie.love**). The server is where the encrypted
 profiles live — the app needs one configured to hatch or view anything.
-(Internally the codebase, env vars, and config file keep their original
-`moxy` names in package aliases and CSS selectors — see the main README's
-historical note.)
+(Upgrading a server installed before the rename? Every `MOXY_*` environment
+variable is now `MENAGERIE_*` and the old names are inert — see **Migrating
+off the `moxy` names** at the end.)
 
 ## DNS at the registrar (Porkbun)
 
@@ -178,3 +178,37 @@ One-time wiring:
 
 From then on: GitHub app → **Actions → Redeploy server → Run workflow**.
 The run's log shows the script's output, ending in `{"ok":true}`.
+
+## Migrating off the `moxy` names
+
+A server installed before the rename has `MOXY_*` variables set. The server no
+longer reads them, so each one silently reverts to its default. Run this on the
+box to see what it is actually using:
+
+```sh
+systemctl cat menagerie-sync moxy-sync 2>/dev/null | grep -i 'environment\|execstart'
+docker inspect -f '{{.Name}} {{.Config.Env}}' $(docker ps -aq) 2>/dev/null
+docker volume ls
+```
+
+Then, whichever install you have:
+
+- **`MOXY_TRUST_PROXY` is the one that fails quietly.** Unread, rate limiting
+  sees only the reverse proxy's address, so every client shares one budget.
+  Nothing errors; the server just starts refusing people under load.
+- **`MOXY_DB_PATH` moves the database.** Under Docker the image sets
+  `MENAGERIE_DB_PATH=/data/menagerie-sync.db` itself, so the path is fine — but
+  the _filename_ changed, and `update.sh` now mounts a volume named
+  `menagerie-sync-data`. Rows written under the old name in the old volume are
+  not deleted, they are simply no longer read. Under systemd the unit's
+  `Environment=` line is inert and `ProtectSystem=strict` makes the fallback
+  path unwritable, so that one at least fails loudly on start.
+- **The auto-updater needs its variable renamed.** The installed
+  `moxy-update.service` sets `MOXY_REPO_DIR`; `update.sh` now reads
+  `MENAGERIE_REPO_DIR` and defaults to `/opt/menagerie`. Left alone, the next
+  run after the first `cd`s into a directory that does not exist and stops
+  updating. Reinstall the units from `deploy/` (they are renamed too), and
+  `systemctl disable --now moxy-update.timer moxy-sync` first.
+- **Container and image names changed**, so the old `moxy-sync` container keeps
+  holding port 8787 and the new one cannot bind. `docker rm -f moxy-sync`
+  before the first new cycle.

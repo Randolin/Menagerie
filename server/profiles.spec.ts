@@ -82,7 +82,7 @@ function putProfile(
 }
 
 beforeAll(async () => {
-  dir = mkdtempSync(join(tmpdir(), 'moxy-profiles-'));
+  dir = mkdtempSync(join(tmpdir(), 'menagerie-profiles-'));
   dbPath = join(dir, 'test.db');
   profiles = new ProfilesDb(dbPath);
   groups = new GroupsDb(dbPath, 3); // tiny member cap to test 'full'

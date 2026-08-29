@@ -1,4 +1,4 @@
-// Moxy profile server — zero runtime dependencies, run directly with Node 24+:
+// Menagerie profile server — zero runtime dependencies, run directly with Node 24+:
 //
 //   node server/menagerie-sync-server.ts
 //
