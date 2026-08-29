@@ -19,8 +19,8 @@ import { BoopStore } from '../stores/boop.store';
   imports: [RouterLink, BoopComposerComponent, CreatureIconComponent],
   template: `
     <div class="card">
-      <h2>My menagerie</h2>
-      <p class="sub">
+      <h2 i18n>My menagerie</h2>
+      <p i18n class="sub">
         The creatures you’ve collected — keep view phrases you’ve been given and compare them
         against your own profile. Your menagerie is encrypted with your edit key; the server never
         sees who’s in it.
@@ -32,7 +32,11 @@ import { BoopStore } from '../stores/boop.store';
             [disabled]="session.refreshingConnections()"
             (click)="refresh()"
           >
-            {{ session.refreshingConnections() ? 'Checking…' : 'Check for updates' }}
+            @if (session.refreshingConnections()) {
+              <span i18n>Checking…</span>
+            } @else {
+              <span i18n>Check for updates</span>
+            }
           </button>
         </div>
       }
@@ -42,17 +46,17 @@ import { BoopStore } from '../stores/boop.store';
             {{ c.label }}
             @switch (freshness(c.id)) {
               @case ('updated') {
-                <span class="badge badge-close" style="margin-left:6px">new answers</span>
+                <span i18n class="badge badge-close" style="margin-left:6px">new answers</span>
               }
               @case ('gone') {
-                <span class="fine" style="margin-left:6px">· no longer opens</span>
+                <span i18n class="fine" style="margin-left:6px">· no longer opens</span>
               }
             }
           </div>
           <div class="grid-answers" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <span class="fine">{{ c.viewPhrase }}</span>
-            <button class="btn btn-small" (click)="compareWith(c.viewPhrase)">Compare</button>
-            <a class="btn btn-ghost btn-small" [routerLink]="['/view', c.viewPhrase]">View</a>
+            <button i18n class="btn btn-small" (click)="compareWith(c.viewPhrase)">Compare</button>
+            <a i18n class="btn btn-ghost btn-small" [routerLink]="['/view', c.viewPhrase]">View</a>
             <button
               class="btn btn-ghost btn-small"
               [attr.aria-label]="'Remove ' + c.label"
@@ -63,7 +67,9 @@ import { BoopStore } from '../stores/boop.store';
           </div>
         </div>
       } @empty {
-        <p class="fine">No creatures yet. Paste a view phrase or link below to keep it here.</p>
+        <p i18n class="fine">
+          No creatures yet. Paste a view phrase or link below to keep it here.
+        </p>
       }
       <form
         style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"
@@ -72,24 +78,28 @@ import { BoopStore } from '../stores/boop.store';
         <input
           #nameInput
           type="text"
+          i18n-placeholder
           placeholder="Name (for you only)"
+          i18n-aria-label
           aria-label="Connection name"
           style="min-width:150px"
         />
         <input
           #phraseInput
           type="text"
+          i18n-placeholder
           placeholder="Their view phrase or link"
+          i18n-aria-label
           aria-label="Connection view phrase"
           style="flex:1;min-width:220px"
         />
-        <button class="btn">Add</button>
+        <button i18n class="btn">Add</button>
       </form>
     </div>
 
     <div class="card">
-      <h2>Boops</h2>
-      <p class="sub">
+      <h2 i18n>Boops</h2>
+      <p i18n class="sub">
         A boop is an anonymous “I’m interested” — sealed so only you can open it, with no message
         box on either side. Everything inside is what the sender <em>says</em>; Menagerie can’t
         verify who booped you.
@@ -97,7 +107,7 @@ import { BoopStore } from '../stores/boop.store';
       @for (boop of session.incomingBoops(); track boop.id) {
         <div class="grid-row" style="align-items:flex-start">
           <div class="grid-item-label">
-            says it’s from
+            <span i18n>says it’s from</span>
             <moxy-creature-icon
               [emoji]="boop.content.from.emoji"
               [animal]="boop.content.from.animal ?? null"
@@ -112,8 +122,12 @@ import { BoopStore } from '../stores/boop.store';
           </div>
           <div class="grid-answers" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             @if (boop.content.attachments?.viewPhrase; as phrase) {
-              <a class="btn btn-ghost btn-small" [routerLink]="['/view', phrase]">Their profile</a>
-              <button class="btn btn-ghost btn-small" (click)="compareWith(phrase)">Compare</button>
+              <a i18n class="btn btn-ghost btn-small" [routerLink]="['/view', phrase]"
+                >Their profile</a
+              >
+              <button i18n class="btn btn-ghost btn-small" (click)="compareWith(phrase)">
+                Compare
+              </button>
             }
             @if (boop.content.attachments?.contact; as contact) {
               @if (revealed().has(boop.id)) {
@@ -129,8 +143,10 @@ import { BoopStore } from '../stores/boop.store';
                 </button>
               } @else {
                 <button
+                  i18n
                   class="btn btn-ghost btn-small"
                   (click)="reveal(boop.id)"
+                  i18n-title
                   title="They chose to de-anonymize themselves to you. Off-platform contact is outside Menagerie's protection — trust it like a stranger's note."
                 >
                   Reveal contact card
@@ -141,8 +157,10 @@ import { BoopStore } from '../stores/boop.store';
               <moxy-boop-composer [replyTo]="boop" />
             }
             <button
+              i18n
               class="btn btn-ghost btn-small"
               (click)="dismissBoop(boop.id)"
+              i18n-title
               title="Silently declines — they are not notified"
             >
               ✕ Dismiss
@@ -150,10 +168,10 @@ import { BoopStore } from '../stores/boop.store';
           </div>
         </div>
       } @empty {
-        <p class="fine">No boops waiting. Booping happens from someone’s profile page.</p>
+        <p i18n class="fine">No boops waiting. Booping happens from someone’s profile page.</p>
       }
       @if (session.sentBoops().length > 0) {
-        <h3 class="fine" style="margin-top:16px">Sent</h3>
+        <h3 i18n class="fine" style="margin-top:16px">Sent</h3>
         @for (sent of session.sentBoops(); track sent.id) {
           <div class="grid-row" style="align-items:flex-start">
             <div class="grid-item-label">
@@ -177,7 +195,7 @@ import { BoopStore } from '../stores/boop.store';
                   <span class="fine">· {{ intentLabel(i) }}</span>
                 }
                 @if (reply.attachments?.viewPhrase; as phrase) {
-                  <a class="btn btn-ghost btn-small" [routerLink]="['/view', phrase]"
+                  <a i18n class="btn btn-ghost btn-small" [routerLink]="['/view', phrase]"
                     >Their profile</a
                   >
                 }
@@ -263,14 +281,14 @@ export class MenagerieComponent {
     event.preventDefault();
     const phrase = extractViewPhrase(phraseInput.value);
     if (!phrase) {
-      this.toast.show('That doesn’t look like a Menagerie view phrase or link.', 'error');
+      this.toast.show($localize`That doesn’t look like a Menagerie view phrase or link.`, 'error');
       return;
     }
     try {
       await this.session.addConnection(nameInput.value, phrase);
       nameInput.value = '';
       phraseInput.value = '';
-      this.toast.show('Saved');
+      this.toast.show($localize`Saved`);
     } catch (err) {
       this.toast.error(err);
     }
@@ -287,7 +305,7 @@ export class MenagerieComponent {
   protected async dismissBoop(id: string): Promise<void> {
     try {
       await this.boops.dismissBoop(id);
-      this.toast.show('Dismissed — they are not notified.');
+      this.toast.show($localize`Dismissed — they are not notified.`);
     } catch (err) {
       this.toast.error(err);
     }

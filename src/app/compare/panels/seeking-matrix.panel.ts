@@ -9,8 +9,8 @@ import type { ComparePanelComponent } from '../compare-panels.token';
   imports: [InterestMatrixComponent],
   template: `
     <div class="card">
-      <h2>What each of you is open to</h2>
-      <p class="sub">Highlighted rows are mutual — everyone answered is at least “Curious”.</p>
+      <h2 i18n>What each of you is open to</h2>
+      <p i18n class="sub">Highlighted rows are mutual — everyone answered is at least “Curious”.</p>
       <!-- No "read as a table" here: moxy-interest-matrix already IS a table,
            with scoped headers and a visible level label in every cell. A
            second one would be duplication a screen reader has to wade through

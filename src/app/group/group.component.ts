@@ -64,9 +64,9 @@ interface LoadedGroup {
   template: `
     @if (view.error()) {
       <div class="card">
-        <h2>Couldn’t open that group</h2>
+        <h2 i18n>Couldn’t open that group</h2>
         <p class="sub">{{ errorMessage() }}</p>
-        <a class="btn" routerLink="/">Go to the start</a>
+        <a i18n class="btn" routerLink="/">Go to the start</a>
       </div>
     } @else if (view.value(); as g) {
       <moxy-subject-card
@@ -74,8 +74,8 @@ interface LoadedGroup {
         [phrase]="g.phrase"
         [title]="g.persona?.name ?? 'A group'"
       >
-        <span subject-head class="fine">group</span>
-        <p class="sub">
+        <span i18n subject-head class="fine">group</span>
+        <p i18n class="sub">
           A shared roster, stored only as ciphertext. Everyone holding this group’s phrase sees the
           same members: open members as their creature, others as a group-local pseudonym with an
           answer snapshot.
@@ -84,7 +84,11 @@ interface LoadedGroup {
           <div>
             <div class="code-box">{{ g.phrase }}</div>
             <div class="btn-row" style="margin-top:12px">
-              <button class="btn btn-primary" (click)="copy(inviteUrl(g), 'Invite link copied')">
+              <button
+                i18n
+                class="btn btn-primary"
+                (click)="copy(inviteUrl(g), 'Invite link copied')"
+              >
                 📋 Copy invite link
               </button>
             </div>
@@ -94,9 +98,9 @@ interface LoadedGroup {
       </moxy-subject-card>
 
       <div class="card">
-        <h2>Members ({{ g.members.length }})</h2>
+        <h2 i18n>Members ({{ g.members.length }})</h2>
         @if (g.members.length === 0) {
-          <p class="sub">Nobody has deposited yet — share the invite link.</p>
+          <p i18n class="sub">Nobody has deposited yet — share the invite link.</p>
         }
         @for (m of g.members; track m.memberLocator) {
           <div class="grid-row" style="align-items:center">
@@ -115,14 +119,14 @@ interface LoadedGroup {
                     ><moxy-creature-icon [emoji]="m.emoji ?? '🥚'" [size]="18" /> {{ m.name }}</span
                   >
                   @if (m.isMe) {
-                    <span class="fine">(you)</span>
+                    <span i18n class="fine">(you)</span>
                   }
                   @if (m.deposit.tier === 1) {
-                    <span class="fine">pseudonym</span>
+                    <span i18n class="fine">pseudonym</span>
                   }
                 </label>
               } @else {
-                <span class="fine"
+                <span i18n class="fine"
                   >🥀 sealed deposit — from before a re-mint; ask them to rejoin</span
                 >
               }
@@ -132,35 +136,49 @@ interface LoadedGroup {
               style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"
             >
               @if (m.deposit && !m.isMe && matchPct(m); as pct) {
-                <span class="fine">{{ pct }}% overall match with you</span>
+                <span i18n class="fine">{{ pct }}% overall match with you</span>
               }
               @if (m.deposit?.tier === 2 && m.deposit!.viewPhrase) {
-                <a class="btn btn-ghost btn-small" [routerLink]="['/view', m.deposit!.viewPhrase]"
+                <a
+                  i18n
+                  class="btn btn-ghost btn-small"
+                  [routerLink]="['/view', m.deposit!.viewPhrase]"
                   >View</a
                 >
                 @if (session.active() && !m.isMe) {
                   <a
+                    i18n
                     class="btn btn-ghost btn-small"
                     [routerLink]="['/view', m.deposit!.viewPhrase]"
+                    i18n-title
                     title="Boop from their profile page"
                     >👉 Boop</a
                   >
                 }
               } @else if (m.deposit?.tier === 1 && !m.isMe) {
-                <span class="fine" title="Pseudonymous members can’t be reached in this version">
+                <span
+                  i18n
+                  class="fine"
+                  i18n-title
+                  title="Pseudonymous members can’t be reached in this version"
+                >
                   not boopable
                 </span>
               }
               @if (isAdmin() && !m.isMe) {
-                <button class="btn btn-ghost btn-small" (click)="kick(g, m)">✕ Kick</button>
+                <button i18n class="btn btn-ghost btn-small" (click)="kick(g, m)">✕ Kick</button>
               }
             </div>
           </div>
         }
         @if (selectedCount() > 0) {
           <div class="btn-row" style="margin-top:12px">
-            <button class="btn btn-primary" (click)="compareSelected(g)">
-              🔍 Compare {{ session.active() ? 'me + ' : '' }}{{ selectedCount() }} selected
+            <button i18n class="btn btn-primary" (click)="compareSelected(g)">
+              🔍 Compare
+              @if (session.active()) {
+                me +
+              }
+              {{ selectedCount() }} selected
             </button>
           </div>
         }
@@ -168,8 +186,14 @@ interface LoadedGroup {
 
       @if (session.active()) {
         <div class="card">
-          <h2>{{ myMembership()?.memberLocator ? 'My membership' : 'Join this group' }}</h2>
-          <p class="sub">
+          <h2>
+            @if (myMembership()?.memberLocator) {
+              <span i18n>My membership</span>
+            } @else {
+              <span i18n>Join this group</span>
+            }
+          </h2>
+          <p i18n class="sub">
             Joining deposits a copy of your open answers into the roster — desires never, in any
             form. Pseudonymous keeps your creature and view link out of it; open shares both with
             everyone who ever holds this group’s phrase. Deposits are snapshots: refresh after you
@@ -195,7 +219,7 @@ interface LoadedGroup {
               }}
             </button>
             @if (myMembership()?.memberLocator) {
-              <button class="btn btn-ghost" [disabled]="busy()" (click)="leave()">
+              <button i18n class="btn btn-ghost" [disabled]="busy()" (click)="leave()">
                 Leave group
               </button>
             }
@@ -203,7 +227,7 @@ interface LoadedGroup {
         </div>
       } @else {
         <div class="card">
-          <p class="sub">
+          <p i18n class="sub">
             <a routerLink="/">Hatch or log in</a> to join this group and see how you match its
             members.
           </p>
@@ -212,22 +236,24 @@ interface LoadedGroup {
 
       @if (isAdmin()) {
         <div class="card">
-          <h2>Group admin</h2>
-          <p class="sub">
+          <h2 i18n>Group admin</h2>
+          <p i18n class="sub">
             You hold this group’s admin phrase. Kicking removes a deposit; it does NOT revoke the
             group phrase — someone who has it can still read the roster until you re-mint.
             Re-minting kills every old link, QR, and deposit.
           </p>
           <div class="btn-row">
-            <button class="btn" [disabled]="busy()" (click)="remint()">🎲 Re-mint group</button>
-            <button class="btn btn-danger" [disabled]="busy()" (click)="deleteGroup(g)">
+            <button i18n class="btn" [disabled]="busy()" (click)="remint()">
+              🎲 Re-mint group
+            </button>
+            <button i18n class="btn btn-danger" [disabled]="busy()" (click)="deleteGroup(g)">
               Delete group forever
             </button>
           </div>
         </div>
       }
     } @else {
-      <div class="card"><p class="sub">Opening group…</p></div>
+      <div class="card"><p i18n class="sub">Opening group…</p></div>
     }
   `,
 })
@@ -380,7 +406,9 @@ export class GroupComponent {
     this.busy.set(true);
     try {
       await this.groupStore.depositToGroup(g.phrase, tier);
-      this.toast.show(tier === 1 ? 'Deposited under your pseudonym' : 'Deposited openly');
+      this.toast.show(
+        tier === 1 ? $localize`Deposited under your pseudonym` : $localize`Deposited openly`,
+      );
       this.reload.update((n) => n + 1);
     } catch (err) {
       this.toast.error(err);
@@ -395,7 +423,7 @@ export class GroupComponent {
     this.busy.set(true);
     try {
       await this.groupStore.leaveGroup(entry.id);
-      this.toast.show('Left the group — your deposit is gone');
+      this.toast.show($localize`Left the group — your deposit is gone`);
       this.reload.update((n) => n + 1);
     } catch (err) {
       this.toast.error(err);
@@ -407,11 +435,12 @@ export class GroupComponent {
   protected async kick(g: LoadedGroup, m: MemberRow): Promise<void> {
     const entry = this.myMembership();
     if (!entry?.adminPhrase) return;
-    if (!confirm(`Remove ${m.name}'s deposit? They can rejoin until you re-mint.`)) return;
+    if (!confirm($localize`Remove ${m.name}:NAME:'s deposit? They can rejoin until you re-mint.`))
+      return;
     this.busy.set(true);
     try {
       await this.groupStore.kickMember(entry.adminPhrase, g.phrase, m.memberLocator);
-      this.toast.show(`${m.name} removed`);
+      this.toast.show($localize`${m.name}:NAME: removed`);
       this.reload.update((n) => n + 1);
     } catch (err) {
       this.toast.error(err);
@@ -432,7 +461,7 @@ export class GroupComponent {
     this.busy.set(true);
     try {
       const newPhrase = await this.groupStore.remintGroup(entry.id);
-      this.toast.show('Group re-minted — share the new invite');
+      this.toast.show($localize`Group re-minted — share the new invite`);
       await this.router.navigate(['/group', newPhrase]);
     } catch (err) {
       this.toast.error(err);
@@ -444,11 +473,11 @@ export class GroupComponent {
   protected async deleteGroup(g: LoadedGroup): Promise<void> {
     const entry = this.myMembership();
     if (!entry?.adminPhrase) return;
-    if (!confirm('Delete this group and every deposit forever?')) return;
+    if (!confirm($localize`Delete this group and every deposit forever?`)) return;
     this.busy.set(true);
     try {
       await this.groupStore.deleteGroup(entry.id, entry.adminPhrase, g.phrase);
-      this.toast.show('Group deleted');
+      this.toast.show($localize`Group deleted`);
       await this.router.navigate(['/me']);
     } catch (err) {
       this.toast.error(err);

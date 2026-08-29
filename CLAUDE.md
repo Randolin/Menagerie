@@ -26,6 +26,9 @@ npm run e2e               # Playwright vs the PRODUCTION build; build first
 `npm test` = the four unit suites. `ng build` is the only step that
 type-checks templates — run it even for "trivial" component edits.
 
+Changed any user-facing copy? `npm run i18n:extract` — the domain half is
+guarded (`messages.spec.ts` fails on drift), the template half is not.
+
 ## Layout and dependency rules
 
 - `libs/core` (`@moxy/core`) — pure TypeScript domain: schema, phrase
@@ -60,6 +63,15 @@ type-checks templates — run it even for "trivial" component edits.
   `ANIMAL_HABITATS`) must grow in the same commit, guarded by specs.
 - The entropy ledger in `hatch/phrases.ts` must be recomputed before
   anything new derives from a view phrase's tail.
+- User-facing copy is addressable, and stays that way. Schema words are read
+  through `schema/labels.ts` (`itemLabel`, `optionLabel(s)`, `scaleEnds`,
+  `sectionTitle`, `sectionBlurb`, `answerChips`) — never off `item.label`,
+  `item.options[i]` or `section.title`, which `src/app/schema-copy.spec.ts`
+  enforces. App templates carry `i18n` / `i18n-<attr>`; a new string without
+  one compiles fine and is simply untranslatable, so the e2e drives a
+  pseudo-locale (`?lang=qps`) where unmarked copy shows as plain English.
+  Message keys come from frozen item ids and option indexes — never from the
+  English — which is what lets a translation survive relabelling.
 - Internal identifiers keep the historical `moxy` name (env vars, headers,
   `@moxy/*` aliases, storage keys, `dist/moxy`). User-facing text says
   Menagerie. Don't migrate either direction.

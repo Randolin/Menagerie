@@ -8,8 +8,8 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
   imports: [RouterLink],
   template: `
     <div class="hero">
-      <h1>How Menagerie works — and exactly what it does and doesn’t protect</h1>
-      <p class="lede">
+      <h1 i18n>How Menagerie works — and exactly what it does and doesn’t protect</h1>
+      <p i18n class="lede">
         Menagerie is a static page plus one small open-source server that stores only ciphertext it
         can never read. No accounts, no email, no names, no analytics, no cookies — and no free-text
         fields at all: every answer is a pick from fixed options, so nothing you can type into a
@@ -18,8 +18,8 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
     </div>
 
     <div class="card">
-      <h2>🥚 Hatching: two phrases are the whole identity</h2>
-      <p>
+      <h2 i18n>🥚 Hatching: two phrases are the whole identity</h2>
+      <p i18n>
         Hatching mints two random phrases. The <strong>view phrase</strong> (six words — your
         creature’s name plus three more) is what you share: as text, a link, or a QR code. The
         <strong>edit phrase</strong> (five words, ~65 bits of entropy) is yours alone and is the
@@ -29,9 +29,11 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
         addresses and ciphertext, never a phrase, never a key, never an answer.
       </p>
       <ul>
-        <li>Keep the edit phrase → you can log in from any device and edit or delete.</li>
-        <li>Lose it → the profile can never be edited again. Nobody can help; that’s the point.</li>
-        <li>
+        <li i18n>Keep the edit phrase → you can log in from any device and edit or delete.</li>
+        <li i18n>
+          Lose it → the profile can never be edited again. Nobody can help; that’s the point.
+        </li>
+        <li i18n>
           The phrases are unrelated: a view phrase can never edit, and the server checks writes with
           a token it stores only as a hash.
         </li>
@@ -39,13 +41,13 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
     </div>
 
     <div class="card">
-      <h2>🦊 Your creature is your view phrase</h2>
-      <p>
+      <h2 i18n>🦊 Your creature is your view phrase</h2>
+      <p i18n>
         The first three words of your view phrase — like “brave-amber-otter” — are your creature:
         shown as your profile’s identity and drawn into your QR code’s colors. That’s deliberate:
         everyone you share with sees the same recognizable creature.
       </p>
-      <p class="sub">
+      <p i18n class="sub">
         The flip side, honestly: those three words are public-by-design, so the secret part of a
         view phrase is really the poetic tail — the last three words, drawn from curated lists of
         4,096 each (36 bits). Argon2id’s memory cost prices a targeted brute-force of that tail in
@@ -62,8 +64,8 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
     </div>
 
     <div class="card">
-      <h2>⚖️ Importance marks travel with your answers</h2>
-      <p>
+      <h2 i18n>⚖️ Importance marks travel with your answers</h2>
+      <p i18n>
         You can mark any answered question <em>matters</em>, <em>matters a lot</em>, or
         <em>dealbreaker</em> (with the answers you could live with). These marks are part of your
         profile: anyone you share your view phrase with sees them alongside your answers, and
@@ -73,25 +75,25 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
     </div>
 
     <div class="card">
-      <h2>📊 Anonymous counters: the one thing the server can read — because you chose it</h2>
-      <p>
+      <h2 i18n>📊 Anonymous counters: the one thing the server can read — because you chose it</h2>
+      <p i18n>
         Off by default. Opting in submits, once a month, a list of coarse counts: your age band, and
         bucketed answers joint-counted against it (open to friendship: yes; alcohol: never; …). No
         name, no creature, no phrases — the submission carries only a token derived so the server
         cannot link it to your profile, used once per month to prevent double-counting.
       </p>
       <ul>
-        <li>
+        <li i18n>
           Desire counts are submitted through <strong>randomized response</strong>: each bit is
           flipped with 25% probability before it leaves your device, so even the server can never
           know whether any single answer was real — only the crowd's rate can be estimated.
         </li>
-        <li>Buckets with fewer than ten contributors are never served.</li>
-        <li>
+        <li i18n>Buckets with fewer than ten contributors are never served.</li>
+        <li i18n>
           Each month replaces the last; nothing accumulates per person, and opting out simply stops
           future submissions.
         </li>
-        <li>
+        <li i18n>
           The result is the <a routerLink="/community">community page</a> — and yes, these counters
           are the one deliberately readable thing in the database. That is the entire, opt-in trade.
         </li>
@@ -99,8 +101,8 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
     </div>
 
     <div class="card">
-      <h2>🕸️ Groups: shared rosters, honestly explained</h2>
-      <p>
+      <h2 i18n>🕸️ Groups: shared rosters, honestly explained</h2>
+      <p i18n>
         A group is one more encrypted record: a roster the server can’t read, addressed and unlocked
         by a shared <strong>group phrase</strong> (the group gets its own creature and invite QR).
         Joining deposits a snapshot of your <em>open</em> answers — desires never travel into a
@@ -108,7 +110,7 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
         deposit openly and it shows your creature and view link. The creator holds a separate admin
         phrase for kicks, re-mints, and deletion.
       </p>
-      <div class="notice-warn notice">
+      <div i18n class="notice-warn notice">
         <strong>The honest ledger: </strong>
         everyone who ever holds the group phrase can read the roster — kicking removes a deposit but
         not that access; only re-minting does, and it asks everyone to rejoin. Deposits are
@@ -119,8 +121,8 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
     </div>
 
     <div class="card">
-      <h2>👉 Boops: anonymous first contact, honestly explained</h2>
-      <p>
+      <h2 i18n>👉 Boops: anonymous first contact, honestly explained</h2>
+      <p i18n>
         A boop is a sealed “I’m interested” — not a message. It’s encrypted to a key only the
         recipient holds, so the server, other viewers, and even a stolen database can’t open it, and
         every boop is padded to the same size so nothing about it leaks from its shape. There is no
@@ -131,7 +133,7 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
         closes your boop address for good — that’s the block button. Menagerie is not a messenger:
         two people who want to talk take a contact card and go somewhere built for talking.
       </p>
-      <div class="notice-warn notice">
+      <div i18n class="notice-warn notice">
         <strong>The honest ledger: </strong>
         a sealed boop proves nothing about its sender — the name, the reply box, all of it is
         claimed, which is why the app says “says it’s from.” The server can’t read boops, but it
@@ -143,15 +145,15 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
     </div>
 
     <div class="card">
-      <h2>🎭 The desires section: mutual reveal, honestly explained</h2>
-      <p>
+      <h2 i18n>🎭 The desires section: mutual reveal, honestly explained</h2>
+      <p i18n>
         Desires never travel as readable answers. Each positive answer (anything warmer than “Not
         for me”) becomes a salted fingerprint in your profile’s viewable half. Comparing checks
         whether both profiles carry a fingerprint for the same desire and only then reveals it.
         One-sided interests stay invisible, and the fingerprints are padded and shuffled so even
         their count is hidden.
       </p>
-      <div class="notice-warn notice">
+      <div i18n class="notice-warn notice">
         <strong>The honest limit: </strong>
         a technically skilled person who can view your profile could test every possible desire
         against the fingerprints and recover your positive answers. “Not for me” answers are never
@@ -161,14 +163,14 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
     </div>
 
     <div class="card">
-      <h2>🖥️ What the server can and cannot see</h2>
-      <p>
+      <h2 i18n>🖥️ What the server can and cannot see</h2>
+      <p i18n>
         The server holds, per profile: two opaque 128-bit addresses (unguessable, and one-way — they
         can’t be reversed into phrases), two encrypted blobs, a write-token hash, and hour-coarse
         timestamps. It cannot decrypt anything, cannot forge an update, and never asks who you are.
         IP addresses are used only for in-memory rate limiting and are never written down.
       </p>
-      <p class="sub">
+      <p i18n class="sub">
         What a server operator <em>could</em> observe or do — the honest ledger: see when a profile
         is viewed or edited and how big it is (activity patterns, not content); tell that a view
         identity and an edit identity belong to the same profile; count profiles; and withhold,
@@ -178,7 +180,7 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
         phrases and tiny QR codes possible. You can self-host it — one dependency-free file in the
         repository.
       </p>
-      <p class="sub">
+      <p i18n class="sub">
         Installed or not, this app keeps a copy of its own files on your device so it opens without
         the network. That cache holds the page, its code and its fonts — never a profile, because
         profiles come from the server on a different address and the cache never touches it. There
@@ -186,7 +188,7 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
         there. Your answers stay in memory while you work and go nowhere but the encrypted record: a
         shared computer holds no readable answers once the tab closes.
       </p>
-      <p class="sub">
+      <p i18n class="sub">
         Unless you ask it to remember them. Settings has an off-by-default box that keeps unsaved
         answers on the device, so a closed tab or a dead battery doesn’t cost you the survey — and
         it keeps them the way the server does, encrypted under a key your edit phrase derives and
@@ -194,7 +196,7 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
         them back. The honest catch: tick “remember my edit phrase” as well and this browser holds
         both the lock and the key, which is why the settings page says so where you tick it.
       </p>
-      <p class="sub">
+      <p i18n class="sub">
         Your menagerie adds one read per kept creature when you open that page, so it can tell you
         which of them have new answers. The server can’t read a word of what comes back — it
         compares a save counter — but those reads look exactly like views, and they say that someone
@@ -204,8 +206,8 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
     </div>
 
     <div class="card">
-      <h2>🧹 Housekeeping, stated plainly</h2>
-      <p>
+      <h2 i18n>🧹 Housekeeping, stated plainly</h2>
+      <p i18n>
         Profiles that never save an answer are deleted after {{ gcEmpty }}. Profiles untouched — no
         edit and no view — for {{ gcIdle }} are deleted too. Any save or view resets the clock.
         Deletion is real deletion: the row is gone.
@@ -213,8 +215,8 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
     </div>
 
     <div class="card">
-      <h2>🧭 Who Menagerie is for</h2>
-      <p>
+      <h2 i18n>🧭 Who Menagerie is for</h2>
+      <p i18n>
         Everyone whose connections don’t fit one template: monogamous couples checking alignment
         before moving in; polycules mapping a constellation; swingers and play partners negotiating
         interests without awkward guessing; asexual and aromantic folks looking for queerplatonic
@@ -224,8 +226,8 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
     </div>
 
     <div class="card">
-      <h2>🛠️ Verify or self-host it</h2>
-      <p>
+      <h2 i18n>🛠️ Verify or self-host it</h2>
+      <p i18n>
         Menagerie is open source under the
         <a href="https://github.com/Randolin/Menagerie/blob/main/LICENSE" rel="noreferrer"
           >AGPL-3.0</a
@@ -238,12 +240,12 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
         zero dependencies. Point any copy of the app at any server via its config file — your
         phrases work wherever that same server is reachable.
       </p>
-      <p class="sub">
+      <p i18n class="sub">
         Threat-model fine print: Menagerie can’t protect you from what you choose to share, from
         someone photographing your screen, or from a compromised device or browser extension. It
         simply refuses to create the identity databases such attacks usually target.
       </p>
-      <p class="fine">
+      <p i18n class="fine">
         Curious what your creature could have been?
         <a routerLink="/creatures">Meet the whole menagerie</a> — all 64 of them.
       </p>

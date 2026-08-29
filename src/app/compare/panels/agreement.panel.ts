@@ -15,8 +15,8 @@ function answerText(item: Item, v: AnswerValue): string {
   imports: [AgreementStripComponent],
   template: `
     <div class="card">
-      <h2>Agreement, item by item</h2>
-      <p class="sub">
+      <h2 i18n>Agreement, item by item</h2>
+      <p i18n class="sub">
         Every question you both answered, placed by how closely your answers sit. Hover a dot to see
         the question and both answers.
       </p>

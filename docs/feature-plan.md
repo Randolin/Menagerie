@@ -365,7 +365,8 @@ worse.
 **Caveat.** It touches nearly every component, so it wants a quiet window
 between features rather than a slot in a wave.
 
-**Size.** Large and boring. Schedule honestly or not at all.
+**Size.** Large and boring. Schedule honestly or not at all. **Shipped**, and
+the item's framing was wrong in a way worth writing down — see below.
 
 ---
 
@@ -465,7 +466,52 @@ Three things came out of building it that the item did not predict:
   _before_ it and passes while proving nothing. It waits for the value to
   change now.
 
-**Unscheduled.** D3 i18n.
+**Wave 6 — the words, addressed.** D3 i18n groundwork. **Shipped**, 648
+strings, no translation.
+
+The item said "extract user-facing strings from the inline templates", which
+misses where the copy is. The survey schema is 296 of those 648 — more than
+half of everything the product says — and it lives in `libs/core`, which may
+not import a framework, while `$localize` comes from `@angular/localize`. So
+Angular's extractor could never see the survey, and no amount of template
+markup would have made a translation possible. That was the part that needed
+designing, and it went first.
+
+The keys turned out to be free. `schema/sections.ts` is append-only under a
+checked-in freeze: ids are forever, options never reorder. So the schema
+already holds a set of permanent identifiers, and keys built from them
+(`it.<id>.o<index>`) cannot be invalidated by any edit the freeze permits —
+relabelling and appending are exactly the edits that leave a key meaning what
+it meant. The frozen file did not change at all: the English stays where it
+is and doubles as the fallback, so a partial translation degrades one string
+at a time instead of showing gaps.
+
+Three things fell out of doing it:
+
+- **Coverage is the whole problem, and it needs two different proofs.** A
+  string nobody marked compiles fine, reviews clean, and is simply
+  untranslatable. In core, a spec loads a bag where every key maps to a
+  marker and fails if any rendered string comes back English. In the app, no
+  spec can see it, so the e2e builds a pseudo-locale from the extracted
+  catalogue and drives the real UI with it — English on screen is the bug,
+  visible in a screenshot. A third guard, `schema-copy.spec.ts`, is a source
+  scan in the style of `no-angular.spec.ts`: it rejects `item.label` and its
+  friends outright, because that is how the layer gets bypassed in practice.
+- **Runtime loading, not a build per locale.** This is a static bundle with
+  hash routing on Pages; per-locale builds mean per-locale directories and a
+  redirect. One fetch before bootstrap, paid only when a locale other than
+  the source is wanted, and every failure resolves to English rather than
+  rejecting — a missing catalogue must never be why someone can't open their
+  profile.
+- **The costs, stated.** `@angular/localize` and the message metadata put
+  ~19 kB on the initial bundle, which was already 35 kB over its 500 kB
+  warning budget and is now 54 kB over (the error budget is 1 MB). The
+  template catalogue has no drift guard the way the domain one does — Angular
+  ships no such check — so `npm run i18n:extract` after a copy change is a
+  habit, not an enforced one; the e2e catches it only for the handful of
+  strings it names.
+
+**Nothing left unscheduled.** Every item in Tracks A–D has shipped.
 
 ## Invariants this plan touches
 

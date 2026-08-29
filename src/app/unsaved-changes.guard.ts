@@ -15,5 +15,5 @@ import { ProfileSessionStore } from './stores/profile-session.store';
 export const unsavedChangesGuard: CanDeactivateFn<unknown> = () => {
   const session = inject(ProfileSessionStore);
   if (!session.dirty()) return true;
-  return confirm('You have unsaved answers. Leave this page and lose them?');
+  return confirm($localize`You have unsaved answers. Leave this page and lose them?`);
 };

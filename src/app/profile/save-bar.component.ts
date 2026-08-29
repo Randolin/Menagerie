@@ -40,19 +40,27 @@ const SAVED_FLASH_MS = 2200;
       <div class="save-bar save-bar-offline" role="status">
         <span class="save-bar-label">{{ offlineNote() }}</span>
         <button class="btn" [disabled]="saving()" (click)="save()">
-          {{ saving() ? 'Saving…' : 'Try again' }}
+          @if (saving()) {
+            <span i18n>Saving…</span>
+          } @else {
+            <span i18n>Try again</span>
+          }
         </button>
       </div>
     } @else if (session.dirty()) {
       <div class="save-bar" role="status">
-        <span class="save-bar-label">You have unsaved answers</span>
+        <span i18n class="save-bar-label">You have unsaved answers</span>
         <button class="btn btn-primary" [disabled]="saving()" (click)="save()">
-          {{ saving() ? 'Saving…' : '💾 Save now' }}
+          @if (saving()) {
+            <span i18n>Saving…</span>
+          } @else {
+            <span i18n>💾 Save now</span>
+          }
         </button>
       </div>
     } @else if (justSaved()) {
       <div class="save-bar save-bar-done" role="status">
-        <span class="save-bar-label">✓ Saved</span>
+        <span i18n class="save-bar-label">✓ Saved</span>
       </div>
     }
   `,
@@ -82,11 +90,11 @@ export class SaveBarComponent implements OnDestroy {
       await this.session.save();
       if (this.session.saveState() === 'conflict') {
         this.toast.show(
-          'Saved elsewhere first — this device now shows the newer copy. Re-apply your edit if it matters.',
+          $localize`Saved elsewhere first — this device now shows the newer copy. Re-apply your edit if it matters.`,
           'error',
         );
       } else {
-        this.toast.show('Saved');
+        this.toast.show($localize`Saved`);
         this.flashSaved();
       }
     } catch (err) {

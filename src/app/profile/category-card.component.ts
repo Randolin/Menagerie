@@ -31,9 +31,14 @@ import { QuestionRowComponent } from '../survey/items/question-row.component';
           [attr.aria-expanded]="!collapsed()"
           (click)="collapsed.set(!collapsed())"
         >
-          {{ collapsed() ? 'Show' : 'Hide' }}
+          @if (collapsed()) {
+            <span i18n>Show</span>
+          } @else {
+            <span i18n>Hide</span>
+          }
         </button>
         <button
+          i18n
           type="button"
           class="btn btn-ghost btn-small category-remove"
           (click)="confirmRemove()"
@@ -44,7 +49,7 @@ import { QuestionRowComponent } from '../survey/items/question-row.component';
 
       @if (!collapsed()) {
         @if (section().privacy === 'match') {
-          <p class="fine">
+          <p i18n class="fine">
             🔒 Mutual-only — these travel as scrambled fingerprints and surface only when you both
             marked the same thing. “Not for me” is never shared in any form.
           </p>
@@ -52,14 +57,24 @@ import { QuestionRowComponent } from '../survey/items/question-row.component';
 
         @if (removing()) {
           <div class="notice notice-warn">
-            <strong>Remove “{{ section().title }}”?</strong>
-            This clears its {{ answered() }} answered
-            {{ answered() === 1 ? 'question' : 'questions' }} and any importance marks.
+            <span i18n
+              ><strong>Remove “{{ section().title }}”?</strong> This clears its
+              {answered(), plural,
+                =1 {one answered question}
+                other {{{ answered() }} answered questions}
+              }
+              and any importance marks.</span
+            >
             <div class="btn-row" style="margin-top:8px">
-              <button type="button" class="btn btn-small" (click)="remove()">
+              <button i18n type="button" class="btn btn-small" (click)="remove()">
                 Remove and clear
               </button>
-              <button type="button" class="btn btn-ghost btn-small" (click)="removing.set(false)">
+              <button
+                i18n
+                type="button"
+                class="btn btn-ghost btn-small"
+                (click)="removing.set(false)"
+              >
                 Keep
               </button>
             </div>

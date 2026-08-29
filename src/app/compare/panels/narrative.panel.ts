@@ -9,8 +9,8 @@ import { buildNarrative } from '../narrative';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="card">
-      <h2>In words</h2>
-      <p class="sub">
+      <h2 i18n>In words</h2>
+      <p i18n class="sub">
         The same comparison as the charts below, written out — what the numbers are actually saying
         about the answers you each gave.
       </p>

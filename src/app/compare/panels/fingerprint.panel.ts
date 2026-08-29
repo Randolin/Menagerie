@@ -20,8 +20,8 @@ import type { ComparePanelComponent } from '../compare-panels.token';
   imports: [ChartTableComponent, PersonKeyComponent, RadarComponent],
   template: `
     <div class="card">
-      <h2>Values fingerprint</h2>
-      <p class="sub">
+      <h2 i18n>Values fingerprint</h2>
+      <p i18n class="sub">
         Each shape is one profile's values, drawn over the same axes — overlap is alignment you can
         see. An axis points toward the trait it names.
       </p>

@@ -22,7 +22,7 @@ import type { ComparePanelComponent } from '../compare-panels.token';
   ],
   template: `
     <div class="card">
-      <h2>The headline</h2>
+      <h2 i18n>The headline</h2>
       <moxy-person-key [names]="model().names" [emojis]="personaEmojis()" />
       @for (alert of alerts(); track alert) {
         <div class="notice-warn notice">⛔ {{ alert }}</div>
@@ -50,8 +50,8 @@ import type { ComparePanelComponent } from '../compare-panels.token';
       </div>
       @if (fits(); as f) {
         <div style="margin-top:14px">
-          <h3 style="margin-bottom:6px">Fit, each way</h3>
-          <p class="fine" style="margin-top:0">
+          <h3 i18n style="margin-bottom:6px">Fit, each way</h3>
+          <p i18n class="fine" style="margin-top:0">
             Weighted by what each of you said matters — honestly different numbers.
           </p>
           <moxy-dumbbell
@@ -70,7 +70,7 @@ import type { ComparePanelComponent } from '../compare-panels.token';
         </div>
       } @else if (model().payloads.length > 2) {
         <div style="margin-top:14px">
-          <h3>Pairwise alignment</h3>
+          <h3 i18n>Pairwise alignment</h3>
           <moxy-pair-matrix [names]="model().names" [scores]="model().pairwise" />
         </div>
       }

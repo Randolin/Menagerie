@@ -39,8 +39,8 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
   template: `
     @if (!noticeDismissed()) {
       <div class="card card-danger" role="alert" aria-labelledby="edit-phrase-heading">
-        <h2 id="edit-phrase-heading">⚠️ Save your edit phrase</h2>
-        <p class="sub">
+        <h2 i18n id="edit-phrase-heading">⚠️ Save your edit phrase</h2>
+        <p i18n class="sub">
           The only way to edit this profile. Shown once — no account, no reset. Lose it and this
           profile can never be edited again.
         </p>
@@ -58,16 +58,21 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
         </div>
         <label class="ack-row">
           <input type="checkbox" [checked]="acknowledged()" (change)="toggleAck($event)" />
-          <span>I’ve saved it somewhere I can get back to.</span>
+          <span i18n>I’ve saved it somewhere I can get back to.</span>
         </label>
         <div class="btn-row">
-          <button class="btn btn-primary" [disabled]="!acknowledged()" (click)="dismissNotice()">
+          <button
+            i18n
+            class="btn btn-primary"
+            [disabled]="!acknowledged()"
+            (click)="dismissNotice()"
+          >
             I’ve saved it
           </button>
           <!-- "Somewhere I can get back to" is easier to tick than to do.
                This is the somewhere. -->
-          <a class="btn" routerLink="/backup">🖨️ Print a backup card</a>
-          <span class="fine">
+          <a i18n class="btn" routerLink="/backup">🖨️ Print a backup card</a>
+          <span i18n class="fine">
             Profiles with no saved answers are deleted after {{ gcEmpty }}; untouched and unviewed
             for {{ gcIdle }}, also deleted.
           </span>
@@ -78,12 +83,13 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
     <moxy-subject-card
       [persona]="session.persona()"
       [phrase]="session.viewPhrase()"
+      i18n-title
       title="My profile"
     >
-      <button subject-head class="btn btn-ghost btn-small" (click)="regenerate()">
+      <button i18n subject-head class="btn btn-ghost btn-small" (click)="regenerate()">
         New creature
       </button>
-      <p class="sub">
+      <p i18n class="sub">
         Share the phrase, the link, or the QR code — all three carry the same view-only credential.
         Your creature is its first three words; anyone who can see your profile can recognize it. A
         new creature is a whole new phrase: every previously shared link and QR stops working.
@@ -98,7 +104,9 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
               <button
                 class="btn btn-icon"
                 (click)="shareView()"
+                i18n-aria-label
                 aria-label="Share view link"
+                i18n-title
                 title="Share view link"
               >
                 <moxy-icon name="share" />
@@ -107,7 +115,9 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
             <button
               class="btn btn-icon"
               (click)="copy(session.viewUrl()!, 'View link copied')"
+              i18n-aria-label
               aria-label="Copy view link"
+              i18n-title
               title="Copy view link"
             >
               <moxy-icon name="link" />
@@ -115,7 +125,9 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
             <button
               class="btn btn-icon"
               (click)="copy(session.viewPhrase()!, 'View phrase copied')"
+              i18n-aria-label
               aria-label="Copy the phrase on its own"
+              i18n-title
               title="Copy the phrase on its own"
             >
               <moxy-icon name="copy" />
@@ -141,24 +153,28 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
 
     @if (showMilestone()) {
       <div class="card" role="status">
-        <h2>🎉 Your core set is done</h2>
-        <p class="sub">
+        <h2 i18n>🎉 Your core set is done</h2>
+        <p i18n class="sub">
           Every question a comparison leans on is answered, so yours is worth sharing now. The other
           half is someone else's: a comparison needs two profiles, and nothing happens until one of
           you sends a phrase.
         </p>
         <div class="btn-row">
-          <button class="btn btn-primary" (click)="copy(session.viewUrl()!, 'View link copied')">
+          <button
+            i18n
+            class="btn btn-primary"
+            (click)="copy(session.viewUrl()!, 'View link copied')"
+          >
             Copy my view link
           </button>
-          <a class="btn" routerLink="/menagerie">Keep someone's phrase</a>
-          <button class="btn btn-ghost" (click)="dismissMilestone()">Dismiss</button>
+          <a i18n class="btn" routerLink="/menagerie">Keep someone's phrase</a>
+          <button i18n class="btn btn-ghost" (click)="dismissMilestone()">Dismiss</button>
         </div>
       </div>
     }
 
     <div class="profile-head">
-      <h2>My answers</h2>
+      <h2 i18n>My answers</h2>
       <span class="fine core-marker" [class.core-done]="coreDone()">
         <moxy-ring [fraction]="coreFraction()" [size]="20" label="core completion" />
         {{
@@ -182,7 +198,7 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
     <moxy-save-bar />
 
     @if (!addedSections().length) {
-      <p class="fine" style="margin:10px 4px">
+      <p i18n class="fine" style="margin:10px 4px">
         Nothing here yet. Add a category above — every question is optional, and only what you
         answer is ever shown.
       </p>

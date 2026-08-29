@@ -17,14 +17,14 @@ import { DraftStore } from '../stores/draft.store';
     @if (missing().length) {
       <div class="card add-card">
         @if (!open()) {
-          <button type="button" class="btn btn-primary add-trigger" (click)="open.set(true)">
+          <button i18n type="button" class="btn btn-primary add-trigger" (click)="open.set(true)">
             ＋ Add a category
           </button>
-          <span class="fine">{{ missing().length }} left to add — all optional</span>
+          <span i18n class="fine">{{ missing().length }} left to add — all optional</span>
         } @else {
           <div class="add-head">
-            <h2>Add a category</h2>
-            <button type="button" class="btn btn-ghost btn-small" (click)="open.set(false)">
+            <h2 i18n>Add a category</h2>
+            <button i18n type="button" class="btn btn-ghost btn-small" (click)="open.set(false)">
               Cancel
             </button>
           </div>
@@ -34,11 +34,11 @@ import { DraftStore } from '../stores/draft.store';
                 <span class="add-option-title">
                   {{ s.title }}
                   @if (s.section.privacy === 'match') {
-                    <span class="fine">🔒 mutual-only</span>
+                    <span i18n class="fine">🔒 mutual-only</span>
                   }
                 </span>
                 <span class="fine add-option-blurb">{{ s.blurb }}</span>
-                <span class="fine">{{ s.section.items.length }} questions</span>
+                <span i18n class="fine">{{ s.section.items.length }} questions</span>
               </button>
             }
           </div>

@@ -10,8 +10,8 @@ import type { ComparePanelComponent } from '../compare-panels.token';
   imports: [ChartTableComponent, PersonKeyComponent, ScaleStripComponent],
   template: `
     <div class="card">
-      <h2>Values, side by side</h2>
-      <p class="sub">Each dot is a person. Distance between dots is the actual gap.</p>
+      <h2 i18n>Values, side by side</h2>
+      <p i18n class="sub">Each dot is a person. Distance between dots is the actual gap.</p>
       <moxy-person-key [names]="model().names" [emojis]="model().emojis" />
       @for (row of rows(); track row.item.id) {
         <moxy-scale-strip

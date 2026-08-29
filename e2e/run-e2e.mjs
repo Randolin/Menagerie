@@ -11,7 +11,15 @@ import { PNG } from 'pngjs';
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
-import { createReadStream, existsSync, statSync, readFileSync, mkdirSync, rmSync } from 'node:fs';
+import {
+  createReadStream,
+  existsSync,
+  statSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  rmSync,
+} from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -24,6 +32,22 @@ if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 if (!existsSync(join(DIST, 'index.html'))) {
   console.error('dist not found — run `npm run build` first');
   process.exit(1);
+}
+
+// --- a pseudo-locale, built here rather than checked in --------------------
+// Every extracted template message wrapped in guillemets. Loading it turns the
+// UI into a test of its own markup: anything still reading as plain English on
+// screen is a string nobody marked, which is the one i18n mistake no compiler
+// and no unit test can see. Generated from the catalogue on every run, so it
+// can never drift from the templates the way a committed fixture would.
+const CATALOGUE = join(root, 'locale', 'messages.json');
+if (existsSync(CATALOGUE)) {
+  const source = JSON.parse(readFileSync(CATALOGUE, 'utf8')).translations ?? {};
+  const template = Object.fromEntries(
+    Object.entries(source).map(([id, text]) => [id, `«${text}»`]),
+  );
+  mkdirSync(join(DIST, 'i18n'), { recursive: true });
+  writeFileSync(join(DIST, 'i18n', 'qps.json'), JSON.stringify({ template }));
 }
 
 // --- dumb static server (no rewrites: hash routing must need none) ---------
@@ -39,7 +63,16 @@ const MIME = {
 const server = createServer((req, res) => {
   const path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   let file = join(DIST, path === '/' ? 'index.html' : path);
-  if (!existsSync(file) || statSync(file).isDirectory()) file = join(DIST, 'index.html');
+  if (!existsSync(file) || statSync(file).isDirectory()) {
+    // Everything unknown is the shell — except a locale catalogue, which has
+    // to 404 honestly or the loader would parse index.html as JSON.
+    if (path.startsWith('/i18n/')) {
+      res.statusCode = 404;
+      res.end();
+      return;
+    }
+    file = join(DIST, 'index.html');
+  }
   res.setHeader('content-type', MIME[extname(file)] ?? 'application/octet-stream');
   createReadStream(file).pipe(res);
 });
@@ -315,6 +348,35 @@ try {
   await offline.context().setOffline(false);
   if (cachedOrigins.some((origin) => origin !== new URL(BASE).origin)) {
     fail(`the cache holds a foreign origin: ${cachedOrigins.join(', ')}`);
+  }
+
+  // --- the pseudo-locale: proof the markup actually covers the UI ----------
+  step = 'pseudo-locale';
+  {
+    const pseudo = await freshPage();
+    await pseudo.goto(`${BASE}?lang=qps#/`);
+    await pseudo.waitForSelector('.brand', { timeout: 30000 });
+    const nav = await pseudo.textContent('.app-header');
+    // The header is the smallest surface that has to be fully marked: if the
+    // nav is bracketed, loadTranslations ran, the catalogue reached the page,
+    // and those strings are addressable by a translator.
+    for (const expected of ['«Compare»', '«How it works»', '«Log in»']) {
+      if (!nav.includes(expected)) fail(`header not translated: wanted ${expected} in ${nav}`);
+    }
+    const body = await pseudo.textContent('body');
+    if (!body.includes('«')) fail('the pseudo-locale did not load at all');
+    // Landing copy, the page a stranger meets first.
+    if (!body.includes('«Compatibility, minus the identity»')) {
+      fail('the landing headline is not translatable');
+    }
+    // And the default stays English, with no catalogue fetched.
+    const plain = await freshPage();
+    await plain.goto(`${BASE}#/`);
+    await plain.waitForSelector('.brand', { timeout: 30000 });
+    if ((await plain.textContent('body')).includes('«')) {
+      fail('the source locale loaded a catalogue it should have skipped');
+    }
+    await shot(pseudo, '01c-pseudo-locale.png');
   }
 
   step = 'landing-configure';

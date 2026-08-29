@@ -25,8 +25,9 @@ import { DraftStore } from '../../stores/draft.store';
     <!-- aria-pressed, not just a class: which importance is set was visible
          only as a highlight, so a screen reader could not tell at all. -->
     <div class="weight-row" moxyOptionGroup role="group" [attr.aria-label]="importanceLabel()">
-      <span class="fine">Importance:</span>
+      <span i18n class="fine">Importance:</span>
       <button
+        i18n
         type="button"
         class="btn btn-ghost btn-small"
         [class.weight-on]="!weight()"
@@ -49,7 +50,7 @@ import { DraftStore } from '../../stores/draft.store';
     </div>
     @if (weight() === 3) {
       <div class="weight-accept" moxyOptionGroup role="group" [attr.aria-label]="acceptLabel()">
-        <span class="fine">I could match with:</span>
+        <span i18n class="fine">I could match with:</span>
         @for (opt of acceptOptions(); track $index) {
           <button
             type="button"
@@ -62,7 +63,7 @@ import { DraftStore } from '../../stores/draft.store';
           </button>
         }
         @if (!hasAcceptable()) {
-          <span class="fine">— pick at least one, or this stays a soft weight</span>
+          <span i18n class="fine">— pick at least one, or this stays a soft weight</span>
         }
       </div>
     }

@@ -69,13 +69,13 @@ interface LoadedProfile {
   template: `
     @if (view.error()) {
       <div class="card">
-        <h2>Couldn’t open that profile</h2>
+        <h2 i18n>Couldn’t open that profile</h2>
         <p class="sub">{{ errorMessage() }}</p>
-        <a class="btn" routerLink="/">Go to the start</a>
+        <a i18n class="btn" routerLink="/">Go to the start</a>
       </div>
     } @else if (view.value(); as v) {
       <moxy-subject-card [persona]="v.persona" [phrase]="v.phrase" [title]="v.name + '’s profile'">
-        <p class="sub">
+        <p i18n class="sub">
           A Menagerie profile — anonymous by design, stored only as ciphertext the server can’t
           read.
           @if (v.hasDesires) {
@@ -84,12 +84,16 @@ interface LoadedProfile {
           }
         </p>
         <div class="btn-row" style="margin-top:16px">
-          <button class="btn btn-primary" (click)="compareWith(v)">🔍 Compare</button>
+          <button i18n class="btn btn-primary" (click)="compareWith(v)">🔍 Compare</button>
           @if (session.active()) {
-            <button class="btn" (click)="saveConnection(v)">💾 Add to my menagerie</button>
+            <button i18n class="btn" (click)="saveConnection(v)">💾 Add to my menagerie</button>
           } @else {
             <button class="btn" [disabled]="hatching()" (click)="hatchAndKeep(v)">
-              {{ hatching() ? 'Hatching…' : '🥚 Hatch mine and keep ' + v.name }}
+              @if (hatching()) {
+                <span i18n>Hatching…</span>
+              } @else {
+                <span i18n>🥚 Hatch mine and keep {{ v.name }}</span>
+              }
             </button>
           }
         </div>
@@ -103,7 +107,7 @@ interface LoadedProfile {
               />
             </div>
           } @else {
-            <p class="fine" style="margin-top:12px">
+            <p i18n class="fine" style="margin-top:12px">
               This creature can’t be booped yet — its profile predates boops.
             </p>
           }
@@ -112,7 +116,7 @@ interface LoadedProfile {
 
       @if (v.sections.length === 0) {
         <div class="card">
-          <p class="sub">Nothing here yet — this profile hasn’t saved any open answers.</p>
+          <p i18n class="sub">Nothing here yet — this profile hasn’t saved any open answers.</p>
         </div>
       }
       @for (group of v.sections; track group.title) {
@@ -144,7 +148,7 @@ interface LoadedProfile {
         </div>
       }
     } @else {
-      <div class="card"><p class="sub">Opening profile…</p></div>
+      <div class="card"><p i18n class="sub">Opening profile…</p></div>
     }
   `,
 })
@@ -248,7 +252,7 @@ export class ViewComponent {
         viewLocator: v.viewLocator,
         version: v.version,
       });
-      this.toast.show(`${v.name} joined your menagerie`);
+      this.toast.show($localize`${v.name}:NAME: joined your menagerie`);
     } catch (err) {
       this.toast.error(err);
     }
@@ -275,7 +279,9 @@ export class ViewComponent {
       const mine = this.session.viewPhrase();
       if (mine) this.compare.addPhrase(mine);
       await this.router.navigate(['/me']);
-      this.toast.show(`Hatched — ${v.name} is in your menagerie. Answer a few, then compare.`);
+      this.toast.show(
+        $localize`Hatched — ${v.name}:NAME: is in your menagerie. Answer a few, then compare.`,
+      );
     } catch (err) {
       this.toast.error(err);
     } finally {
