@@ -264,11 +264,14 @@ try {
   // newcomer is shown before they commit to anything, and it never fetches.
   step = 'demo-unconfigured';
   await page.click('text=See a comparison first');
-  await page.waitForSelector('text=brave-azure-otter', { timeout: 30000 });
-  const demoBody = await page.textContent('body');
-  for (const expected of ['Overall alignment', 'Mutual desires', 'Fit, each way']) {
-    if (!demoBody.includes(expected)) fail(`demo is missing "${expected}" with no server`);
+  // Wait for the panels, not for the creature names. The names render as soon
+  // as the model resolves, but every panel is a lazily loaded component that
+  // arrives afterwards — snapshotting the body in between reads a page that is
+  // still filling in, which is a race that only shows up on a slow runner.
+  for (const expected of ['Overall alignment', 'Mutual desires', 'Fit, each way', 'In words']) {
+    await page.waitForSelector(`text=${expected}`, { timeout: 30000 });
   }
+  const demoBody = await page.textContent('body');
   // The dealbreaker alert and the mutual reveal are the two moments the demo
   // exists to show; a demo that quietly lost them would still look fine.
   if (!demoBody.includes('Alcohol')) fail('demo does not name the violated dealbreaker');
