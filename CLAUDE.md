@@ -69,7 +69,10 @@ guarded (`messages.spec.ts` fails on drift), the template half is not.
   `item.options[i]` or `section.title`, which `src/app/schema-copy.spec.ts`
   enforces. App templates carry `i18n` / `i18n-<attr>`; a new string without
   one compiles fine and is simply untranslatable, so the e2e drives a
-  pseudo-locale (`?lang=qps`) where unmarked copy shows as plain English.
+  pseudo-locale (`?lang=qps`) where unmarked copy shows as plain English, and
+  `src/app/i18n-copy.spec.ts` rejects the two shapes no text-node pass can
+  see: a literal inside `{{ … }}` (use `@if`/`@else` with marked spans) and
+  a static `title`/`aria-label`/`placeholder`/`alt` with no `i18n-` sibling.
   Message keys come from frozen item ids and option indexes — never from the
   English — which is what lets a translation survive relabelling.
 - Internal identifiers keep the historical `moxy` name (env vars, headers,

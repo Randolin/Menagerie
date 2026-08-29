@@ -134,11 +134,11 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
             </button>
           </div>
           <p class="fine" style="margin-top:10px">
-            {{
-              session.populated()
-                ? 'Viewers see only the sections you’ve saved.'
-                : 'Nothing is filled in yet — viewers would see an empty profile.'
-            }}
+            @if (session.populated()) {
+              <span i18n>Viewers see only the sections you’ve saved.</span>
+            } @else {
+              <span i18n>Nothing is filled in yet — viewers would see an empty profile.</span>
+            }
           </p>
         </div>
         @if (session.viewUrl(); as url) {

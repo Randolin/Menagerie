@@ -177,13 +177,13 @@ import { BoopStore } from '../stores/boop.store';
             <div class="grid-item-label">
               <moxy-creature-icon [emoji]="sent.emoji" [size]="18" /> {{ sent.label }}
               <span class="fine">
-                {{
-                  sent.status === 'answered'
-                    ? '↩️ replied'
-                    : sent.status === 'sent'
-                      ? 'sent — no reply yet'
-                      : 'not sent'
-                }}
+                @if (sent.status === 'answered') {
+                  <span i18n>↩️ replied</span>
+                } @else if (sent.status === 'sent') {
+                  <span i18n>sent — no reply yet</span>
+                } @else {
+                  <span i18n>not sent</span>
+                }
               </span>
             </div>
             <div

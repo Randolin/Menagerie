@@ -232,6 +232,16 @@ Both waves are done. The one thing neither could do for itself is look at the
 link-preview card, which is a judgement about a picture; it is checked into
 `public/social-card.png` and regenerable.
 
+**A follow-on the waves earned.** Three separate i18n misses of the same shape
+turned up across E1 and E2 — string literals inside interpolated ternaries,
+which no text-node pass can see and which the pseudo-locale only reveals to
+someone looking at a screenshot. Rather than wait for a fourth,
+`src/app/i18n-copy.spec.ts` now rejects that shape and unmarked static
+attributes outright. It found **sixteen more on its first run**, in the
+dashboard, groups, group and menagerie pages — which is the argument for
+writing it: the sweep, the pseudo-locale and two rounds of review had all
+walked past them.
+
 The prerequisite (merging D1 + D3 so this plan starts from a green `main`) is
 done — PR #30.
 

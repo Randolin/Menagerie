@@ -201,22 +201,22 @@ interface LoadedGroup {
           </p>
           <div class="btn-row">
             <button class="btn" [disabled]="busy()" (click)="deposit(g, 1)">
-              {{
-                myMembership()?.memberLocator
-                  ? myMembership()?.tier === 1
-                    ? '↻ Refresh (pseudonymous)'
-                    : 'Switch to pseudonymous'
-                  : '🐾 Join with a pseudonym'
-              }}
+              @if (!myMembership()?.memberLocator) {
+                <span i18n>🐾 Join with a pseudonym</span>
+              } @else if (myMembership()?.tier === 1) {
+                <span i18n>↻ Refresh (pseudonymous)</span>
+              } @else {
+                <span i18n>Switch to pseudonymous</span>
+              }
             </button>
             <button class="btn" [disabled]="busy()" (click)="deposit(g, 2)">
-              {{
-                myMembership()?.memberLocator
-                  ? myMembership()?.tier === 2
-                    ? '↻ Refresh (open)'
-                    : 'Open up — share my creature'
-                  : '🦊 Join openly'
-              }}
+              @if (!myMembership()?.memberLocator) {
+                <span i18n>🦊 Join openly</span>
+              } @else if (myMembership()?.tier === 2) {
+                <span i18n>↻ Refresh (open)</span>
+              } @else {
+                <span i18n>Open up — share my creature</span>
+              }
             </button>
             @if (myMembership()?.memberLocator) {
               <button i18n class="btn btn-ghost" [disabled]="busy()" (click)="leave()">
