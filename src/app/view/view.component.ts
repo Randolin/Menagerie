@@ -16,6 +16,7 @@ import {
   importanceLabel,
   personaFromViewPhrase,
   SECTIONS,
+  sectionTitle,
   type AnswerValue,
   type ImportanceWeight,
   type Item,
@@ -114,10 +115,10 @@ interface LoadedProfile {
           <p class="sub">Nothing here yet — this profile hasn’t saved any open answers.</p>
         </div>
       }
-      @for (section of v.sections; track section.title) {
+      @for (group of v.sections; track group.title) {
         <div class="card grid-section">
-          <h2>{{ section.title }}</h2>
-          @for (entry of section.items; track entry.item.id) {
+          <h2>{{ group.title }}</h2>
+          @for (entry of group.items; track entry.item.id) {
             @if (entry.item.type === 'scale') {
               <moxy-scale-strip
                 [item]="asScale(entry.item)"
@@ -182,7 +183,7 @@ export class ViewComponent {
       const payload = fetched.payload;
       const sections = SECTIONS.filter((s) => s.privacy === 'open')
         .map((s) => ({
-          title: s.title,
+          title: sectionTitle(s),
           items: s.items
             .filter((item) => payload.a[item.id] !== undefined)
             .map((item) => ({

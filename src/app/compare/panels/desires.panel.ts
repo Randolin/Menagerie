@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { interestLabel } from '@moxy/core';
+import { interestLabel, itemLabel } from '@moxy/core';
 import { seriesVar } from '@moxy/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
@@ -29,7 +29,7 @@ import type { ComparePanelComponent } from '../compare-panels.token';
           </p>
           @for (row of model().desireRows; track row.item.id) {
             <div class="reveal-card">
-              <div class="reveal-title">{{ row.item.label }}</div>
+              <div class="reveal-title">{{ label(row.item) }}</div>
               <div class="reveal-levels">
                 @for (lvl of row.levels; track $index) {
                   @if (lvl >= 1) {
@@ -56,4 +56,5 @@ export class DesiresPanel implements ComparePanelComponent {
   readonly model = input.required<CompareModel>();
   protected readonly color = seriesVar;
   protected readonly levelLabel = interestLabel;
+  protected readonly label = itemLabel;
 }

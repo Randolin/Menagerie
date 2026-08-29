@@ -15,6 +15,7 @@
     "server": "node server/moxy-sync-server.ts",
     "sprites": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/ts-resolve.mjs scripts/sprite-sheet.ts",
     "seed:qa": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/ts-resolve.mjs scripts/seed-qa.ts",
+    "i18n:extract": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/ts-resolve.mjs scripts/extract-messages.ts",
     "test:server": "vitest run --config server/vitest.config.ts",
     "typecheck:server": "tsc -p server/tsconfig.json",
     "typecheck:scripts": "tsc -p scripts/tsconfig.json",

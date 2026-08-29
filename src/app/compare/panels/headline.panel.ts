@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { getItem, SECTIONS } from '@moxy/core';
+import { getItem, SECTIONS, sectionTitle } from '@moxy/core';
 import {
   DumbbellComponent,
   MeterComponent,
@@ -120,7 +120,7 @@ export class HeadlinePanel implements ComparePanelComponent {
     if (!pair) return [];
     return SECTIONS.flatMap((s) => {
       const score = s.privacy === 'open' ? pair.sections[s.id]?.score : undefined;
-      return score === undefined ? [] : [{ id: s.id, title: s.title, score }];
+      return score === undefined ? [] : [{ id: s.id, title: sectionTitle(s), score }];
     });
   });
 }

@@ -6,6 +6,7 @@ import {
   getItem,
   getSection,
   itemLabel,
+  optionLabels,
   type MetricsRecord,
 } from '@moxy/core';
 import { errorText } from '@moxy/ui';
@@ -168,12 +169,11 @@ export class CommunityComponent {
     },
   });
 
-  private readonly ageOptions =
-    (getItem('ab.age')?.item as { options?: readonly string[] })?.options ?? [];
+  private readonly ageItem = getItem('ab.age')?.item;
 
   protected readonly bands = computed(() => {
     const buckets = this.view.value()?.buckets ?? {};
-    const rows = this.ageOptions
+    const rows = (this.ageItem ? optionLabels(this.ageItem) : [])
       .map((label, i) => ({ label, n: buckets[`age|${i}`] ?? 0 }))
       .filter((b) => b.n > 0);
     const max = Math.max(1, ...rows.map((b) => b.n));
@@ -186,10 +186,11 @@ export class CommunityComponent {
     return typeof age === 'number' ? age : null;
   });
 
-  protected myBandLabel(): string | null {
+  protected readonly myBandLabel = computed(() => {
     const band = this.myBand();
-    return band === null ? null : (this.ageOptions[band] ?? null);
-  }
+    if (band === null || !this.ageItem) return null;
+    return optionLabels(this.ageItem)[band] ?? null;
+  });
 
   protected readonly seekingRows = computed<RateRow[]>(() => {
     const band = this.myBand();

@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import {
   IMPORTANCE_WEIGHTS,
-  INTEREST_LEVELS,
+  importanceLabels,
+  interestLevelLabels,
+  optionLabels,
   itemLabel,
   type ImportanceWeight,
   type Item,
@@ -98,16 +100,18 @@ export class WeightControlComponent {
 
   protected readonly weight = computed(() => this.draft.weights()[this.item().id]);
 
-  protected readonly tiers = computed(() =>
-    this.item().type === 'scale'
-      ? IMPORTANCE_WEIGHTS.filter((d) => d.value !== 3)
-      : IMPORTANCE_WEIGHTS,
-  );
+  protected readonly tiers = computed(() => {
+    const named = importanceLabels().map((label, i) => ({
+      value: IMPORTANCE_WEIGHTS[i].value,
+      label,
+    }));
+    return this.item().type === 'scale' ? named.filter((d) => d.value !== 3) : named;
+  });
 
   protected readonly acceptOptions = computed<readonly string[]>(() => {
     const item = this.item();
-    if (item.type === 'choice' || item.type === 'multi') return item.options;
-    if (item.type === 'interest') return INTEREST_LEVELS.map((l) => l.label);
+    if (item.type === 'choice' || item.type === 'multi') return optionLabels(item);
+    if (item.type === 'interest') return interestLevelLabels();
     return [];
   });
 

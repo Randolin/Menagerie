@@ -74,3 +74,18 @@ export {
 } from './hatch/hatch-client';
 
 export * from './storage/storage';
+
+// User-facing copy that lives in the domain rather than a template: the
+// message layer, the schema's label accessors, and the catalogue the
+// extraction script and its guard spec share.
+export { loadMessages, clearMessages, message, type MessageBag } from './i18n/messages';
+export { sourceCatalogue } from './i18n/catalogue';
+export {
+  importanceLabels,
+  interestLevelLabels,
+  optionLabel,
+  optionLabels,
+  scaleEnds,
+  sectionBlurb,
+  sectionTitle,
+} from './schema/labels';
