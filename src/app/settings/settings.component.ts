@@ -42,10 +42,22 @@ import { MetricsStore } from '../stores/metrics.store';
         you, keeps yours alive. There is no account and no reset, so the
         <a routerLink="/backup">backup card</a> is worth printing while you still can.
       </p>
-      <label class="fine" style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+      <label class="fine" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
         <input type="checkbox" [checked]="session.remembered()" (change)="toggleRemember($event)" />
         Remember my edit phrase on this device — stored unencrypted in this browser
       </label>
+      <label class="fine" style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+        <input type="checkbox" [checked]="session.keepDraft()" (change)="toggleKeepDraft($event)" />
+        Keep unsaved answers on this device — encrypted under your edit phrase, so they come back
+        when you next log in here
+      </label>
+      @if (session.keepDraft() && session.remembered()) {
+        <p class="fine" style="margin-top:-6px">
+          Both boxes are ticked, so this browser holds your edit phrase <em>and</em> the answers it
+          unlocks. Anyone with this device has both halves — fine on a phone only you use, worth
+          reconsidering on a shared one.
+        </p>
+      }
       @if (newEditPhrase(); as phrase) {
         <div class="notice">
           Your <strong>new edit phrase</strong> — the old one is dead. Save this one now:
@@ -80,6 +92,16 @@ export class SettingsComponent {
     } catch (err) {
       this.toast.error(err);
     }
+  }
+
+  protected async toggleKeepDraft(event: Event): Promise<void> {
+    const on = (event.target as HTMLInputElement).checked;
+    await this.session.setKeepDraft(on);
+    this.toast.show(
+      on
+        ? 'Unsaved answers will be kept on this device, encrypted'
+        : 'Unsaved answers are no longer kept — the stored copy is gone',
+    );
   }
 
   protected toggleRemember(event: Event): void {

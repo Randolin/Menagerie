@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { HatchClient, HatchError, type HatchFailure } from './hatch-client';
+import { HatchClient, HatchError, hatchFailureMessage, type HatchFailure } from './hatch-client';
 import { EDIT_TOKEN_HEADER, NEW_EDIT_TOKEN_HEADER } from './hatch-api';
 import { BOOP_TOKEN_HEADER } from '../boop/boop-api';
 
@@ -241,5 +241,50 @@ describe('HatchClient boops', () => {
     await new HatchClient('https://s', fetch).deleteKnock(LOC, TOKEN, 'kid');
     expect(captured[0].url).toBe(`https://s/v2/boops/${LOC}/knocks/kid`);
     expect(captured[0].method).toBe('DELETE');
+  });
+});
+
+/**
+ * A HatchError's message is what a person reads in a toast, so it is part of
+ * the product, not debug output. These shipped as `hatch network` and friends
+ * for long enough to prove nobody was checking.
+ */
+describe('failure messages', () => {
+  const ALL: HatchFailure[] = [
+    { kind: 'network', cause: new Error('boom') },
+    { kind: 'not_found' },
+    { kind: 'bad_token' },
+    { kind: 'conflict', remote: { version: 2, blob_view: 'V', blob_priv: 'P' } },
+    { kind: 'locator_taken' },
+    { kind: 'too_large' },
+    { kind: 'rate_limited' },
+    { kind: 'at_capacity' },
+    { kind: 'server', status: 500 },
+  ];
+
+  test('every failure reads as a sentence, and none leaks the kind', () => {
+    for (const failure of ALL) {
+      const message = hatchFailureMessage(failure);
+      expect(message).toMatch(/^[A-Z\u2018\u201cT]/);
+      expect(message).toMatch(/[.]$/);
+      // The machine tokens are snake_case to a one; none may reach a reader.
+      expect(message).not.toContain('_');
+    }
+  });
+
+  test('each failure says something different', () => {
+    expect(new Set(ALL.map(hatchFailureMessage)).size).toBe(ALL.length);
+  });
+
+  test('the offline case names the cause and the consequence', () => {
+    const message = hatchFailureMessage({ kind: 'network', cause: null });
+    expect(message).toContain('offline');
+    expect(message).toContain('Nothing was lost');
+  });
+
+  test('HatchError carries it as its own message', () => {
+    expect(new HatchError({ kind: 'not_found' }).message).toBe(
+      hatchFailureMessage({ kind: 'not_found' }),
+    );
   });
 });

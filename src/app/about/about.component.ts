@@ -187,6 +187,14 @@ import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
         shared computer holds no readable answers once the tab closes.
       </p>
       <p class="sub">
+        Unless you ask it to remember them. Settings has an off-by-default box that keeps unsaved
+        answers on the device, so a closed tab or a dead battery doesn’t cost you the survey — and
+        it keeps them the way the server does, encrypted under a key your edit phrase derives and
+        nothing stores. Still no readable answers at rest; typing the phrase again is what brings
+        them back. The honest catch: tick “remember my edit phrase” as well and this browser holds
+        both the lock and the key, which is why the settings page says so where you tick it.
+      </p>
+      <p class="sub">
         Your menagerie adds one read per kept creature when you open that page, so it can tell you
         which of them have new answers. The server can’t read a word of what comes back — it
         compares a save counter — but those reads look exactly like views, and they say that someone

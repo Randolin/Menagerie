@@ -417,6 +417,111 @@ try {
   await answerValues(page);
   await shot(page, '04-dashboard-filled.png');
 
+  // --- a save that dies in a tunnel, and finishes itself when it doesn't ----
+  // The claim under test is the one the bar makes to the person: the answers
+  // are not lost, and they will save when the network is back — without
+  // anyone clicking anything a second time.
+  step = 'offline-save';
+  {
+    // Orientation, deliberately: an item nothing else in this run asserts, so
+    // the offline round-trip proves itself without perturbing any other step.
+    const card = await addCategory(page, 'About me');
+    await card
+      .locator('.q-row', { hasText: 'Orientation' })
+      .locator('.opt', { hasText: 'Queer' })
+      .click();
+    await page.waitForSelector('.save-bar');
+
+    // Two mechanisms, because each does only half the job. setOffline drives
+    // navigator.onLine and the online/offline events the retry listens for,
+    // but Chromium's network emulation does not reliably cut loopback, so the
+    // request would otherwise succeed and prove nothing; the route abort is
+    // what actually makes the save fail.
+    const serverGlob = `${main.url}/**`;
+    await page.route(serverGlob, (route) => route.abort('internetdisconnected'));
+    await page.context().setOffline(true);
+    await page.click('.save-bar button');
+    await page.waitForSelector('.save-bar-offline', { timeout: 45000 });
+    const bar = await page.textContent('.save-bar-offline');
+    if (!bar.includes('Offline')) fail('the offline save bar does not say it is offline');
+    // Not kept on this device by default, so the honest advice is the tab.
+    if (!bar.includes('Leave it open')) fail('offline bar did not say to keep the tab open');
+    // A red toast on top of it would read as a second, worse problem.
+    if ((await page.textContent('body')).includes('Unknown error')) {
+      fail('an offline save produced a raw error message');
+    }
+    await shot(page, '04b-offline-save.png');
+
+    await page.unroute(serverGlob);
+    await page.context().setOffline(false);
+    // No second click: coming back online is what finishes the save.
+    await page.waitForSelector('.save-bar', { state: 'detached', timeout: 45000 });
+    await page.reload();
+    await page.waitForSelector('.category-card', { timeout: 30000 });
+    if (!(await page.textContent('body')).includes('Queer')) {
+      fail('the answer made offline did not reach the server on reconnect');
+    }
+  }
+
+  // --- unsaved answers that survive the tab, encrypted and opt-in ----------
+  step = 'kept-draft';
+  {
+    await page.goto(`${BASE}#/settings`);
+    await page
+      .locator('label', { hasText: 'Keep unsaved answers on this device' })
+      .locator('input')
+      .check();
+    // Both boxes unticked means one warning, not two: the compounding note
+    // only appears when the phrase is on this device as well.
+    if ((await page.textContent('body')).includes('both the lock and the key')) {
+      fail('the compounding warning showed with only one opt-in ticked');
+    }
+    await page.goto(`${BASE}#/me`);
+    const before = await page.evaluate(() => localStorage.getItem('moxy.draft.v1'));
+    const card = await addCategory(page, 'About me');
+    await card
+      .locator('.q-row', { hasText: 'Orientation' })
+      .locator('.opt', { hasText: 'Bisexual' })
+      .click();
+    await page.waitForSelector('.save-bar');
+
+    // Writes are debounced, so wait for the answer to actually land rather
+    // than for a blob that may still be the one written at opt-in time.
+    await page.waitForFunction(
+      (was) => {
+        const now = localStorage.getItem('moxy.draft.v1');
+        return Boolean(now) && now !== was;
+      },
+      before,
+      { timeout: 15000 },
+    );
+
+    // What reaches disk is the whole point of the opt-in being acceptable.
+    const stored = await page.evaluate(() => localStorage.getItem('moxy.draft.v1'));
+    if (stored.includes('ab.orient') || stored.includes('Bisexual')) {
+      fail('the kept draft is readable at rest');
+    }
+
+    // Close the tab's worth of state and come back: the answer returns, and
+    // returns as UNSAVED, because the server was never told about it.
+    await page.reload();
+    await page.waitForSelector('.save-bar', { timeout: 60000 });
+    if (!(await page.textContent('body')).includes('Bisexual')) {
+      fail('the kept draft did not come back after a reload');
+    }
+    await saveProfile(page);
+    if (await page.evaluate(() => localStorage.getItem('moxy.draft.v1'))) {
+      fail('the kept draft outlived the save that made it redundant');
+    }
+
+    await page.goto(`${BASE}#/settings`);
+    await page
+      .locator('label', { hasText: 'Keep unsaved answers on this device' })
+      .locator('input')
+      .uncheck();
+    await page.goto(`${BASE}#/me`);
+  }
+
   // --- a second profile to compare against ----------------------------------
   step = 'profile-b';
   const pageB = await hatchProfile();

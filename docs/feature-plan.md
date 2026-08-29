@@ -338,7 +338,9 @@ questions on a commute currently loses to a tunnel.
   that build serves and the suite will need to account for it.
 
 **Size.** Medium, with a long tail of caching bugs. Do it when the loop
-above it works.
+above it works. **Shipped** — see Wave 5 below for what the constraint about
+the cache turned into, and why the offline draft did not cost the invariant
+it looked like it would.
 
 ### D2 · Sharing and printing the result
 
@@ -412,32 +414,56 @@ Two more notes:
   hues that eyeballing two had missed.
 
 **Wave 5 — reach.** D1 PWA · D2 share and print. Multiply the loop after
-it works. **D2 shipped. D1 shipped in half, and the other half is a
-question for the product, not a caching problem:**
+it works. **Shipped**, in two parts.
 
-D1 promised "the survey fillable offline". It cannot be built without
-breaking an invariant `DraftStore` states outright — answers are in memory
-only, "so a shared computer holds no plaintext answers after the tab
-closes". Filling the survey offline means writing plaintext intimate
-answers to disk, on a device that may be shared, for an audience that
-chose this app partly because it does not do that. That is a trade for
-the product to make deliberately, not a caching detail to slip in behind
-a service worker.
+The first part was the shell: the app installs and survives losing the
+network. The cache holds this origin's static files and nothing else — the
+profile server is a different origin and is never touched — so there is no
+"what does the cache know about me" question to answer, and logging out has
+nothing to clear. The e2e proves both halves: the shell comes back offline,
+and the cache contains no foreign origin.
 
-What shipped is the half with no such cost: the app installs, and its own
-shell survives losing the network. The cache holds this origin's static
-files and nothing else — the profile server is a different origin and is
-never touched — so there is no "what does the cache know about me"
-question to answer, and logging out has nothing to clear. The e2e proves
-both halves of that: the shell comes back offline, and the cache contains
-no foreign origin.
+The second part was held back deliberately, because "the survey fillable
+offline" looked like it had to break an invariant `DraftStore` states
+outright — answers are in memory only, "so a shared computer holds no
+plaintext answers after the tab closes". Two honest shapes were recorded and
+the trade was left to the product.
 
-**If the offline draft is wanted**, the honest shapes are: an explicit
-opt-in per device ("keep my answers on this device"), mirroring how the
-edit phrase is already remembered only on request; or encrypting the
-draft under a key held in memory, which protects a closed tab but not a
-running one. Both are product decisions with a real threat-model
-argument, and both belong to whoever owns that argument.
+**It turned out not to be a trade.** The plan's second shape — encrypt the
+draft under a key held in memory — was described as protecting a closed tab
+but not a running one, which undersold it: the key in question is `editKey`,
+derived from the edit phrase by Argon2id and never written anywhere. So the
+draft goes to disk under it, and a closed tab leaves ciphertext that nobody
+on the device can open until someone types the edit phrase again. The
+invariant survives verbatim; the answers survive too. That also solved the
+identity problem for free — a draft written under one profile's key simply
+fails to decrypt under another's, so there is no identifier to store and no
+way for the next person on a shared machine to inherit anything.
+
+It ships off by default all the same, because the honest limit is the
+interaction with the _other_ opt-in: tick "remember my edit phrase" as well
+and this browser holds both the lock and the key. Settings says so, in place,
+only when both are on.
+
+Three things came out of building it that the item did not predict:
+
+- **"Fillable offline" was mostly already true**, and the actual loss was at
+  the end: the save fails, and `HatchError` shipped its machine token as the
+  message, so the toast read `hatch network`. Every failure kind now has a
+  sentence written for someone mid-edit, and `network` is a distinct
+  `SaveState` — not an error — with a bar that says the answers are safe and
+  a retry that fires on the browser's own `online` event. No poll: the About
+  page promises no request while you are away, and that promise still holds
+  because this is the click you already made, finishing.
+- **`Blob.prototype.stream` was load-bearing and shouldn't have been.** Every
+  encrypted blob went through a Blob to reach `CompressionStream`, which made
+  the whole crypto layer unusable in the app's own jsdom suite. `compress.ts`
+  now feeds the transform directly — same deflate-raw, two fewer APIs, and the
+  vault's at-rest assertions can run as unit tests.
+- **The cheap version of the disk test is a lie.** Writes are debounced, so an
+  e2e that reads `localStorage` right after a click reads the blob from
+  _before_ it and passes while proving nothing. It waits for the value to
+  change now.
 
 **Unscheduled.** D3 i18n.
 

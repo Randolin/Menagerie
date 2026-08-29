@@ -52,11 +52,43 @@ export type HatchFailure =
   | { kind: 'at_capacity' }
   | { kind: 'server'; status: number };
 
+/**
+ * What to say to a person when a round-trip fails.
+ *
+ * These are the strings that reach a toast, so they are written for someone
+ * who is mid-edit and does not know what a locator is. `network` gets the
+ * most care of the set: it is the one failure that is usually the room's
+ * fault rather than the app's, and the one where the useful thing to say is
+ * what happens to the work in front of them.
+ */
+export function hatchFailureMessage(failure: HatchFailure): string {
+  switch (failure.kind) {
+    case 'network':
+      return 'Can’t reach the profile server — you may be offline. Nothing was lost.';
+    case 'not_found':
+      return 'That phrase doesn’t open anything. It may have been deleted, expired, or re-minted.';
+    case 'bad_token':
+      return 'That edit phrase isn’t allowed to change this profile.';
+    case 'conflict':
+      return 'This profile was saved somewhere else first.';
+    case 'locator_taken':
+      return 'A one-in-a-trillion collision — minting a new phrase.';
+    case 'too_large':
+      return 'That profile is too large for the server to store.';
+    case 'rate_limited':
+      return 'Too many requests from here just now. Wait a moment and try again.';
+    case 'at_capacity':
+      return 'The server is full and isn’t taking new profiles right now.';
+    case 'server':
+      return `The server answered with an error (${failure.status}).`;
+  }
+}
+
 export class HatchError extends Error {
   readonly failure: HatchFailure;
 
   constructor(failure: HatchFailure) {
-    super(`hatch ${failure.kind}`);
+    super(hatchFailureMessage(failure));
     this.name = 'HatchError';
     this.failure = failure;
   }

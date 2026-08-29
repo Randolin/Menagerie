@@ -42,7 +42,9 @@ import {
 } from '@moxy/core';
 import { clone } from './clone';
 import { APP_STORAGE } from './storage.token';
+import { ConnectivityStore } from './connectivity.store';
 import { DraftStore } from './draft.store';
+import { DraftVault } from './draft-vault';
 import { ServerConfigStore } from './server-config.store';
 
 /** Edit phrase for this tab only — gone when the tab closes. */
@@ -50,7 +52,12 @@ const SESSION_KEY = 'moxy.hatch.session.v1';
 /** Edit phrase across restarts — ONLY behind the explicit opt-in checkbox. */
 const REMEMBER_KEY = 'moxy.hatch.remember.v1';
 
-export type SaveState = 'idle' | 'saving' | 'saved' | 'conflict' | 'error';
+/**
+ * `offline` is a distinct outcome from `error` because it is the one failure
+ * where the work is not lost and the right advice is "wait", not "try
+ * something else". Everything about how it is presented follows from that.
+ */
+export type SaveState = 'idle' | 'saving' | 'saved' | 'conflict' | 'offline' | 'error';
 
 /**
  * What a freshness check learned about one saved connection.
@@ -81,6 +88,8 @@ export interface IncomingBoop {
 export class ProfileSessionStore {
   private readonly config = inject(ServerConfigStore);
   private readonly draft = inject(DraftStore);
+  private readonly vault = inject(DraftVault);
+  private readonly connectivity = inject(ConnectivityStore);
   private readonly storage = inject(APP_STORAGE);
 
   readonly active = signal(false);
@@ -128,6 +137,25 @@ export class ProfileSessionStore {
   private readonly sessionLocators = new Map<string, string>();
   /** Serializes saves so two rapid clicks can't race the CAS version. */
   private chain: Promise<unknown> = Promise.resolve();
+
+  constructor() {
+    // The one request this app makes without being asked, and it is a write
+    // the person already asked for: their Save died in a tunnel. Retrying it
+    // when the network returns is finishing that click, not polling — nothing
+    // here ever reads, and nothing fires unless a save is sitting in
+    // `offline` with the same unsaved answers still on screen.
+    this.connectivity.onReconnect(() => {
+      if (this.saveState() !== 'offline' || !this.active() || !this.dirty()) return;
+      void this.save().catch(() => undefined);
+    });
+  }
+
+  /** Is the unsaved draft kept (encrypted) on this device? */
+  readonly keepDraft = this.vault.enabled.asReadonly();
+
+  setKeepDraft(on: boolean): Promise<void> {
+    return this.vault.setEnabled(on);
+  }
 
   viewUrl(): string | null {
     const phrase = this.viewPhrase();
@@ -338,6 +366,7 @@ export class ProfileSessionStore {
       /* fine */
     }
     this.remembered.set(false);
+    this.vault.disarm();
     this.draft.clear();
   }
 
@@ -603,6 +632,7 @@ export class ProfileSessionStore {
       this.populated.set(this.populated() || populated);
       this.connections.set(nextPriv.connections);
       this.snapshotSaved(nextPriv);
+      this.vault.clear();
       this.saveState.set('saved');
     } catch (err) {
       if (err instanceof HatchError && err.failure.kind === 'conflict') {
@@ -621,7 +651,8 @@ export class ProfileSessionStore {
         this.saveState.set('conflict');
         return;
       }
-      this.saveState.set('error');
+      const offline = err instanceof HatchError && err.failure.kind === 'network';
+      this.saveState.set(offline ? 'offline' : 'error');
       throw err;
     }
   }
@@ -684,6 +715,13 @@ export class ProfileSessionStore {
     this.snapshotSaved(priv);
     this.saveState.set('idle');
     this.draft.loadFrom(priv.answers, priv.weights, priv.acceptable);
+    // The server's copy is the baseline, so it is loaded first and snapshotted
+    // first. A kept draft is then laid over it, which is what makes the
+    // recovered work show up as *unsaved* — the save bar appears and the
+    // person decides, rather than the app quietly resurrecting answers.
+    this.vault.arm(editKeys.editKey);
+    const kept = await this.vault.restore();
+    if (kept) this.draft.loadFrom(kept.answers, kept.weights, kept.acceptable);
     this.active.set(true);
     this.writeSession(editPhrase);
     this.remembered.set(this.readRemembered() === editPhrase);
