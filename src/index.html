@@ -10,6 +10,27 @@
       content="Hatch an anonymous compatibility profile, share it as a phrase or QR code, and lay profiles side by side to see where you overlap. No accounts, no names, no tracking — the server stores only ciphertext it can't read."
     />
     <meta name="referrer" content="no-referrer" />
+
+    <!-- Link previews. Deliberately generic: a #/view/<phrase> link and a bare
+         link must unfurl identically, because the preview is rendered into a
+         chat window that shoulders can read and the phrase is not for them.
+         Hash routing makes this the only possible answer anyway — the fragment
+         never reaches a server, so no preview can ever be about a profile. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Menagerie" />
+    <meta property="og:title" content="Menagerie — anonymous compatibility profiles" />
+    <meta
+      property="og:description"
+      content="Hatch a profile, share a phrase or QR code, and lay two profiles side by side to see where you overlap. No accounts, no names — and intimate answers reveal only when they're mutual."
+    />
+    <meta property="og:image" content="social-card.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="The word Menagerie above the line 'Compatibility, minus the identity', with a row of pixel-art creatures."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="manifest" href="manifest.webmanifest" />
     <meta name="theme-color" content="#4a3aa7" />
     <link rel="apple-touch-icon" href="icon.svg" />

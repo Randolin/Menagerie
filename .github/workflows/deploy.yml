@@ -84,6 +84,25 @@ jobs:
               JSON.stringify({ serverUrl: process.env.MOXY_SERVER_URL ?? "" }) + "\n");'
           cat dist/moxy/browser/moxy.config.json
 
+      # og:image must be absolute — most link unfurlers will not resolve a
+      # relative one — but the source can't hardcode a host, because anyone
+      # may self-host this bundle anywhere. So the deploy that knows its own
+      # address is what fills it in, from the same kind of repo variable that
+      # already carries the server URL; a copy served from somewhere else
+      # keeps the relative path rather than pointing at ours. Unset is a
+      # degraded preview, never a failed build.
+      - name: Stamp the deployed origin into the link-preview image URL
+        env:
+          MOXY_SITE_URL: ${{ vars.MOXY_SITE_URL }}
+        run: |
+          node -e 'const fs = require("fs");
+            const base = (process.env.MOXY_SITE_URL ?? "").replace(/\/+$/, "");
+            if (!base) { console.log("no site URL known — og:image stays relative"); process.exit(0); }
+            const f = "dist/moxy/browser/index.html";
+            fs.writeFileSync(f, fs.readFileSync(f, "utf8")
+              .replace(/(property="og:image" content=")social-card\.png/, `$1${base}/social-card.png`));
+            console.log(`og:image → ${base}/social-card.png`);'
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:

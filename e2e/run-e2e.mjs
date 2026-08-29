@@ -59,6 +59,7 @@ const MIME = {
   '.json': 'application/json',
   '.svg': 'image/svg+xml',
   '.webmanifest': 'application/manifest+json',
+  '.png': 'image/png',
 };
 const server = createServer((req, res) => {
   const path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
@@ -377,6 +378,35 @@ try {
       fail('the source locale loaded a catalogue it should have skipped');
     }
     await shot(pseudo, '01c-pseudo-locale.png');
+  }
+
+  // --- the link preview, which is the app's first impression for most ------
+  // Served from the real build, because the failure this catches is an asset
+  // that never shipped or a tag that lost its image — both of which look fine
+  // in source and produce a blank card in every chat app.
+  step = 'unfurl';
+  {
+    const head = readFileSync(join(DIST, 'index.html'), 'utf8');
+    for (const tag of ['og:title', 'og:description', 'og:image', 'og:image:alt', 'twitter:card']) {
+      if (!head.includes(tag)) fail(`link preview missing ${tag}`);
+    }
+    // Generic by design: a phrase link and a bare link must be
+    // indistinguishable in a preview a whole group chat can see.
+    const preview = /property="og:(title|description)" content="([^"]*)"/g;
+    for (const [, , text] of head.matchAll(preview)) {
+      for (const leak of ['shared', 'someone', 'their profile', 'invited']) {
+        if (text.toLowerCase().includes(leak)) fail(`link preview describes the sender: ${leak}`);
+      }
+    }
+    // A plain GET, not page.goto: an unfurler is a crawler with no service
+    // worker, and navigating would (correctly) be answered with the app shell,
+    // because under hash routing every navigation is the same document.
+    const card = await page.request.get(`${BASE}social-card.png`);
+    if (!card.ok()) fail('the link preview image is not in the build');
+    if (!(card.headers()['content-type'] ?? '').includes('image/png')) {
+      fail('the link preview image is not a PNG — unfurlers will not render SVG');
+    }
+    if ((await card.body()).length < 5000) fail('the link preview image is suspiciously empty');
   }
 
   step = 'landing-configure';

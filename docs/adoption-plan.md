@@ -161,7 +161,14 @@ unfurl is visible to shoulders the phrase is not meant for.
 **Done when** a `#/view/…` link and a bare link both unfurl with the card in
 a chat client, and the image is regenerable from the repo.
 
-**Size.** Small.
+**Size.** Small. **Shipped.** `npm run social-card` renders it through the
+pinned Chromium the e2e already uses, from the real sprites, so it cannot
+drift into showing creatures the app doesn't have. One thing the item missed:
+`og:image` has to be absolute or most unfurlers ignore it, and the source
+cannot hardcode a host because anyone may self-host this bundle — so the
+deploy stamps it from a repo variable, exactly as it already does for the
+profile-server URL, and an unset variable degrades the preview instead of
+failing the build.
 
 ### E3 · Say what it costs
 
@@ -178,7 +185,10 @@ to be.
 **Done when** both surfaces state the bound, the strings carry i18n markers,
 and `i18n:extract` has run.
 
-**Size.** Tiny.
+**Size.** Tiny. **Shipped**, and it turned up a second i18n miss: the core
+marker was a multi-line ternary inside an interpolation, invisible to the D3
+sweep's text-node pass for the same reason the boop composer's blurb was. Two
+marked branches now.
 
 ### E4 · The compare page teaches its own empty state
 
@@ -193,7 +203,7 @@ already exist.
 **Done when** both variants render, are translatable, and the demo link is
 absent once any profile is loaded.
 
-**Size.** Tiny.
+**Size.** Tiny. **Shipped.**
 
 ### E5 · Mention the install
 
@@ -204,7 +214,8 @@ instructions, which rot.
 
 **Where.** `src/app/settings/settings.component.ts`.
 
-**Size.** Tiny.
+**Size.** Tiny. **Shipped**, and it says what the cache actually holds rather
+than promising offline access to profiles it can never have.
 
 ---
 
@@ -215,10 +226,14 @@ the only new e2e path, and it deserves an undiluted review.
 
 **Wave E-2 — the door.** E2 + E3 + E4 + E5 in one pass: all small, all
 front-of-funnel, one wave of copy-heavy diffs and one screenshot review.
+**Shipped.**
 
-Before either: merge the outstanding branch (D1 + D3, four commits) so this
-plan starts from a green `main` that already contains the offline saves and
-the i18n rails E3/E4 depend on.
+Both waves are done. The one thing neither could do for itself is look at the
+link-preview card, which is a judgement about a picture; it is checked into
+`public/social-card.png` and regenerable.
+
+The prerequisite (merging D1 + D3 so this plan starts from a green `main`) is
+done — PR #30.
 
 ## Invariants this plan touches
 

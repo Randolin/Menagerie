@@ -70,6 +70,10 @@ import { MetricsStore } from '../stores/metrics.store';
           <div class="passphrase-box" style="margin-top:8px">{{ phrase }}</div>
         </div>
       }
+      <p i18n class="fine" style="margin-bottom:12px">
+        Menagerie can be added to your home screen. It opens without the network afterwards — the
+        app’s own files only; profiles still come from the server.
+      </p>
       <div class="btn-row">
         <a i18n class="btn btn-primary" routerLink="/backup">🖨️ Backup card</a>
         <button i18n class="btn" (click)="changeEditPhrase()">Change edit phrase</button>

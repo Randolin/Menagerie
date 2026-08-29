@@ -6,6 +6,7 @@ import {
   linkedSignal,
   untracked,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { ToastService, seriesVar } from '@moxy/ui';
 import { CompareStore } from '../stores/compare.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
@@ -15,7 +16,7 @@ import { ShareBackComponent } from './share-back.component';
 @Component({
   selector: 'moxy-compare',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ComparePanelsComponent, ShareBackComponent],
+  imports: [ComparePanelsComponent, RouterLink, ShareBackComponent],
   template: `
     <h1 i18n>Compare profiles</h1>
 
@@ -99,6 +100,17 @@ import { ShareBackComponent } from './share-back.component';
             Add at least two profiles to see the comparison — your own, people you’ve saved, or any
             view phrase you’ve been given.
           </p>
+          @if (session.active()) {
+            <p i18n class="fine">
+              Waiting on someone? Share your phrase or QR from
+              <a routerLink="/me">your profile</a>, and paste theirs here once they’ve answered.
+            </p>
+          } @else {
+            <p i18n class="fine">
+              Not sure what this looks like? <a routerLink="/demo">See a worked example</a> — two
+              fictional creatures, the real panels.
+            </p>
+          }
         </div>
       }
     }

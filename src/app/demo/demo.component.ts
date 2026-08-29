@@ -65,8 +65,9 @@ import { ServerConfigStore } from '../stores/server-config.store';
       <div class="card">
         <h2 i18n>Your turn</h2>
         <p i18n class="sub">
-          Hatching takes a second and needs no account, no email, and no name. Answer the core set,
-          share your phrase with one person, and you get this — about the two of you.
+          Hatching takes a second and needs no account, no email, and no name. Answer the core set —
+          about five minutes — share your phrase with one person, and you get this, about the two of
+          you.
         </p>
         @if (ready()) {
           <button class="btn btn-primary" [disabled]="hatching()" (click)="hatch()">
