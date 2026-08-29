@@ -20,6 +20,7 @@ import { ADJECTIVES_A, ADJECTIVES_B, ANIMALS, PERSONA_COLORS } from './wordlists
  */
 export const GENERIC_CREATURE_EMOJI = '🐾';
 import { adjBHue } from './adjb-hues';
+import { DOMAIN } from '../crypto/domains';
 
 export interface Persona {
   /** [adjectiveA, adjectiveB, animal] */
@@ -47,7 +48,7 @@ export async function personaFromViewPhrase(viewPhrase: string): Promise<Persona
   const digest = new Uint8Array(
     await globalThis.crypto.subtle.digest(
       'SHA-256',
-      new TextEncoder().encode(`moxy.persona.v3|${adjA}-${adjB}-${animal.name}`),
+      new TextEncoder().encode(`${DOMAIN.PERSONA_COLOR}|${adjA}-${adjB}-${animal.name}`),
     ),
   );
   // 16 divides 256 exactly — single-byte masking is uniform.

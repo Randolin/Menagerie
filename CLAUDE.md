@@ -51,8 +51,19 @@ guarded (`messages.spec.ts` fails on drift), the template half is not.
 
 ## Frozen contracts — never "fix" these
 
-- Crypto vectors in `crypto/phrase-kdf.spec.ts` and `hatch/hatch.spec.ts`
-  pin every credential derivation. If they break, your change is wrong.
+- `crypto/domains.ts` is the only file in the repo whose VALUES can never
+  change. Its constants are the salts every phrase derives against, so each
+  one is the address of everything stored under it — edit one and every
+  profile ever created becomes permanently unopenable, with no migration and
+  no reset. They are deliberately opaque so that no rename, rebrand or
+  tidy-up has a reason to touch them: the meaning lives in the constant NAME,
+  which is ordinary TypeScript and may be renamed freely. Need a new
+  derivation? Add a fresh random token; never edit or vary an existing one.
+  `domains.spec.ts` is the tripwire and explains the cost in its own failure.
+- Frozen vectors in `crypto/phrase-kdf.spec.ts`, `hatch/hatch.spec.ts`,
+  `hatch/phrase-compat.spec.ts` and `boop/sealed-box.spec.ts` pin the
+  derivations themselves. If they break and you did not deliberately change a
+  domain constant, your change is wrong — fix the regression, not the values.
 - The survey schema (`schema/sections.ts`) is append-only: ids are forever
   (retired ids never reused), options never reorder. The freeze fixtures
   (`schema-v*.freeze.json`) enforce it.
@@ -69,12 +80,22 @@ guarded (`messages.spec.ts` fails on drift), the template half is not.
   `item.options[i]` or `section.title`, which `src/app/schema-copy.spec.ts`
   enforces. App templates carry `i18n` / `i18n-<attr>`; a new string without
   one compiles fine and is simply untranslatable, so the e2e drives a
-  pseudo-locale (`?lang=qps`) where unmarked copy shows as plain English.
+  pseudo-locale (`?lang=qps`) where unmarked copy shows as plain English, and
+  `src/app/i18n-copy.spec.ts` rejects the two shapes no text-node pass can
+  see: a literal inside `{{ … }}` (use `@if`/`@else` with marked spans) and
+  a static `title`/`aria-label`/`placeholder`/`alt` with no `i18n-` sibling.
   Message keys come from frozen item ids and option indexes — never from the
   English — which is what lets a translation survive relabelling.
-- Internal identifiers keep the historical `moxy` name (env vars, headers,
-  `@moxy/*` aliases, storage keys, `dist/moxy`). User-facing text says
-  Menagerie. Don't migrate either direction.
+- The old `moxy` name survives only in the path aliases (`@moxy/*`) and the
+  component selector prefix (`moxy-`). Both are ordinary code and safe to
+  rename — nothing derives from them. This used to be a hard invariant
+  because the KDF salts spelled the name out; they don't any more, which is
+  the whole point of `crypto/domains.ts`.
+- `menagerie.*` browser-storage keys and `x-menagerie-*` wire headers are
+  durable interfaces, not frozen ones: renaming a storage key logs everyone
+  out and drops a remembered edit phrase (a lockout, for anyone who never
+  wrote it down), and renaming a header needs the app and the server
+  deployed together. Version the key rather than rename it.
 
 ## Conventions
 
@@ -106,7 +127,7 @@ guarded (`messages.spec.ts` fails on drift), the template half is not.
 - `ng test`/`ng build` need Node ≥ 22.22.3 (CI uses 24); the server needs
   Node with `node:sqlite` (≥ 22.5, warning-free on 24).
 - The e2e suite spawns real servers and a real Chromium against
-  `dist/moxy/browser` — it tests the last build, not your working tree.
+  `dist/menagerie/browser` — it tests the last build, not your working tree.
 - Argon2id derivations are deliberately slow (~seconds); e2e timeouts that
   look generous are load-bearing.
 - The GC policy constants live in `hatch/constants.ts`, shared by server

@@ -118,7 +118,7 @@ npm run test:app     # Angular component tests (vitest + jsdom)
 npm run test:server  # profile-server integration tests (real HTTP, SQLite)
 npm run typecheck:server  # tsc over server/ (vitest strips types unchecked)
 npm run format       # prettier --write (format:check is what CI enforces)
-npm run build        # production build → dist/moxy/browser
+npm run build        # production build → dist/menagerie/browser
 npm run e2e          # drives the PRODUCTION build in Chromium against a real
                      # spawned profile server (build first)
 npm run server       # run the profile server (see below)
@@ -126,8 +126,8 @@ npm run server       # run the profile server (see below)
 
 For local development, point the app at a local server: run
 `npm run server`, then in the app's landing page (or DevTools) set
-`localStorage['moxy.server.v2'] = 'http://127.0.0.1:8787'`. Deployments read
-`moxy.config.json` instead — see Deploying.
+`localStorage['menagerie.server.v2'] = 'http://127.0.0.1:8787'`. Deployments read
+`menagerie.config.json` instead — see Deploying.
 
 ### Architecture
 
@@ -152,12 +152,18 @@ e2e         Playwright suite run against the production build via a dumb
             zero-knowledge-at-rest scan of the raw database.
 ```
 
-> **Historical note:** the codebase keeps its original internal name, `moxy`.
-> Path aliases (`@moxy/core`), storage keys (`moxy.*`), env vars (`MOXY_*`),
-> API headers (`x-moxy-*`), the config filename, and the server entrypoint are
-> stable identifiers deliberately untouched by the rename to Menagerie —
-> changing them would churn frozen crypto vectors and stored browser state
-> for zero user benefit.
+> **Historical note:** the project was once called _moxy_, and the name still
+> survives in two purely internal places — the path aliases (`@moxy/core`,
+> `@moxy/ui`) and the component selector prefix (`moxy-`). Both are ordinary
+> code and safe to rename; they simply haven't been.
+>
+> Nothing else carries it. In particular the cryptographic domain-separation
+> constants — which used to spell the old name into a salt — are now opaque
+> tokens in `libs/core/src/crypto/domains.ts`. That file is the _only_ place
+> in the repository whose values can never change, and it says so at length:
+> its constants are the addresses of every profile, and the meaning lives in
+> the constant names rather than the values precisely so that no rename,
+> rebrand, or tidy-up ever has a reason to touch them.
 
 ### Extending it
 
@@ -194,13 +200,13 @@ Docker and systemd + Caddy recipes are in [`deploy/`](deploy/README.md).
 
 Pushes to the default branch deploy the app to **GitHub Pages** automatically
 via `.github/workflows/deploy.yml`, stamping the production server URL into
-`moxy.config.json` from the `MOXY_SERVER_URL` repository variable
+`menagerie.config.json` from the `MENAGERIE_SERVER_URL` repository variable
 (Settings → Secrets and variables → Actions → Variables). Manual alternative:
 
 ```sh
 npx ng build --base-href ./
-echo '{"serverUrl":"https://api.menagerie.love"}' > dist/moxy/browser/moxy.config.json
-# copy dist/moxy/browser/* to any static host
+echo '{"serverUrl":"https://api.menagerie.love"}' > dist/menagerie/browser/menagerie.config.json
+# copy dist/menagerie/browser/* to any static host
 ```
 
 Hash routing means no server rewrites are needed anywhere, and a scanned QR
@@ -209,27 +215,27 @@ Hash routing means no server rewrites are needed anywhere, and a scanned QR
 ### The profile server
 
 ```sh
-node server/moxy-sync-server.ts     # Node >= 24; no npm install needed
+node server/menagerie-sync-server.ts     # Node >= 24; no npm install needed
 ```
 
-| Env                       | Default          | Meaning                                           |
-| ------------------------- | ---------------- | ------------------------------------------------- |
-| `PORT`                    | `8787`           | listen port (`0` = ephemeral, printed as JSON)    |
-| `MOXY_DB_PATH`            | `./moxy-sync.db` | SQLite file (`:memory:` for testing)              |
-| `MOXY_MAX_BLOB_BYTES`     | `262144`         | per-blob ciphertext size cap                      |
-| `MOXY_TRUST_PROXY`        | unset            | `1` to honor `X-Forwarded-For` for rate limits    |
-| `MOXY_MAX_PROFILES`       | `100000`         | circuit breaker: creates answer 503 beyond        |
-| `MOXY_MAX_GROUPS`         | `10000`          | group circuit breaker                             |
-| `MOXY_MAX_GROUP_MEMBERS`  | `32`             | deposits per group                                |
-| `MOXY_MAX_BOOP_INBOXES`   | `200000`         | boop inbox circuit breaker                        |
-| `MOXY_METRICS_K`          | `10`             | k-floor: aggregate buckets under this stay hidden |
-| `MOXY_READS_PER_MINUTE`   | `120`            | per-IP GET budget                                 |
-| `MOXY_WRITES_PER_MINUTE`  | `30`             | per-IP write budget                               |
-| `MOXY_BOOPS_PER_MINUTE`   | `5`              | per-IP knock-POST budget                          |
-| `MOXY_METRICS_PER_MINUTE` | `5`              | per-IP metrics-POST budget                        |
-| `MOXY_GC_EMPTY_MS`        | 7 days           | never-populated profiles die after this           |
-| `MOXY_GC_IDLE_MS`         | 365 days         | populated ones, after no edit _and_ no view       |
-| `MOXY_GC_SWEEP_MS`        | 1 hour           | GC sweep interval                                 |
+| Env                            | Default               | Meaning                                           |
+| ------------------------------ | --------------------- | ------------------------------------------------- |
+| `PORT`                         | `8787`                | listen port (`0` = ephemeral, printed as JSON)    |
+| `MENAGERIE_DB_PATH`            | `./menagerie-sync.db` | SQLite file (`:memory:` for testing)              |
+| `MENAGERIE_MAX_BLOB_BYTES`     | `262144`              | per-blob ciphertext size cap                      |
+| `MENAGERIE_TRUST_PROXY`        | unset                 | `1` to honor `X-Forwarded-For` for rate limits    |
+| `MENAGERIE_MAX_PROFILES`       | `100000`              | circuit breaker: creates answer 503 beyond        |
+| `MENAGERIE_MAX_GROUPS`         | `10000`               | group circuit breaker                             |
+| `MENAGERIE_MAX_GROUP_MEMBERS`  | `32`                  | deposits per group                                |
+| `MENAGERIE_MAX_BOOP_INBOXES`   | `200000`              | boop inbox circuit breaker                        |
+| `MENAGERIE_METRICS_K`          | `10`                  | k-floor: aggregate buckets under this stay hidden |
+| `MENAGERIE_READS_PER_MINUTE`   | `120`                 | per-IP GET budget                                 |
+| `MENAGERIE_WRITES_PER_MINUTE`  | `30`                  | per-IP write budget                               |
+| `MENAGERIE_BOOPS_PER_MINUTE`   | `5`                   | per-IP knock-POST budget                          |
+| `MENAGERIE_METRICS_PER_MINUTE` | `5`                   | per-IP metrics-POST budget                        |
+| `MENAGERIE_GC_EMPTY_MS`        | 7 days                | never-populated profiles die after this           |
+| `MENAGERIE_GC_IDLE_MS`         | 365 days              | populated ones, after no edit _and_ no view       |
+| `MENAGERIE_GC_SWEEP_MS`        | 1 hour                | GC sweep interval                                 |
 
 Run it behind a TLS reverse proxy. The API:
 `GET /v2/health` ·

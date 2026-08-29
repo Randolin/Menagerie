@@ -4,8 +4,8 @@ import { DraftStore } from './draft.store';
 import { DraftVault } from './draft-vault';
 import { APP_STORAGE } from './storage.token';
 
-const DRAFT_KEY = 'moxy.draft.v1';
-const KEEP_KEY = 'moxy.draft.keep.v1';
+const DRAFT_KEY = 'menagerie.draft.v1';
+const KEEP_KEY = 'menagerie.draft.keep.v1';
 
 async function aesKey(): Promise<CryptoKey> {
   return crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);

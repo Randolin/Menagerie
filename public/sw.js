@@ -79,7 +79,7 @@ self.addEventListener('fetch', (event) => {
   // Config and locale catalogues must never be served stale while a network
   // exists: neither filename carries a content hash, so a cached copy would
   // outlive the deploy that replaced it.
-  if (url.pathname.endsWith('moxy.config.json') || url.pathname.includes('/i18n/')) {
+  if (url.pathname.endsWith('menagerie.config.json') || url.pathname.includes('/i18n/')) {
     event.respondWith(fromNetworkFirst(request));
     return;
   }

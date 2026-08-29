@@ -48,7 +48,7 @@ import { ServerConfigStore } from '../stores/server-config.store';
             #serverInput
             type="text"
             i18n-placeholder
-            placeholder="https://moxy-sync.example.com"
+            placeholder="https://profiles.example.com"
             i18n-aria-label
             aria-label="Profile server URL"
             style="flex:1;min-width:240px"

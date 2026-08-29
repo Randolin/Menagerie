@@ -5,18 +5,12 @@
 // server stores only SHA-256(editToken) and opaque ciphertext — it can never
 // decrypt, never recover a phrase, and never forge a write.
 import { derivePhraseKeys } from '../crypto/phrase-kdf';
+import { DOMAIN } from '../crypto/domains';
 
-// v2: Argon2id derivation (see crypto/phrase-kdf.ts) — bumped together with
-// the KDF so v1 (PBKDF2) credentials can never collide with v2 namespaces.
-const VIEW_DOMAIN = 'moxy.hatch.view.v2';
-const EDIT_DOMAIN = 'moxy.hatch.edit.v2';
-// Group domains ride the same Argon2id generation. Domain separation keeps a
-// group phrase's derivations unlinkable to any profile namespace.
-const GROUP_READ_DOMAIN = 'moxy.group.read.v1';
-const GROUP_ADMIN_DOMAIN = 'moxy.group.admin.v1';
-// Metrics dedup token: same phrase, separate domain — the server can store
-// it without being able to link it to the view or edit locator.
-const METRICS_DOMAIN = 'moxy.metrics.v1';
+// Salts live in crypto/domains.ts, opaque and frozen. What matters here is
+// only that these four are DIFFERENT from one another: that is what stops a
+// view phrase and an edit phrase deriving the same address, and what keeps a
+// metrics token unlinkable to the profile that produced it.
 
 export interface ViewKeys {
   readonly viewLocator: string;
@@ -30,12 +24,12 @@ export interface EditKeys {
 }
 
 export async function deriveViewKeys(viewPhrase: string): Promise<ViewKeys> {
-  const { locator, key } = await derivePhraseKeys(viewPhrase, VIEW_DOMAIN);
+  const { locator, key } = await derivePhraseKeys(viewPhrase, DOMAIN.VIEW_KEYS);
   return { viewLocator: locator, viewKey: key };
 }
 
 export async function deriveEditKeys(editPhrase: string): Promise<EditKeys> {
-  const { locator, key, token } = await derivePhraseKeys(editPhrase, EDIT_DOMAIN);
+  const { locator, key, token } = await derivePhraseKeys(editPhrase, DOMAIN.EDIT_KEYS);
   return { editLocator: locator, editKey: key, editToken: token };
 }
 
@@ -46,18 +40,18 @@ export interface GroupReadKeys {
 
 /** Group phrase (shared invite) → roster address + roster decryption key. */
 export async function deriveGroupReadKeys(groupPhrase: string): Promise<GroupReadKeys> {
-  const { locator, key } = await derivePhraseKeys(groupPhrase, GROUP_READ_DOMAIN);
+  const { locator, key } = await derivePhraseKeys(groupPhrase, DOMAIN.GROUP_READ_KEYS);
   return { groupLocator: locator, groupKey: key };
 }
 
 /** Admin phrase (creator only) → the manage/kick/re-mint/delete token. */
 export async function deriveGroupAdminToken(adminPhrase: string): Promise<string> {
-  const { token } = await derivePhraseKeys(adminPhrase, GROUP_ADMIN_DOMAIN);
+  const { token } = await derivePhraseKeys(adminPhrase, DOMAIN.GROUP_ADMIN_TOKEN);
   return token;
 }
 
 /** View phrase → once-per-epoch metrics dedup token (unlinkable by domain). */
 export async function deriveMetricsToken(viewPhrase: string): Promise<string> {
-  const { token } = await derivePhraseKeys(viewPhrase, METRICS_DOMAIN);
+  const { token } = await derivePhraseKeys(viewPhrase, DOMAIN.METRICS_TOKEN);
   return token;
 }

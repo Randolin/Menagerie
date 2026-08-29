@@ -1,6 +1,6 @@
 # TLS fronting for the profile server with Caddy (automatic Let's Encrypt).
 # nginx or traefik work identically — the server just needs TLS terminated in
-# front of it and, with MOXY_TRUST_PROXY=1, an X-Forwarded-For header so rate
+# front of it and, with MENAGERIE_TRUST_PROXY=1, an X-Forwarded-For header so rate
 # limiting sees real client addresses (Caddy sets it by default).
 api.menagerie.love {
 	reverse_proxy 127.0.0.1:8787

@@ -27,7 +27,7 @@ export interface BoopInboxRecord {
 }
 
 /** The inbox owner's read/delete credential (random, stored in PrivData). */
-export const BOOP_TOKEN_HEADER = 'x-moxy-boop-token';
+export const BOOP_TOKEN_HEADER = 'x-menagerie-boop-token';
 
 /**
  * Hard cap per knock blob. Clients pad every sealed knock to one fixed

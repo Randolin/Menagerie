@@ -42,11 +42,11 @@ export interface PutMemberRequest {
 }
 
 /** Manage/kick/re-key/delete credential (creator's admin phrase). */
-export const ADMIN_TOKEN_HEADER = 'x-moxy-admin-token';
+export const ADMIN_TOKEN_HEADER = 'x-menagerie-admin-token';
 /** A member's own deposit credential (random, stored in their PrivData). */
-export const MEMBER_TOKEN_HEADER = 'x-moxy-member-token';
+export const MEMBER_TOKEN_HEADER = 'x-menagerie-member-token';
 /** With re-keying, the group's new admin token arrives alongside. */
-export const NEW_ADMIN_TOKEN_HEADER = 'x-moxy-new-admin-token';
+export const NEW_ADMIN_TOKEN_HEADER = 'x-menagerie-new-admin-token';
 
 /** Hard cap on deposits per group. */
 export const GROUP_MAX_MEMBERS = 32;

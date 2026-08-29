@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "moxy": {
+    "menagerie": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -60,10 +60,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "moxy:build:production"
+              "buildTarget": "menagerie:build:production"
             },
             "development": {
-              "buildTarget": "moxy:build:development"
+              "buildTarget": "menagerie:build:development"
             }
           },
           "defaultConfiguration": "development"

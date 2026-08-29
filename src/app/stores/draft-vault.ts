@@ -4,9 +4,9 @@ import { DraftStore } from './draft.store';
 import { APP_STORAGE } from './storage.token';
 
 /** The unsaved draft, encrypted under the edit key. Opt-in, per device. */
-const DRAFT_KEY = 'moxy.draft.v1';
+const DRAFT_KEY = 'menagerie.draft.v1';
 /** The opt-in itself. Absent or anything but "1" means off. */
-const KEEP_KEY = 'moxy.draft.keep.v1';
+const KEEP_KEY = 'menagerie.draft.keep.v1';
 
 /** Long enough that a fast run through a section is one write, not thirty. */
 const WRITE_DEBOUNCE_MS = 400;

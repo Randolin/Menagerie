@@ -3,8 +3,9 @@
 Two pieces: the **static app** (GitHub Pages at **menagerie.love**) and the
 **profile server** (**api.menagerie.love**). The server is where the encrypted
 profiles live — the app needs one configured to hatch or view anything.
-(Internally the codebase, env vars, and config file keep their original
-`moxy` names — see the main README's historical note.)
+(Upgrading a server installed before the rename? Every `MOXY_*` environment
+variable is now `MENAGERIE_*` and the old names are inert — see **Migrating
+off the `moxy` names** at the end.)
 
 ## DNS at the registrar (Porkbun)
 
@@ -23,34 +24,34 @@ code change.
 
 `.github/workflows/deploy.yml` runs the full test ladder on every push (core,
 server, and app unit tests, production build, and the Playwright e2e suite)
-and publishes `dist/moxy/browser` to GitHub Pages on pushes to the default
-branch, stamping the profile-server URL into `moxy.config.json` from the
-`MOXY_SERVER_URL` repository variable.
+and publishes `dist/menagerie/browser` to GitHub Pages on pushes to the default
+branch, stamping the profile-server URL into `menagerie.config.json` from the
+`MENAGERIE_SERVER_URL` repository variable.
 
 One-time setup:
 
 1. Repo **Settings → Pages → Source: "GitHub Actions"**.
 2. **Settings → Secrets and variables → Actions → Variables** → add
-   `MOXY_SERVER_URL` = `https://api.menagerie.love` (your server, below).
+   `MENAGERIE_SERVER_URL` = `https://api.menagerie.love` (your server, below).
 
 The next push to the default branch goes live at
 `https://<user>.github.io/<repo>/`.
 
 Any other static host works identically: `npx ng build --base-href ./`, write
-`{"serverUrl":"https://…"}` to `dist/moxy/browser/moxy.config.json`, and copy
-`dist/moxy/browser/*`. Hash routing needs no rewrite rules anywhere, and
+`{"serverUrl":"https://…"}` to `dist/menagerie/browser/menagerie.config.json`, and copy
+`dist/menagerie/browser/*`. Hash routing needs no rewrite rules anywhere, and
 scanned QR codes (`…#/view/<phrase>`) deep-link directly.
 
 ## The profile server — option A: Docker
 
 ```sh
-docker build -f deploy/Dockerfile -t moxy-sync .    # from the repo root
-docker run -d --name moxy-sync --restart unless-stopped \
-  -p 127.0.0.1:8787:8787 -v moxy-sync-data:/data moxy-sync
+docker build -f deploy/Dockerfile -t menagerie-sync .    # from the repo root
+docker run -d --name menagerie-sync --restart unless-stopped \
+  -p 127.0.0.1:8787:8787 -v menagerie-sync-data:/data menagerie-sync
 ```
 
-The SQLite database lives in the `moxy-sync-data` volume. Put TLS in front
-(see the Caddyfile below) and add `-e MOXY_TRUST_PROXY=1` so rate limiting
+The SQLite database lives in the `menagerie-sync-data` volume. Put TLS in front
+(see the Caddyfile below) and add `-e MENAGERIE_TRUST_PROXY=1` so rate limiting
 sees real client addresses.
 
 ## The profile server — option B: systemd on a VPS
@@ -58,21 +59,21 @@ sees real client addresses.
 Needs Node ≥ 24 (`node:sqlite` + native TypeScript — no npm install, no build):
 
 ```sh
-sudo mkdir -p /opt/moxy
-sudo cp -r server libs /opt/moxy/
-sudo cp deploy/moxy-sync.service /etc/systemd/system/
-sudo systemctl enable --now moxy-sync
+sudo mkdir -p /opt/menagerie
+sudo cp -r server libs /opt/menagerie/
+sudo cp deploy/menagerie-sync.service /etc/systemd/system/
+sudo systemctl enable --now menagerie-sync
 curl http://127.0.0.1:8787/v2/health   # → {"ok":true}
 ```
 
-The database lands in `/var/lib/moxy-sync/` (managed by systemd's
+The database lands in `/var/lib/menagerie-sync/` (managed by systemd's
 `StateDirectory`; the unit runs as an ephemeral `DynamicUser` with a
 read-only filesystem view otherwise).
 
 Garbage collection runs inside the server (defaults: empty profiles after
 7 days, idle-and-unviewed profiles after 12 months, sweeping hourly) —
-override with `MOXY_GC_EMPTY_MS` / `MOXY_GC_IDLE_MS` / `MOXY_GC_SWEEP_MS`,
-and cap total profiles with `MOXY_MAX_PROFILES`.
+override with `MENAGERIE_GC_EMPTY_MS` / `MENAGERIE_GC_IDLE_MS` / `MENAGERIE_GC_SWEEP_MS`,
+and cap total profiles with `MENAGERIE_MAX_PROFILES`.
 
 ## TLS in front (either option)
 
@@ -88,14 +89,14 @@ nginx or traefik work the same way — terminate TLS, proxy to `:8787`.
 
 ## Last step: point the app at it
 
-Set the `MOXY_SERVER_URL` repository variable (step 2 above) so deploys stamp
-it into `moxy.config.json`, or on any single browser use the landing page's
+Set the `MENAGERIE_SERVER_URL` repository variable (step 2 above) so deploys stamp
+it into `menagerie.config.json`, or on any single browser use the landing page's
 "Use this server" field. The server can never read what it stores — see the
 README's threat-model section.
 
 ## Updating from your phone
 
-The server's data (SQLite) lives in the `moxy-sync-data` Docker volume, so
+The server's data (SQLite) lives in the `menagerie-sync-data` Docker volume, so
 updating never touches profiles: pull, rebuild the image, swap the
 container. Three ways to run that cycle, all workable from Android.
 
@@ -121,10 +122,10 @@ ssh-copy-id root@<server-ip>
 ```sh
 cd /opt/menagerie      # wherever the repo was cloned on the box
 git pull
-docker build -f deploy/Dockerfile -t moxy-sync .
-docker stop moxy-sync && docker rm moxy-sync
-docker run -d --name moxy-sync --restart unless-stopped \
-  -p 127.0.0.1:8787:8787 -v moxy-sync-data:/data -e MOXY_TRUST_PROXY=1 moxy-sync
+docker build -f deploy/Dockerfile -t menagerie-sync .
+docker stop menagerie-sync && docker rm menagerie-sync
+docker run -d --name menagerie-sync --restart unless-stopped \
+  -p 127.0.0.1:8787:8787 -v menagerie-sync-data:/data -e MENAGERIE_TRUST_PROXY=1 menagerie-sync
 curl -s http://127.0.0.1:8787/v2/health
 ```
 
@@ -132,10 +133,10 @@ curl -s http://127.0.0.1:8787/v2/health
 health check, and a no-op when nothing changed). Note it cycles the Docker
 container, so it — and both hands-free options below — apply to option A
 only; an option-B (systemd/bare-node) box updates with `git pull` +
-`systemctl restart moxy-sync` instead:
+`systemctl restart menagerie-sync` instead:
 
 ```sh
-MOXY_REPO_DIR=/opt/menagerie /opt/menagerie/deploy/update.sh --force
+MENAGERIE_REPO_DIR=/opt/menagerie /opt/menagerie/deploy/update.sh --force
 ```
 
 ### Hands-free option 1: the box follows main (recommended)
@@ -145,14 +146,14 @@ A systemd timer runs `update.sh` every 10 minutes and cycles only when
 main. Paste once, on the box:
 
 ```sh
-cp /opt/menagerie/deploy/moxy-update.service /etc/systemd/system/
-cp /opt/menagerie/deploy/moxy-update.timer /etc/systemd/system/
+cp /opt/menagerie/deploy/menagerie-update.service /etc/systemd/system/
+cp /opt/menagerie/deploy/menagerie-update.timer /etc/systemd/system/
 systemctl daemon-reload
-systemctl enable --now moxy-update.timer
-systemctl list-timers moxy-update.timer     # sanity check
+systemctl enable --now menagerie-update.timer
+systemctl list-timers menagerie-update.timer     # sanity check
 ```
 
-(If your clone lives elsewhere, edit `MOXY_REPO_DIR` and the `ExecStart`
+(If your clone lives elsewhere, edit `MENAGERIE_REPO_DIR` and the `ExecStart`
 path in the service file first.)
 
 ### Hands-free option 2: a "Redeploy server" button in the GitHub app
@@ -168,7 +169,7 @@ One-time wiring:
    forced-command prefix, then the full contents of `menagerie-deploy.pub`:
 
    ```
-   command="MOXY_REPO_DIR=/opt/menagerie /opt/menagerie/deploy/update.sh --force",restrict <contents of menagerie-deploy.pub>
+   command="MENAGERIE_REPO_DIR=/opt/menagerie /opt/menagerie/deploy/update.sh --force",restrict <contents of menagerie-deploy.pub>
    ```
 
 3. In the repo: **Settings → Secrets and variables → Actions → Secrets** →
@@ -177,3 +178,48 @@ One-time wiring:
 
 From then on: GitHub app → **Actions → Redeploy server → Run workflow**.
 The run's log shows the script's output, ending in `{"ok":true}`.
+
+## Migrating off the `moxy` names
+
+A server installed before the rename has `MOXY_*` variables set. The server no
+longer reads them, so each one silently reverts to its default. Run this on the
+box to see what it is actually using:
+
+```sh
+systemctl cat menagerie-sync moxy-sync 2>/dev/null | grep -i 'environment\|execstart'
+docker inspect -f '{{.Name}} {{.Config.Env}}' $(docker ps -aq) 2>/dev/null
+docker volume ls
+```
+
+**If you use the Docker + `menagerie-update.timer` install, you should not
+need to do any of this.** `update.sh` locates the clone from its own path
+rather than an environment variable, retires a container left over from the
+old name, and compares against the commit label on the _running_ container
+rather than the git ref — so a box installed before the rename converges on
+its own within two ticks, and a run that dies half-way is simply retried
+instead of wedging. What follows is for a hand-rolled install, or for
+understanding what the automatic path is fixing:
+
+- **`MOXY_TRUST_PROXY` is the one that fails quietly.** Unread, rate limiting
+  sees only the reverse proxy's address, so every client shares one budget.
+  Nothing errors; the server just starts refusing people under load.
+- **`MOXY_DB_PATH` moves the database.** Under Docker the image sets
+  `MENAGERIE_DB_PATH=/data/menagerie-sync.db` itself, so the path is fine — but
+  the _filename_ changed, and `update.sh` now mounts a volume named
+  `menagerie-sync-data`. Rows written under the old name in the old volume are
+  not deleted, they are simply no longer read. Under systemd the unit's
+  `Environment=` line is inert and `ProtectSystem=strict` makes the fallback
+  path unwritable, so that one at least fails loudly on start.
+- **The auto-updater needs its variable renamed.** The installed
+  `moxy-update.service` sets `MOXY_REPO_DIR`; `update.sh` now reads
+  `MENAGERIE_REPO_DIR` and defaults to `/opt/menagerie`. Left alone, the next
+  run after the first `cd`s into a directory that does not exist and stops
+  updating. Reinstall the units from `deploy/` (they are renamed too), and
+  `systemctl disable --now moxy-update.timer moxy-sync` first.
+- **Container and image names changed.** `update.sh` removes the old
+  `moxy-sync` container itself; only a hand-rolled install needs
+  `docker rm -f moxy-sync` before the first new cycle.
+- **The old volume is left alone.** `moxy-sync-data` still holds whatever was
+  there; the new container mounts `menagerie-sync-data` and starts a fresh
+  database. Nothing is deleted, so an old volume can be re-mounted later if
+  its contents turn out to matter.

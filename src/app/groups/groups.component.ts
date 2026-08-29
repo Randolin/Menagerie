@@ -36,9 +36,13 @@ import { GroupMembershipStore } from '../stores/group-membership.store';
               <span i18n class="fine">creator</span>
             }
             @if (g.memberLocator) {
-              <span class="fine">{{
-                g.tier === 2 ? 'open' : 'as ' + (g.emoji ?? '') + ' ' + (g.pseudonym ?? 'pseudonym')
-              }}</span>
+              @if (g.tier === 2) {
+                <span i18n class="fine">open</span>
+              } @else if (g.pseudonym) {
+                <span i18n class="fine">as {{ g.emoji ?? '' }} {{ g.pseudonym }}</span>
+              } @else {
+                <span i18n class="fine">under a pseudonym</span>
+              }
             } @else {
               <span i18n class="fine">not deposited</span>
             }

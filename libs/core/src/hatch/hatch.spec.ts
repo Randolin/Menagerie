@@ -24,7 +24,7 @@ describe('hatch key derivation (frozen vectors, KDF v2)', () => {
   // values.
   test('view keys', async () => {
     const keys = await deriveViewKeys(FROZEN_VIEW_PHRASE);
-    expect(keys.viewLocator).toBe('SauNSo4rWzJu_7HMdiy2-g');
+    expect(keys.viewLocator).toBe('mqmD75lVULwTR2Cc7-Evrw');
     // Hyphens and spaces normalize identically.
     const spaced = await deriveViewKeys('amber azure fox mistwoven emberlit fernhollow');
     expect(spaced.viewLocator).toBe(keys.viewLocator);
@@ -32,14 +32,14 @@ describe('hatch key derivation (frozen vectors, KDF v2)', () => {
 
   test('edit keys', async () => {
     const keys = await deriveEditKeys(FROZEN_EDIT_PHRASE);
-    expect(keys.editLocator).toBe('LAviT3zFamXacDtKx8cC2A');
-    expect(keys.editToken).toBe('H-fY9ATfWdKgnXHN_TSCUw');
+    expect(keys.editLocator).toBe('pwvxu5seTpcPAcCWJzt_yA');
+    expect(keys.editToken).toBe('K5QmUY-sjMVH3BcOZmxfJQ');
   }, 30000);
 
   test('domains are disjoint: same phrase, different roles, different keys', async () => {
     const view = await deriveViewKeys(FROZEN_EDIT_PHRASE);
     const edit = await deriveEditKeys(FROZEN_EDIT_PHRASE);
-    const other = await derivePhraseKeys(FROZEN_EDIT_PHRASE, 'moxy.kdf.freeze.test');
+    const other = await derivePhraseKeys(FROZEN_EDIT_PHRASE, 'a-third-domain-for-this-test');
     const locators = [view.viewLocator, edit.editLocator, other.locator];
     expect(new Set(locators).size).toBe(3);
   }, 30000);
@@ -101,15 +101,15 @@ describe('persona v3', () => {
     const persona = await personaFromViewPhrase(FROZEN_VIEW_PHRASE);
     expect(persona?.name).toBe('amber-azure-fox');
     expect(persona?.emoji).toBe('🦊');
-    expect(persona?.colorIndex).toBe(11);
-    expect(persona?.color).toBe('#0b5e8a');
+    expect(persona?.colorIndex).toBe(1);
+    expect(persona?.color).toBe('#2f6b4f');
   });
 
   test('color derives from the HEAD only — the chip leaks nothing about the tail', async () => {
     const other = await personaFromViewPhrase('amber-azure-fox-starworn-dewkissed-moonvale');
     expect(other?.name).toBe('amber-azure-fox');
-    expect(other?.colorIndex).toBe(11);
-    expect(other?.color).toBe('#0b5e8a');
+    expect(other?.colorIndex).toBe(1);
+    expect(other?.color).toBe('#2f6b4f');
   });
 
   test('non-list words yield null', async () => {

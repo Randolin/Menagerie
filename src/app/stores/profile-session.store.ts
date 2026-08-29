@@ -48,9 +48,9 @@ import { DraftVault } from './draft-vault';
 import { ServerConfigStore } from './server-config.store';
 
 /** Edit phrase for this tab only — gone when the tab closes. */
-const SESSION_KEY = 'moxy.hatch.session.v1';
+const SESSION_KEY = 'menagerie.hatch.session.v1';
 /** Edit phrase across restarts — ONLY behind the explicit opt-in checkbox. */
-const REMEMBER_KEY = 'moxy.hatch.remember.v1';
+const REMEMBER_KEY = 'menagerie.hatch.remember.v1';
 
 /**
  * `offline` is a distinct outcome from `error` because it is the one failure

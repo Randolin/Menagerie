@@ -18,7 +18,7 @@ import { loadMessages, type MessageBag } from '@moxy/core';
  * one folder of files. The cost is one fetch before bootstrap, paid only when
  * a locale other than the source is actually wanted.
  */
-const STORED = 'moxy.locale.v1';
+const STORED = 'menagerie.locale.v1';
 
 /** The language the copy is written in — no fetch, no catalogue, no cost. */
 export const SOURCE_LOCALE = 'en';
