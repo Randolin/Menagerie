@@ -6,7 +6,7 @@
 # profile server, including GC and the zero-knowledge-at-rest scan). Branch
 # pushes without a PR get no CI — open the PR to get the ladder. Pushes to
 # main then publish dist/ to GitHub Pages, with the production
-# profile-server URL stamped into moxy.config.json from the MOXY_SERVER_URL
+# profile-server URL stamped into menagerie.config.json from the MENAGERIE_SERVER_URL
 # repository variable
 # (Settings → Secrets and variables → Actions → Variables).
 #
@@ -77,12 +77,12 @@ jobs:
 
       - name: Stamp the production profile-server URL into the Pages artifact
         env:
-          MOXY_SERVER_URL: ${{ vars.MOXY_SERVER_URL }}
+          MENAGERIE_SERVER_URL: ${{ vars.MENAGERIE_SERVER_URL }}
         run: |
           node -e 'const fs = require("fs");
-            fs.writeFileSync("dist/moxy/browser/moxy.config.json",
-              JSON.stringify({ serverUrl: process.env.MOXY_SERVER_URL ?? "" }) + "\n");'
-          cat dist/moxy/browser/moxy.config.json
+            fs.writeFileSync("dist/menagerie/browser/menagerie.config.json",
+              JSON.stringify({ serverUrl: process.env.MENAGERIE_SERVER_URL ?? "" }) + "\n");'
+          cat dist/menagerie/browser/menagerie.config.json
 
       # og:image must be absolute — most link unfurlers will not resolve a
       # relative one — but the source can't hardcode a host, because anyone
@@ -93,12 +93,12 @@ jobs:
       # degraded preview, never a failed build.
       - name: Stamp the deployed origin into the link-preview image URL
         env:
-          MOXY_SITE_URL: ${{ vars.MOXY_SITE_URL }}
+          MENAGERIE_SITE_URL: ${{ vars.MENAGERIE_SITE_URL }}
         run: |
           node -e 'const fs = require("fs");
-            const base = (process.env.MOXY_SITE_URL ?? "").replace(/\/+$/, "");
+            const base = (process.env.MENAGERIE_SITE_URL ?? "").replace(/\/+$/, "");
             if (!base) { console.log("no site URL known — og:image stays relative"); process.exit(0); }
-            const f = "dist/moxy/browser/index.html";
+            const f = "dist/menagerie/browser/index.html";
             fs.writeFileSync(f, fs.readFileSync(f, "utf8")
               .replace(/(property="og:image" content=")social-card\.png/, `$1${base}/social-card.png`));
             console.log(`og:image → ${base}/social-card.png`);'
@@ -106,13 +106,13 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
-          path: dist/moxy/browser
+          path: dist/menagerie/browser
 
   deploy:
     # main is the release branch: feature branches get the full test job on
     # every push and PR, but only main publishes to Pages — via its pushes,
-    # or a manual workflow_dispatch (e.g. to re-stamp moxy.config.json after
-    # the MOXY_SERVER_URL variable changes without any code change).
+    # or a manual workflow_dispatch (e.g. to re-stamp menagerie.config.json after
+    # the MENAGERIE_SERVER_URL variable changes without any code change).
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     needs: test
     runs-on: ubuntu-latest

@@ -1,4 +1,4 @@
-# One update-and-cycle pass (see update.sh). Driven by moxy-update.timer.
+# One update-and-cycle pass (see update.sh). Driven by menagerie-update.timer.
 [Unit]
 Description=Menagerie profile-server update
 After=network-online.target docker.service
@@ -6,5 +6,5 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-Environment=MOXY_REPO_DIR=/opt/menagerie
+Environment=MENAGERIE_REPO_DIR=/opt/menagerie
 ExecStart=/opt/menagerie/deploy/update.sh

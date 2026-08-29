@@ -65,8 +65,8 @@ export interface HatchApiError {
   blob_member?: string;
 }
 
-export const EDIT_TOKEN_HEADER = 'x-moxy-edit-token';
-export const NEW_EDIT_TOKEN_HEADER = 'x-moxy-new-edit-token';
+export const EDIT_TOKEN_HEADER = 'x-menagerie-edit-token';
+export const NEW_EDIT_TOKEN_HEADER = 'x-menagerie-new-edit-token';
 
 /** 16 bytes base64url = exactly 22 chars; locators and tokens alike. */
 export const HATCH_LOCATOR_RE = /^[A-Za-z0-9_-]{22}$/;

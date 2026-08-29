@@ -1,11 +1,11 @@
 # Moxy sync server — systemd unit for a plain VPS.
 #
 # Install:
-#   sudo mkdir -p /opt/moxy && sudo cp -r server libs /opt/moxy/
-#   sudo cp deploy/moxy-sync.service /etc/systemd/system/
-#   sudo systemctl enable --now moxy-sync
+#   sudo mkdir -p /opt/menagerie && sudo cp -r server libs /opt/menagerie/
+#   sudo cp deploy/menagerie-sync.service /etc/systemd/system/
+#   sudo systemctl enable --now menagerie-sync
 #
-# The database lands in /var/lib/moxy-sync/ (StateDirectory). Requires
+# The database lands in /var/lib/menagerie-sync/ (StateDirectory). Requires
 # Node >= 24 at /usr/bin/node.
 [Unit]
 Description=Menagerie zero-knowledge profile server
@@ -14,20 +14,20 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/node /opt/moxy/server/moxy-sync-server.ts
-WorkingDirectory=/opt/moxy
+ExecStart=/usr/bin/node /opt/menagerie/server/menagerie-sync-server.ts
+WorkingDirectory=/opt/menagerie
 Restart=on-failure
 RestartSec=2
 
 # Runs behind a TLS reverse proxy (see Caddyfile); trust its client-IP header
 # so rate limiting sees real addresses.
 Environment=PORT=8787
-Environment=MOXY_DB_PATH=/var/lib/moxy-sync/moxy-sync.db
-Environment=MOXY_TRUST_PROXY=1
+Environment=MENAGERIE_DB_PATH=/var/lib/menagerie-sync/menagerie-sync.db
+Environment=MENAGERIE_TRUST_PROXY=1
 
 # Sandbox: ephemeral user, only the state directory is writable.
 DynamicUser=yes
-StateDirectory=moxy-sync
+StateDirectory=menagerie-sync
 ProtectSystem=strict
 ProtectHome=yes
 PrivateTmp=yes

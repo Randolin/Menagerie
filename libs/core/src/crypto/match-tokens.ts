@@ -12,6 +12,7 @@ import type { Answers, InterestLevel, ProfilePayload } from '../schema/types';
 import { matchItems } from '../schema/schema';
 import { bytesToB64url } from '../codec/base64url';
 import { randomBytes, randomIndex } from './random';
+import { DOMAIN } from './domains';
 
 const subtle = globalThis.crypto.subtle;
 
@@ -23,7 +24,7 @@ async function sha256(text: string): Promise<Uint8Array> {
 const TOKEN_CHARS = 16; // 96 bits of the hash, base64url
 
 export async function matchToken(salt: string, itemId: string, level: number): Promise<string> {
-  const h = await sha256(`moxy.mt.v1|${salt}|${itemId}|${level}`);
+  const h = await sha256(`${DOMAIN.MATCH_TOKEN}|${salt}|${itemId}|${level}`);
   return bytesToB64url(h).slice(0, TOKEN_CHARS);
 }
 

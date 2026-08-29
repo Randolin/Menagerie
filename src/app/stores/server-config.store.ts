@@ -4,14 +4,14 @@ import { APP_STORAGE } from './storage.token';
 
 /**
  * Where profiles live. Resolution order:
- *   1. localStorage override `moxy.server.v2` (power users, e2e harness)
- *   2. `moxy.config.json` next to index.html (stamped by the deploy workflow)
+ *   1. localStorage override `menagerie.server.v2` (power users, e2e harness)
+ *   2. `menagerie.config.json` next to index.html (stamped by the deploy workflow)
  *   3. nothing → 'unconfigured': the app says so instead of failing weirdly.
  *
  * App-level and unencrypted on purpose: the address must be known BEFORE any
  * credential exists, and it reveals only which server this browser talks to.
  */
-const OVERRIDE_KEY = 'moxy.server.v2';
+const OVERRIDE_KEY = 'menagerie.server.v2';
 
 export type ServerConfigState = 'loading' | 'ready' | 'unconfigured';
 
@@ -36,7 +36,7 @@ export class ServerConfigStore {
     }
     try {
       // Relative to the deployed app, wherever it's hosted.
-      const res = await fetch('moxy.config.json', { cache: 'no-cache' });
+      const res = await fetch('menagerie.config.json', { cache: 'no-cache' });
       if (res.ok) {
         const config = (await res.json()) as { serverUrl?: unknown };
         if (typeof config.serverUrl === 'string' && config.serverUrl.trim()) {

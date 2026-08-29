@@ -1,7 +1,7 @@
 import { effect, inject, Injectable, signal } from '@angular/core';
 import { APP_STORAGE } from './storage.token';
 
-const THEME_KEY = 'moxy.theme'; // unchanged from the legacy app
+const THEME_KEY = 'menagerie.theme'; // unchanged from the legacy app
 
 export type ThemeChoice = 'light' | 'dark' | null; // null = follow system
 

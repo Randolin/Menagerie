@@ -1,10 +1,10 @@
-// Moxy end-to-end suite. Serves the PRODUCTION build (dist/moxy/browser) with
+// Menagerie end-to-end suite. Serves the PRODUCTION build (dist/menagerie/browser) with
 // a plain static file server and drives the real UI in Chromium via
 // playwright-core, against a real spawned profile server on its own origin
 // (so CORS is genuinely exercised).
 //
 // Run: npm run build && npm run e2e
-// Env: MOXY_E2E_SHOTS=dir to also capture screenshots.
+// Env: MENAGERIE_E2E_SHOTS=dir to also capture screenshots.
 import { chromium } from 'playwright-core';
 import jsQR from 'jsqr';
 import { PNG } from 'pngjs';
@@ -24,9 +24,9 @@ import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const DIST = join(root, 'dist', 'moxy', 'browser');
+const DIST = join(root, 'dist', 'menagerie', 'browser');
 const CHROMIUM = process.env.CHROMIUM_BIN ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
-const SHOTS = process.env.MOXY_E2E_SHOTS ?? null;
+const SHOTS = process.env.MENAGERIE_E2E_SHOTS ?? null;
 if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 
 if (!existsSync(join(DIST, 'index.html'))) {
@@ -85,14 +85,14 @@ const BASE = `http://127.0.0.1:${server.address().port}/`;
 // fast runner it fits inside a single refill window — production defaults
 // would 429 mid-scenario. The limiters have their own server tests.
 const spawnMoxyServer = async (env) => {
-  const proc = spawn(process.execPath, [join(root, 'server/moxy-sync-server.ts')], {
+  const proc = spawn(process.execPath, [join(root, 'server/menagerie-sync-server.ts')], {
     env: {
       ...process.env,
       PORT: '0',
-      MOXY_READS_PER_MINUTE: '100000',
-      MOXY_WRITES_PER_MINUTE: '100000',
-      MOXY_BOOPS_PER_MINUTE: '100000',
-      MOXY_METRICS_PER_MINUTE: '100000',
+      MENAGERIE_READS_PER_MINUTE: '100000',
+      MENAGERIE_WRITES_PER_MINUTE: '100000',
+      MENAGERIE_BOOPS_PER_MINUTE: '100000',
+      MENAGERIE_METRICS_PER_MINUTE: '100000',
       ...env,
     },
     stdio: ['ignore', 'pipe', 'inherit'],
@@ -123,25 +123,25 @@ const spawnMoxyServer = async (env) => {
 };
 
 const dbPath = join(tmpdir(), `moxy-e2e-${process.pid}.db`);
-const main = await spawnMoxyServer({ MOXY_DB_PATH: dbPath });
+const main = await spawnMoxyServer({ MENAGERIE_DB_PATH: dbPath });
 // Fast-sweeping GC server on a file DB. Timestamps are hour-coarse and the
 // sweep grants that hour back as slack (TTLs are minimum lifetimes), so
 // short TTLs alone can't expire anything — the test backdates created_at
 // through a second SQLite connection instead, exactly like a real aged row.
 const gcDbPath = join(tmpdir(), `moxy-e2e-gc-${process.pid}.db`);
 const gc = await spawnMoxyServer({
-  MOXY_DB_PATH: gcDbPath,
-  MOXY_GC_EMPTY_MS: '3000',
-  MOXY_GC_IDLE_MS: String(365 * 24 * 3600 * 1000),
-  MOXY_GC_SWEEP_MS: '1000',
+  MENAGERIE_DB_PATH: gcDbPath,
+  MENAGERIE_GC_EMPTY_MS: '3000',
+  MENAGERIE_GC_IDLE_MS: String(365 * 24 * 3600 * 1000),
+  MENAGERIE_GC_SWEEP_MS: '1000',
 });
 // Metrics server with k=1 so a single contributor clears the floor. Its own
 // instance also keeps the MAIN db's at-rest scan strict: aggregate counters
 // are plaintext BY DESIGN, and only exist where someone opted in.
 const metricsDbPath = join(tmpdir(), `moxy-e2e-metrics-${process.pid}.db`);
 const metricsSrv = await spawnMoxyServer({
-  MOXY_DB_PATH: metricsDbPath,
-  MOXY_METRICS_K: '1',
+  MENAGERIE_DB_PATH: metricsDbPath,
+  MENAGERIE_METRICS_K: '1',
 });
 
 const browser = await chromium.launch({ executablePath: CHROMIUM });
@@ -169,7 +169,7 @@ async function freshPage(serverUrl = main.url, options = {}) {
   page.on('dialog', (d) => d.accept());
   await page.goto(BASE);
   if (serverUrl) {
-    await page.evaluate((url) => localStorage.setItem('moxy.server.v2', url), serverUrl);
+    await page.evaluate((url) => localStorage.setItem('menagerie.server.v2', url), serverUrl);
     await page.reload();
   }
   return page;
@@ -287,7 +287,7 @@ async function answerValues(page) {
 try {
   // --- landing: no server configured is an honest, explicit state ----------
   step = 'landing-unconfigured';
-  const page = await freshPage(null); // no seeding — moxy.config.json is empty
+  const page = await freshPage(null); // no seeding — menagerie.config.json is empty
   await page.waitForSelector('text=No profile server is configured');
   if (!(await page.locator('button:has-text("Hatch a profile")').isDisabled())) {
     fail('hatch enabled with no server configured');
@@ -569,7 +569,7 @@ try {
       fail('the compounding warning showed with only one opt-in ticked');
     }
     await page.goto(`${BASE}#/me`);
-    const before = await page.evaluate(() => localStorage.getItem('moxy.draft.v1'));
+    const before = await page.evaluate(() => localStorage.getItem('menagerie.draft.v1'));
     const card = await addCategory(page, 'About me');
     await card
       .locator('.q-row', { hasText: 'Orientation' })
@@ -581,7 +581,7 @@ try {
     // than for a blob that may still be the one written at opt-in time.
     await page.waitForFunction(
       (was) => {
-        const now = localStorage.getItem('moxy.draft.v1');
+        const now = localStorage.getItem('menagerie.draft.v1');
         return Boolean(now) && now !== was;
       },
       before,
@@ -589,7 +589,7 @@ try {
     );
 
     // What reaches disk is the whole point of the opt-in being acceptable.
-    const stored = await page.evaluate(() => localStorage.getItem('moxy.draft.v1'));
+    const stored = await page.evaluate(() => localStorage.getItem('menagerie.draft.v1'));
     if (stored.includes('ab.orient') || stored.includes('Bisexual')) {
       fail('the kept draft is readable at rest');
     }
@@ -602,7 +602,7 @@ try {
       fail('the kept draft did not come back after a reload');
     }
     await saveProfile(page);
-    if (await page.evaluate(() => localStorage.getItem('moxy.draft.v1'))) {
+    if (await page.evaluate(() => localStorage.getItem('menagerie.draft.v1'))) {
       fail('the kept draft outlived the save that made it redundant');
     }
 

@@ -340,7 +340,7 @@ if (hatched.size === 0)
 
 /**
  * A seed run makes far more writes in a minute than the server's per-IP
- * budget allows (MOXY_WRITES_PER_MINUTE defaults to 30, and knocks get their
+ * budget allows (MENAGERIE_WRITES_PER_MINUTE defaults to 30, and knocks get their
  * own smaller budget), so every call backs off and retries rather than
  * abandoning the run half-seeded. Wrapping the client keeps that one concern
  * out of the twenty call sites below.

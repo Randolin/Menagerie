@@ -329,7 +329,7 @@ questions on a commute currently loses to a tunnel.
 
 **Constraints — the reason this is behind Track A.**
 
-- `moxy.config.json` must never be served stale from a cache, or an app
+- `menagerie.config.json` must never be served stale from a cache, or an app
   update can't move the server address. Network-first for that file, always.
 - Caching an app whose entire premise is "nothing identifying is stored"
   needs a deliberate answer about what the cache holds and how logging out

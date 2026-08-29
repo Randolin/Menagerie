@@ -47,7 +47,7 @@ describe('the dashboard', () => {
   }
 
   function dismissPhraseNotice(): void {
-    storage.setItem(`moxy.hatch.notice.${PERSONA.name}`, '1');
+    storage.setItem(`menagerie.hatch.notice.${PERSONA.name}`, '1');
   }
 
   it('sends people somewhere real to save the edit phrase', () => {
@@ -82,7 +82,7 @@ describe('the dashboard', () => {
   it('stays dismissed for this creature across a reload', () => {
     completeCore();
     dismissPhraseNotice();
-    storage.setItem(`moxy.core.milestone.${PERSONA.name}`, '1');
+    storage.setItem(`menagerie.core.milestone.${PERSONA.name}`, '1');
     expect(render().textContent).not.toContain('Your core set is done');
   });
 });

@@ -1,5 +1,7 @@
 // Frozen KDF fixture (v2, Argon2id): these exact outputs were captured from
-// the shipped implementation. If any assertion fails, the derivation drifted
+// the shipped implementation. The domain below is a fixture value, chosen to
+// be none of the production constants in crypto/domains.ts — this spec pins
+// the ALGORITHM, and stays green when a new derivation is added. If any assertion fails, the derivation drifted
 // and every existing profile's locators, tokens, and keys would silently
 // break. Do not "fix" the expected values — fix the regression.
 import { describe, expect, test } from 'vitest';
@@ -8,12 +10,12 @@ import { derivePhraseKeys, normalizePassphrase, PHRASE_KDF_PARAMS } from './phra
 
 const FROZEN = {
   passphrase: 'correct horse battery staple luck',
-  domain: 'moxy.kdf.freeze.test',
-  locator: 'K06pmyHZARRA_oR5vRkI0A',
-  token: 'AgNLxjieG53jgtKBQZYClQ',
+  domain: 'kdf-vector-fixture',
+  locator: 'bC8TOyWgo2bAWmnxgkeY7w',
+  token: 'loPjY2gL-XkEsMPy8xnbYQ',
   // AES-GCM of 'menagerie-kdf-pin' under the derived key (fixture uses a
   // zero IV for determinism; production IVs are random). Pins the key slice.
-  pin: 'CovErbS8h1Me1JPup74MYnYZ366u9nbCmwlwMOAurpDy',
+  pin: 'L-ecC08oi6AFzmFzY23-kBdcjKAIlgMlEiaB7MDjgq2N',
 };
 
 describe('phrase KDF v2 freeze (Argon2id)', () => {

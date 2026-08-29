@@ -17,7 +17,9 @@ export interface ComparePanelDescriptor {
   readonly visible?: (model: CompareModel) => boolean;
 }
 
-export const COMPARE_PANELS = new InjectionToken<ComparePanelDescriptor[]>('moxy.compare.panels');
+export const COMPARE_PANELS = new InjectionToken<ComparePanelDescriptor[]>(
+  'menagerie.compare.panels',
+);
 
 export function provideComparePanel(descriptor: ComparePanelDescriptor): Provider {
   return { provide: COMPARE_PANELS, useValue: descriptor, multi: true };

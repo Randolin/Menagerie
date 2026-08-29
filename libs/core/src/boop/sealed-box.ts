@@ -14,11 +14,12 @@
 // key. Display copy must say "says it's from", never "is from".
 import { bytesToB64url, b64urlToBytes } from '../codec/base64url';
 import { randomBytes } from '../crypto/random';
+import { DOMAIN } from '../crypto/domains';
 
 const subtle = globalThis.crypto.subtle;
 
 const P256 = { name: 'ECDH', namedCurve: 'P-256' } as const;
-const SEAL_INFO = 'moxy.boop.seal.v1';
+const SEAL_INFO = DOMAIN.BOOP_SEAL;
 
 /** Fixed plaintext bucket; JSON longer than bucket−2 cannot be sealed. */
 export const SEAL_PAD_BYTES = 2048;

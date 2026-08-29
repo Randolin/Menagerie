@@ -12,7 +12,7 @@
     "test:app": "ng test",
     "test:ui": "vitest run --config libs/ui/vitest.config.ts",
     "e2e": "node e2e/run-e2e.mjs",
-    "server": "node server/moxy-sync-server.ts",
+    "server": "node server/menagerie-sync-server.ts",
     "sprites": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/ts-resolve.mjs scripts/sprite-sheet.ts",
     "social-card": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/ts-resolve.mjs scripts/social-card.ts",
     "seed:qa": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/ts-resolve.mjs scripts/seed-qa.ts",

@@ -290,7 +290,7 @@ export class DashboardComponent {
   }
 
   private noticeKey(personaName: string): string {
-    return `moxy.hatch.notice.${personaName}`;
+    return `menagerie.hatch.notice.${personaName}`;
   }
 
   /**
@@ -331,7 +331,7 @@ export class DashboardComponent {
   }
 
   private milestoneKey(personaName: string): string {
-    return `moxy.core.milestone.${personaName}`;
+    return `menagerie.core.milestone.${personaName}`;
   }
 
   /** Read once: it decides whether a button exists, and cannot change. */
