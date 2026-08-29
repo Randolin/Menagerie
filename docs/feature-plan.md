@@ -511,7 +511,9 @@ Three things fell out of doing it:
   habit, not an enforced one; the e2e catches it only for the handful of
   strings it names.
 
-**Nothing left unscheduled.** Every item in Tracks A–D has shipped.
+**Nothing left unscheduled.** Every item in Tracks A–D has shipped. The
+successor is `adoption-plan.md` — smaller, later in the funnel, and about
+the loop's last mile rather than the loop.
 
 ## Invariants this plan touches
 
