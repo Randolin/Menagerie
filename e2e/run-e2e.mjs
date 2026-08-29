@@ -727,6 +727,51 @@ try {
   if (compareBody.includes('Impact play')) fail('one-sided desire leaked in compare');
   await shot(page, '06-compare.png');
 
+  // --- the loop closes: send your creature back ----------------------------
+  // A is comparing against B and B can be booped, so the offer is live. It
+  // must state how comparisons work without diagnosing what B holds, and it
+  // must never perform the attachment tick on anyone's behalf.
+  step = 'share-back';
+  {
+    const panel = page.locator('moxy-share-back');
+    await panel.waitFor({ timeout: 30000 });
+    const offer = await panel.textContent();
+    if (!offer.includes('Send your creature back')) fail('share-back offer missing its heading');
+    if (!offer.includes('Include my view phrase')) fail('share-back does not name the tick');
+    for (const claim of ['waiting', 'viewed', 'hasn’t seen']) {
+      if (offer.includes(claim)) fail(`share-back claims something it can't know: ${claim}`);
+    }
+
+    await panel.locator('button', { hasText: '👉 Boop' }).click();
+    await panel.locator('.boop-check', { hasText: 'Curious to connect' }).locator('input').check();
+    const attach = panel.locator('.boop-check', { hasText: 'Include my view phrase' });
+    // The panel proposes; the composer's box is still the person's to tick.
+    if (await attach.locator('input').isChecked()) fail('share-back pre-ticked the attachment');
+    await attach.locator('input').check();
+    await panel.locator('button', { hasText: 'Send boop' }).click();
+    await panel.locator('text=Booped!').waitFor({ timeout: 45000 });
+
+    // Already sent, so the offer stands down. Leave and come back rather than
+    // reloading: the comparison itself is in-memory by design and a reload
+    // would empty it, proving nothing about the offer.
+    await page.goto(`${BASE}#/me`);
+    await page.waitForSelector('.profile-head', { timeout: 45000 });
+    await page.goto(`${BASE}#/compare`);
+    await page.waitForSelector('text=Overall alignment', { timeout: 60000 });
+    if (await page.locator('moxy-share-back').count()) {
+      fail('share-back re-offered a creature it had already sent');
+    }
+
+    // And the point of the whole thing: B can now reach A's profile.
+    await pageB.goto(`${BASE}#/menagerie`);
+    await pageB.waitForSelector('text=says it’s from', { timeout: 45000 });
+    const inbox = await pageB.textContent('body');
+    if (!inbox.includes(personaName)) fail('the returned creature did not reach B');
+    if (!(await pageB.locator('a', { hasText: 'Their profile' }).count())) {
+      fail('the returned boop carried no view phrase');
+    }
+  }
+
   // --- groups: create, join both tiers, compare, kick, re-mint --------------
   step = 'group-create';
   await page.goto(`${BASE}#/groups`);

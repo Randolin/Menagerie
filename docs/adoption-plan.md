@@ -124,7 +124,23 @@ walks that exact path (B compares, boops back with phrase attached, A's
 menagerie gains the creature), and the panel is absent on the demo and absent
 when a boop was already sent.
 
-**Size.** Medium. The most valuable item in this document.
+**Size.** Medium. The most valuable item in this document. **Shipped**, with
+two deviations the code argued for:
+
+- **No `suggestAttachView` input.** The plan wanted the composer to open with
+  the checkbox highlighted; an input that pre-ticks would break the very rule
+  the item states, and one that merely draws attention is mechanism for
+  nothing. The panel's copy names the tick instead — guidance with no code,
+  and the composer is untouched.
+- **The "already sent" gate had to be snapshotted, not read live.**
+  `prepareBoop` writes the sent-boop ledger the moment the composer _opens_,
+  not when it sends — so the obvious live read made the panel delete itself
+  the instant anyone used it, taking their half-written boop and their
+  "Booped!" confirmation with it. The e2e found this; no unit test would
+  have, because it needs a real click. It is a `linkedSignal` keyed on the
+  pair now, with an `untracked` ledger read that is load-bearing rather than
+  decorative: a linkedSignal computation tracks everything it reads, so a
+  plain read reintroduces the bug exactly.
 
 ### E2 · The unfurl card
 

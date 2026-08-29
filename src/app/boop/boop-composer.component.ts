@@ -52,12 +52,14 @@ type Phase = 'idle' | 'staging' | 'composing' | 'sending' | 'done';
       @default {
         <div class="boop-form">
           <p class="sub" style="margin-bottom:8px">
-            {{
-              replyTo()
-                ? 'One reply, then the channel closes. Share only what you choose to.'
-                : 'A boop says “I’m interested” — no message box, no pressure. They can reply
-                 once or quietly decline; you won’t be notified either way.'
-            }}
+            @if (replyTo()) {
+              <span i18n>One reply, then the channel closes. Share only what you choose to.</span>
+            } @else {
+              <span i18n
+                >A boop says “I’m interested” — no message box, no pressure. They can reply once or
+                quietly decline; you won’t be notified either way.</span
+              >
+            }
           </p>
           <fieldset class="boop-intents">
             <legend i18n class="fine">What are you hoping for?</legend>
