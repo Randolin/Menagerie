@@ -59,6 +59,7 @@ const MIME = {
   '.json': 'application/json',
   '.svg': 'image/svg+xml',
   '.webmanifest': 'application/manifest+json',
+  '.png': 'image/png',
 };
 const server = createServer((req, res) => {
   const path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
@@ -377,6 +378,35 @@ try {
       fail('the source locale loaded a catalogue it should have skipped');
     }
     await shot(pseudo, '01c-pseudo-locale.png');
+  }
+
+  // --- the link preview, which is the app's first impression for most ------
+  // Served from the real build, because the failure this catches is an asset
+  // that never shipped or a tag that lost its image — both of which look fine
+  // in source and produce a blank card in every chat app.
+  step = 'unfurl';
+  {
+    const head = readFileSync(join(DIST, 'index.html'), 'utf8');
+    for (const tag of ['og:title', 'og:description', 'og:image', 'og:image:alt', 'twitter:card']) {
+      if (!head.includes(tag)) fail(`link preview missing ${tag}`);
+    }
+    // Generic by design: a phrase link and a bare link must be
+    // indistinguishable in a preview a whole group chat can see.
+    const preview = /property="og:(title|description)" content="([^"]*)"/g;
+    for (const [, , text] of head.matchAll(preview)) {
+      for (const leak of ['shared', 'someone', 'their profile', 'invited']) {
+        if (text.toLowerCase().includes(leak)) fail(`link preview describes the sender: ${leak}`);
+      }
+    }
+    // A plain GET, not page.goto: an unfurler is a crawler with no service
+    // worker, and navigating would (correctly) be answered with the app shell,
+    // because under hash routing every navigation is the same document.
+    const card = await page.request.get(`${BASE}social-card.png`);
+    if (!card.ok()) fail('the link preview image is not in the build');
+    if (!(card.headers()['content-type'] ?? '').includes('image/png')) {
+      fail('the link preview image is not a PNG — unfurlers will not render SVG');
+    }
+    if ((await card.body()).length < 5000) fail('the link preview image is suspiciously empty');
   }
 
   step = 'landing-configure';
@@ -726,6 +756,51 @@ try {
   }
   if (compareBody.includes('Impact play')) fail('one-sided desire leaked in compare');
   await shot(page, '06-compare.png');
+
+  // --- the loop closes: send your creature back ----------------------------
+  // A is comparing against B and B can be booped, so the offer is live. It
+  // must state how comparisons work without diagnosing what B holds, and it
+  // must never perform the attachment tick on anyone's behalf.
+  step = 'share-back';
+  {
+    const panel = page.locator('moxy-share-back');
+    await panel.waitFor({ timeout: 30000 });
+    const offer = await panel.textContent();
+    if (!offer.includes('Send your creature back')) fail('share-back offer missing its heading');
+    if (!offer.includes('Include my view phrase')) fail('share-back does not name the tick');
+    for (const claim of ['waiting', 'viewed', 'hasn’t seen']) {
+      if (offer.includes(claim)) fail(`share-back claims something it can't know: ${claim}`);
+    }
+
+    await panel.locator('button', { hasText: '👉 Boop' }).click();
+    await panel.locator('.boop-check', { hasText: 'Curious to connect' }).locator('input').check();
+    const attach = panel.locator('.boop-check', { hasText: 'Include my view phrase' });
+    // The panel proposes; the composer's box is still the person's to tick.
+    if (await attach.locator('input').isChecked()) fail('share-back pre-ticked the attachment');
+    await attach.locator('input').check();
+    await panel.locator('button', { hasText: 'Send boop' }).click();
+    await panel.locator('text=Booped!').waitFor({ timeout: 45000 });
+
+    // Already sent, so the offer stands down. Leave and come back rather than
+    // reloading: the comparison itself is in-memory by design and a reload
+    // would empty it, proving nothing about the offer.
+    await page.goto(`${BASE}#/me`);
+    await page.waitForSelector('.profile-head', { timeout: 45000 });
+    await page.goto(`${BASE}#/compare`);
+    await page.waitForSelector('text=Overall alignment', { timeout: 60000 });
+    if (await page.locator('moxy-share-back').count()) {
+      fail('share-back re-offered a creature it had already sent');
+    }
+
+    // And the point of the whole thing: B can now reach A's profile.
+    await pageB.goto(`${BASE}#/menagerie`);
+    await pageB.waitForSelector('text=says it’s from', { timeout: 45000 });
+    const inbox = await pageB.textContent('body');
+    if (!inbox.includes(personaName)) fail('the returned creature did not reach B');
+    if (!(await pageB.locator('a', { hasText: 'Their profile' }).count())) {
+      fail('the returned boop carried no view phrase');
+    }
+  }
 
   // --- groups: create, join both tiers, compare, kick, re-mint --------------
   step = 'group-create';

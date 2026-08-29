@@ -177,15 +177,14 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
       <h2 i18n>My answers</h2>
       <span class="fine core-marker" [class.core-done]="coreDone()">
         <moxy-ring [fraction]="coreFraction()" [size]="20" label="core completion" />
-        {{
-          coreDone()
-            ? 'Core complete — comparisons have their footing'
-            : 'Core ' +
-              coreAnswered() +
-              ' of ' +
-              coreTotal +
-              ' — comparisons work best from a full core'
-        }}
+        @if (coreDone()) {
+          <span i18n>Core complete — comparisons have their footing</span>
+        } @else {
+          <span i18n
+            >Core {{ coreAnswered() }} of {{ coreTotal }} — about five minutes in all, and
+            comparisons work best from a full one</span
+          >
+        }
       </span>
     </div>
 
