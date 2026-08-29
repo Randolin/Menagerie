@@ -191,7 +191,14 @@ docker inspect -f '{{.Name}} {{.Config.Env}}' $(docker ps -aq) 2>/dev/null
 docker volume ls
 ```
 
-Then, whichever install you have:
+**If you use the Docker + `menagerie-update.timer` install, you should not
+need to do any of this.** `update.sh` locates the clone from its own path
+rather than an environment variable, retires a container left over from the
+old name, and compares against the commit label on the _running_ container
+rather than the git ref — so a box installed before the rename converges on
+its own within two ticks, and a run that dies half-way is simply retried
+instead of wedging. What follows is for a hand-rolled install, or for
+understanding what the automatic path is fixing:
 
 - **`MOXY_TRUST_PROXY` is the one that fails quietly.** Unread, rate limiting
   sees only the reverse proxy's address, so every client shares one budget.
@@ -209,6 +216,10 @@ Then, whichever install you have:
   run after the first `cd`s into a directory that does not exist and stops
   updating. Reinstall the units from `deploy/` (they are renamed too), and
   `systemctl disable --now moxy-update.timer moxy-sync` first.
-- **Container and image names changed**, so the old `moxy-sync` container keeps
-  holding port 8787 and the new one cannot bind. `docker rm -f moxy-sync`
-  before the first new cycle.
+- **Container and image names changed.** `update.sh` removes the old
+  `moxy-sync` container itself; only a hand-rolled install needs
+  `docker rm -f moxy-sync` before the first new cycle.
+- **The old volume is left alone.** `moxy-sync-data` still holds whatever was
+  there; the new container mounts `menagerie-sync-data` and starts a fresh
+  database. Nothing is deleted, so an old volume can be re-mounted later if
+  its contents turn out to matter.

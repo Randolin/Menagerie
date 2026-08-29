@@ -6,5 +6,7 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-Environment=MENAGERIE_REPO_DIR=/opt/menagerie
+# No repo-dir variable: update.sh locates the clone from its own path, so this
+# unit keeps working if the clone ever moves or was installed under an older
+# name. Point ExecStart at wherever the clone actually is.
 ExecStart=/opt/menagerie/deploy/update.sh
