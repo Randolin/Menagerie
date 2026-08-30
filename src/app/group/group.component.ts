@@ -72,7 +72,7 @@ interface LoadedGroup {
       <mng-subject-card
         [persona]="g.persona"
         [phrase]="g.phrase"
-        [title]="g.persona?.name ?? 'A group'"
+        [title]="g.persona?.name ?? unnamedGroup"
       >
         <span i18n subject-head class="fine">group</span>
         <p i18n class="sub">
@@ -112,7 +112,7 @@ interface LoadedGroup {
                       type="checkbox"
                       [checked]="selected().has(m.memberLocator)"
                       (change)="toggleSelect(m.memberLocator)"
-                      [attr.aria-label]="'Select ' + m.name"
+                      [attr.aria-label]="selectLabel(m.name)"
                     />
                   }
                   <span style="display:inline-flex;align-items:center;gap:5px"
@@ -375,6 +375,13 @@ export class GroupComponent {
 
   protected selectedCount(): number {
     return this.selected().size;
+  }
+
+  /** Copy in bindings — no `i18n-` form exists, so `$localize` it here. */
+  protected readonly unnamedGroup = $localize`A group`;
+
+  protected selectLabel(name: string): string {
+    return $localize`Select ${name}:NAME:`;
   }
 
   protected toggleSelect(memberLocator: string): void {

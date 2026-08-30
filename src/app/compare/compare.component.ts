@@ -41,7 +41,7 @@ import { ShareBackComponent } from './share-back.component';
             <span class="slot-meta">{{ slot.ref }}</span>
             <button
               class="btn btn-ghost btn-small"
-              [attr.aria-label]="'Remove ' + slotName(i)"
+              [attr.aria-label]="removeLabel(i)"
               (click)="store.remove(i)"
             >
               ✕
@@ -189,6 +189,11 @@ export class CompareComponent {
     // only mean not re-offering, which is the safe direction to be wrong in.
     return this.alreadyBooped().has(them.name) ? null : them;
   });
+
+  /** Copy in a binding — no `i18n-` form exists, so `$localize` it here. */
+  protected removeLabel(slotIndex: number): string {
+    return $localize`Remove ${this.slotName(slotIndex)}:NAME:`;
+  }
 
   protected slotName(slotIndex: number): string {
     const m = this.store.model();

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import { offeredItems, type Section } from '@mng/core';
+import { offeredItems, sectionTitle, type Section } from '@mng/core';
 import { DraftStore } from '../stores/draft.store';
 import { QuestionRowComponent } from '../survey/items/question-row.component';
 
@@ -23,7 +23,7 @@ import { QuestionRowComponent } from '../survey/items/question-row.component';
   template: `
     <div class="card category-card">
       <div class="category-head">
-        <h2>{{ section().title }}</h2>
+        <h2>{{ title() }}</h2>
         <span class="fine category-count">{{ answered() }} / {{ items().length }}</span>
         <button
           type="button"
@@ -58,7 +58,7 @@ import { QuestionRowComponent } from '../survey/items/question-row.component';
         @if (removing()) {
           <div class="notice notice-warn">
             <span i18n
-              ><strong>Remove “{{ section().title }}”?</strong> This clears its
+              ><strong>Remove “{{ title() }}”?</strong> This clears its
               {answered(), plural,
                 =1 {one answered question}
                 other {{{ answered() }} answered questions}
@@ -104,6 +104,9 @@ export class CategoryCardComponent {
   protected readonly removing = signal(false);
 
   /** Gated depth questions stay out until earlier answers ask for them. */
+  /** Through the catalogue — `section().title` is the raw English. */
+  protected readonly title = computed(() => sectionTitle(this.section()));
+
   protected readonly items = computed(() => offeredItems(this.section(), this.draft.answers()));
 
   protected readonly answered = computed(() => this.draft.answeredIn(this.section()));

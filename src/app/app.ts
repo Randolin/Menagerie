@@ -27,6 +27,9 @@ export class App {
   /** Waiting boops, for the nav badge. */
   protected readonly boopCount = computed(() => this.session.incomingBoops().length);
 
+  /** The badge's own label — copy in a binding, so `$localize` it here. */
+  protected readonly boopsWaiting = computed(() => $localize`${this.boopCount()}:COUNT: waiting`);
+
   /** What the live region says: the name of the page just navigated to. */
   protected readonly announcement = this.pageTitle.announcement;
 

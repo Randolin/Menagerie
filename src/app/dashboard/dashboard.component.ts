@@ -50,8 +50,8 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
             class="btn btn-icon"
             [class.is-done]="copied()"
             (click)="copyEditPhrase()"
-            [attr.aria-label]="copied() ? 'Edit phrase copied' : 'Copy edit phrase'"
-            [title]="copied() ? 'Copied' : 'Copy edit phrase'"
+            [attr.aria-label]="copyAria()"
+            [title]="copyTitle()"
           >
             <mng-icon [name]="copied() ? 'check' : 'copy'" />
           </button>
@@ -245,6 +245,14 @@ export class DashboardComponent {
    */
   protected readonly copied = signal(false);
   protected readonly acknowledged = signal(false);
+
+  /** Copy in bindings — no `i18n-` form exists, so `$localize` it here. */
+  protected readonly copyAria = computed(() =>
+    this.copied() ? $localize`Edit phrase copied` : $localize`Copy edit phrase`,
+  );
+  protected readonly copyTitle = computed(() =>
+    this.copied() ? $localize`Copied` : $localize`Copy edit phrase`,
+  );
 
   /**
    * Copies the phrase under a warning, because the clipboard is the one place

@@ -36,9 +36,7 @@
       <a routerLink="/menagerie" routerLinkActive="active">
         Menagerie
         @if (boopCount() > 0) {
-          <span class="nav-badge" [attr.aria-label]="boopCount() + ' waiting'">{{
-            boopCount()
-          }}</span>
+          <span class="nav-badge" [attr.aria-label]="boopsWaiting()">{{ boopCount() }}</span>
         }
       </a>
       <a i18n routerLink="/groups" routerLinkActive="active">Groups</a>

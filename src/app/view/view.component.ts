@@ -14,6 +14,7 @@ import {
   extractViewPhrase,
   hasDesiresTokens,
   importanceLabel,
+  itemLabel,
   personaFromViewPhrase,
   SECTIONS,
   sectionTitle,
@@ -74,7 +75,7 @@ interface LoadedProfile {
         <a i18n class="btn" routerLink="/">Go to the start</a>
       </div>
     } @else if (view.value(); as v) {
-      <mng-subject-card [persona]="v.persona" [phrase]="v.phrase" [title]="v.name + '’s profile'">
+      <mng-subject-card [persona]="v.persona" [phrase]="v.phrase" [title]="cardTitle(v.name)">
         <p i18n class="sub">
           A Menagerie profile — anonymous by design, stored only as ciphertext the server can’t
           read.
@@ -118,31 +119,38 @@ interface LoadedProfile {
         <div class="card">
           <p i18n class="sub">Nothing here yet — this profile hasn’t saved any open answers.</p>
         </div>
-      }
-      @for (group of v.sections; track group.title) {
-        <div class="card grid-section">
-          <h2>{{ group.title }}</h2>
-          @for (entry of group.items; track entry.item.id) {
-            @if (entry.item.type === 'scale') {
-              <mng-scale-strip
-                [item]="asScale(entry.item)"
-                [answers]="[$any(entry.value)]"
-                [names]="[v.name]"
-              />
-            } @else {
-              <div class="grid-row">
-                <div class="grid-item-label">
-                  {{ $any(entry.item).label }}
-                  @if (entry.weight; as w) {
-                    <span class="fine" [title]="'They marked this: ' + weightLabel(w)">
-                      {{ w === 3 ? '⛔' : w === 2 ? '★★' : '★' }}
-                    </span>
-                  }
+      } @else {
+        <!-- One panel, not one card per section — the same shape the compare
+             page settled on. The subject card above is the hero and earns its
+             chrome; five equal cards under it made the sections compete with
+             it and with each other, and a section heading already says where
+             one block ends and the next begins. -->
+        <div class="panel grid-section">
+          <h2 i18n>Their answers</h2>
+          @for (group of v.sections; track group.title) {
+            <h3 class="grid-subhead">{{ group.title }}</h3>
+            @for (entry of group.items; track entry.item.id) {
+              @if (entry.item.type === 'scale') {
+                <mng-scale-strip
+                  [item]="asScale(entry.item)"
+                  [answers]="[$any(entry.value)]"
+                  [names]="[v.name]"
+                />
+              } @else {
+                <div class="grid-row">
+                  <div class="grid-item-label">
+                    {{ label(entry.item) }}
+                    @if (entry.weight; as w) {
+                      <span class="fine" [title]="weightTitle(w)">
+                        {{ w === 3 ? '⛔' : w === 2 ? '★★' : '★' }}
+                      </span>
+                    }
+                  </div>
+                  <div class="grid-answers">
+                    <mng-answer-text [item]="entry.item" [value]="$any(entry.value)" />
+                  </div>
                 </div>
-                <div class="grid-answers">
-                  <mng-answer-text [item]="entry.item" [value]="$any(entry.value)" />
-                </div>
-              </div>
+              }
             }
           }
         </div>
@@ -235,8 +243,26 @@ export class ViewComponent {
     return item as ScaleItem;
   }
 
-  protected weightLabel(w: ImportanceWeight): string {
-    return importanceLabel(w) ?? '';
+  /**
+   * Read through the catalogue, never off the item.
+   *
+   * This was `$any(entry.item).label` — which is the exact thing
+   * `schema-copy.spec.ts` exists to forbid, and it got through because the
+   * cast puts a `)` where the guard's pattern wanted a `.`. Every item label
+   * on the page a RECIPIENT sees was untranslatable.
+   */
+  protected label(item: Item): string {
+    return itemLabel(item);
+  }
+
+  /** The card's heading — copy in a binding, so `$localize` it here. */
+  protected cardTitle(name: string): string {
+    return $localize`${name}:NAME:’s profile`;
+  }
+
+  /** The importance marker's tooltip — copy, so it goes through $localize. */
+  protected weightTitle(w: ImportanceWeight): string {
+    return $localize`They marked this: ${importanceLabel(w) ?? ''}:LEVEL:`;
   }
 
   protected compareWith(v: LoadedProfile): void {

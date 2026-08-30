@@ -12,11 +12,7 @@ import { seriesVar } from './series';
   selector: 'mng-flow',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <svg
-      [attr.viewBox]="'0 0 ' + W + ' ' + height()"
-      role="img"
-      [attr.aria-label]="matched().length + ' of ' + needs().length + ' needs covered'"
-    >
+    <svg [attr.viewBox]="'0 0 ' + W + ' ' + height()" role="img" [attr.aria-label]="described()">
       <text i18n [attr.x]="0" [attr.y]="12" text-anchor="start" font-size="10" fill="var(--muted)">
         gives
       </text>
@@ -115,6 +111,12 @@ export class FlowComponent {
   protected readonly RIGHT_X = 260;
   private readonly TOP = 24;
   private readonly ROW = 30;
+
+  /** Copy in a binding — no `i18n-` form exists, so `$localize` it here. */
+  protected readonly described = computed(
+    () =>
+      $localize`${this.matched().length}:COVERED: of ${this.needs().length}:TOTAL: needs covered`,
+  );
 
   protected readonly height = computed(
     () => this.TOP + Math.max(this.gives().length, this.needs().length, 1) * this.ROW,

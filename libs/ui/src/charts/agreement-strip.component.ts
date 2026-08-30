@@ -24,11 +24,7 @@ export interface AgreementRow {
     @for (row of rows(); track row.label) {
       <div class="agree-row">
         <span class="agree-label">{{ row.label }}</span>
-        <svg
-          [attr.viewBox]="'0 0 ' + W + ' ' + H"
-          role="img"
-          [attr.aria-label]="row.label + ': ' + row.dots.length + ' shared answers'"
-        >
+        <svg [attr.viewBox]="'0 0 ' + W + ' ' + H" role="img" [attr.aria-label]="describe(row)">
           <!-- Edge to edge, not inset by PAD: the "differ"/"aligned" legend is
                positioned in CSS and cannot know how the viewBox scaled, so the
                track has to end where the row ends for the two to line up. PAD
@@ -117,6 +113,11 @@ export class AgreementStripComponent {
   protected readonly W = 420;
   protected readonly H = 26;
   protected readonly PAD = 8;
+
+  /** Copy in a binding — no `i18n-` form exists, so `$localize` it here. */
+  protected describe(row: AgreementRow): string {
+    return $localize`${row.label}:SECTION:: ${row.dots.length}:COUNT: shared answers`;
+  }
 
   protected x(sim: number): number {
     return this.PAD + (this.W - 2 * this.PAD) * clamp01(sim);

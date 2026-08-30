@@ -40,9 +40,9 @@ interface MatrixRow {
               <th scope="row" class="matrix-item">{{ row.label }}</th>
               @for (lvl of row.levels; track $index) {
                 @if (lvl === null) {
-                  <td class="cell cell-empty" [title]="names()[$index] + ': not answered'">—</td>
+                  <td class="cell cell-empty" [title]="unanswered($index)">—</td>
                 } @else {
-                  <td i18n class="cell" [title]="names()[$index] + ': ' + levelLabel(lvl)">
+                  <td i18n class="cell" [title]="answered($index, lvl)">
                     <span
                       class="interest-pip lvl-{{ lvl }}"
                       [style.background]="lvl > 0 ? 'var(--ramp-' + lvl + ')' : ''"
@@ -72,6 +72,15 @@ export class InterestMatrixComponent {
   readonly names = input.required<readonly string[]>();
   protected readonly color = seriesVar;
   protected readonly levelLabel = interestLabel;
+
+  /** Cell tooltips — copy in a binding, so `$localize` rather than `i18n-title`. */
+  protected unanswered(personIdx: number): string {
+    return $localize`${this.names()[personIdx]}:NAME:: not answered`;
+  }
+
+  protected answered(personIdx: number, level: number): string {
+    return $localize`${this.names()[personIdx]}:NAME:: ${interestLabel(level)}:LEVEL:`;
+  }
 
   protected readonly matrixRows = computed<MatrixRow[]>(() =>
     this.rows().map((row) => {

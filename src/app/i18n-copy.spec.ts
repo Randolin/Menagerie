@@ -14,10 +14,19 @@ import { fileURLToPath } from 'node:url';
  *                                                  to any text-node pass
  *   <button title="My profile">                 ← a static attribute with no
  *                                                  matching i18n-title
+ *   [attr.aria-label]="'Remove ' + name()"      ← a literal inside a BOUND
+ *                                                  translatable attribute
  *
- * Both compile, both review clean, and both are simply untranslatable. The
- * fix for the first is `@if`/`@else` with marked spans; for the second, an
- * `i18n-<attr>` beside the attribute. This is the check that stops a fourth.
+ * All three compile, all three review clean, and all three are simply
+ * untranslatable. The fix for the first is `@if`/`@else` with marked spans;
+ * for the second, an `i18n-<attr>` beside the attribute; for the third,
+ * `$localize` in the component, since a binding has no `i18n-` form.
+ *
+ * The third was this guard's own blind spot. It used to say a bound attribute
+ * was "the component's problem, caught by the interpolation rule or by the
+ * reviewer" — but a binding is not an interpolation, so nothing checked it,
+ * and nineteen English strings were sitting in `[title]` and
+ * `[attr.aria-label]` across the app when the rule was finally written.
  *
  * Punctuation, symbols and emoji are deliberately not copy: `'⛔'` and `': '`
  * are the same in every language, and demanding markers for them would make
@@ -46,27 +55,46 @@ function templatesOf(file: string, source: string): string[] {
   return [...source.matchAll(/ {2}template: `(.*?)`,\n/gs)].map((m) => m[1]);
 }
 
-/** Quoted string literals inside `{{ … }}`, extracted by scanning, not regex. */
-function literalsInInterpolations(template: string): string[] {
+/**
+ * Quoted string literals inside an expression, extracted by scanning.
+ *
+ * A regex cannot do this: a greedy quote match happily spans from one
+ * literal's opener to the next literal's closer, swallowing the code between
+ * them and reporting words that were never strings.
+ */
+function literalsIn(body: string): string[] {
   const found: string[] = [];
-  for (const [, body] of template.matchAll(/\{\{(.*?)\}\}/gs)) {
-    // A regex cannot do this: a greedy quote match happily spans from one
-    // literal's opener to the next literal's closer, swallowing the code
-    // between them and reporting words that were never strings.
-    let i = 0;
-    while (i < body.length) {
-      const ch = body[i];
-      if (ch === "'" || ch === '"') {
-        const end = body.indexOf(ch, i + 1);
-        if (end < 0) break;
-        found.push(body.slice(i + 1, end));
-        i = end + 1;
-      } else {
-        i++;
-      }
+  let i = 0;
+  while (i < body.length) {
+    const ch = body[i];
+    if (ch === "'" || ch === '"') {
+      const end = body.indexOf(ch, i + 1);
+      if (end < 0) break;
+      found.push(body.slice(i + 1, end));
+      i = end + 1;
+    } else {
+      i++;
     }
   }
   return found;
+}
+
+/** Literals inside `{{ … }}`. */
+function literalsInInterpolations(template: string): string[] {
+  return [...template.matchAll(/\{\{(.*?)\}\}/gs)].flatMap(([, body]) => literalsIn(body));
+}
+
+/**
+ * Literals inside a bound translatable attribute — `[title]="'Copy ' + x"`.
+ *
+ * Only the attributes a person actually reads, which is what keeps this from
+ * firing on `[routerLink]="'/me'"`: a path is not copy, but "me" would pass
+ * the two-letter test and there is no way to tell them apart by shape.
+ */
+function literalsInBoundAttributes(template: string): string[] {
+  const names = TRANSLATABLE_ATTRS.join('|');
+  const bound = new RegExp(`\\[(?:attr\\.)?(?:${names})\\]="([^"]*)"`, 'g');
+  return [...template.matchAll(bound)].flatMap(([, expr]) => literalsIn(expr));
 }
 
 function unmarkedAttributes(template: string): string[] {
@@ -99,6 +127,13 @@ describe('app copy is reachable by a translator', () => {
           for (const literal of literalsInInterpolations(template)) {
             if (IS_COPY.test(literal)) {
               offenders.push(`${where} — @if/@else with marked spans, not {{ … '${literal}' }}`);
+            }
+          }
+          for (const literal of literalsInBoundAttributes(template)) {
+            if (IS_COPY.test(literal)) {
+              offenders.push(
+                `${where} — $localize in the component, not [attr]="'${literal}' + …"`,
+              );
             }
           }
           for (const attr of unmarkedAttributes(template)) {

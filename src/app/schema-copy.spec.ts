@@ -33,6 +33,15 @@ const FORBIDDEN: readonly { readonly re: RegExp; readonly use: string }[] = [
   { re: /\bitem\(\)\.(left|right)\b/, use: 'scaleEnds(item())' },
   { re: /\bsection\.(title|blurb)\b/, use: 'sectionTitle/sectionBlurb(section)' },
   { re: /\.section\.(title|blurb)\b/, use: 'sectionTitle/sectionBlurb(g.section)' },
+  // A cast is not an exemption. `$any(entry.item).label` and
+  // `(entry.item as Item).label` both read the word straight off the object,
+  // and both slipped past every pattern above because the cast puts a `)`
+  // where they wanted a `.`. That is not hypothetical: it shipped on the view
+  // page — the page a RECIPIENT sees — and made every item label there
+  // untranslatable while the guard stayed green.
+  { re: /\)\.label\b/, use: 'itemLabel(item) — a cast is not an exemption' },
+  { re: /\)\.options\[/, use: 'optionLabel(item, index)' },
+  { re: /\)\.(title|blurb)\b(?!\s*[:=])/, use: 'sectionTitle/sectionBlurb(section)' },
 ];
 
 function* walk(dir: string): Generator<string> {

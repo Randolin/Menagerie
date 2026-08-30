@@ -8,7 +8,7 @@ import { pct } from './series';
   template: `
     <div class="meter-row">
       <span class="meter-label">{{ label() }}</span>
-      <div class="meter-track" role="img" [attr.aria-label]="label() + ': ' + pct() + '% aligned'">
+      <div class="meter-track" role="img" [attr.aria-label]="described()">
         <div class="meter-fill" [style.width.%]="pct()"></div>
       </div>
       <span class="meter-value">{{ pct() }}%</span>
@@ -19,4 +19,12 @@ export class MeterComponent {
   readonly score = input.required<number>();
   readonly label = input.required<string>();
   protected readonly pct = computed(() => pct(this.score()));
+
+  /**
+   * The only sentence this chart says to a screen reader — so it is copy, and
+   * copy in a binding has no `i18n-` form. It goes through `$localize` here.
+   */
+  protected readonly described = computed(
+    () => $localize`${this.label()}:LABEL:: ${this.pct()}:PERCENT:% aligned`,
+  );
 }

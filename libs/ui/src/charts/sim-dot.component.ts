@@ -13,13 +13,16 @@ import { pct } from './series';
     @if (sim() === null) {
       <span class="sim-dot sim-none" i18n-title title="Not comparable"></span>
     } @else {
-      <span class="sim-dot sim-{{ bucket() }}" [title]="pct(sim()!) + '% similar'"></span>
+      <span class="sim-dot sim-{{ bucket() }}" [title]="described()"></span>
     }
   `,
 })
 export class SimDotComponent {
   readonly sim = input.required<number | null>();
-  protected readonly pct = pct;
+
+  /** Copy in a binding — no `i18n-title` form exists, so `$localize` it here. */
+  protected readonly described = computed(() => $localize`${pct(this.sim()!)}:PERCENT:% similar`);
+
   protected readonly bucket = computed(() => {
     const s = this.sim();
     if (s === null) return 0;

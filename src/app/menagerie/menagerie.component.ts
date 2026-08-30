@@ -59,7 +59,7 @@ import { BoopStore } from '../stores/boop.store';
             <a i18n class="btn btn-ghost btn-small" [routerLink]="['/view', c.viewPhrase]">View</a>
             <button
               class="btn btn-ghost btn-small"
-              [attr.aria-label]="'Remove ' + c.label"
+              [attr.aria-label]="removeLabel(c.label)"
               (click)="removeConnection(c.id)"
             >
               ✕
@@ -292,6 +292,11 @@ export class MenagerieComponent {
     } catch (err) {
       this.toast.error(err);
     }
+  }
+
+  /** Copy in a binding — no `i18n-` form exists, so `$localize` it here. */
+  protected removeLabel(name: string): string {
+    return $localize`Remove ${name}:NAME:`;
   }
 
   protected async removeConnection(id: string): Promise<void> {

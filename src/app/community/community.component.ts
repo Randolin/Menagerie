@@ -53,11 +53,7 @@ interface RateRow {
           @for (band of bands(); track band.label) {
             <div class="bar-row">
               <span class="bar-label">{{ band.label }}</span>
-              <div
-                class="bar-track"
-                role="img"
-                [attr.aria-label]="band.label + ': ' + band.n + ' creatures'"
-              >
+              <div class="bar-track" role="img" [attr.aria-label]="bandLabel(band)">
                 <div class="bar-fill" [style.width.%]="band.widthPct"></div>
               </div>
               <span class="bar-value">{{ band.n }}</span>
@@ -179,6 +175,11 @@ export class CommunityComponent {
     const max = Math.max(1, ...rows.map((b) => b.n));
     return rows.map((b) => ({ ...b, widthPct: Math.round((100 * b.n) / max) }));
   });
+
+  /** The bar's own label — copy in a binding, so `$localize` it here. */
+  protected bandLabel(band: { readonly label: string; readonly n: number }): string {
+    return $localize`${band.label}:BAND:: ${band.n}:COUNT: creatures`;
+  }
 
   private readonly myBand = computed(() => {
     if (!this.session.active()) return null;
