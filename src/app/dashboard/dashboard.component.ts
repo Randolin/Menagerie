@@ -246,10 +246,24 @@ export class DashboardComponent {
   protected readonly copied = signal(false);
   protected readonly acknowledged = signal(false);
 
+  /**
+   * Copies the phrase under a warning, because the clipboard is the one place
+   * this app can still reach the moment before the mistake.
+   *
+   * Every other safeguard stops at the app boundary: separate fields, distinct
+   * styling, a different word count. None of them are present in the chat
+   * window where someone pastes the wrong box and hits send. A line above the
+   * phrase is — the sender sees it in the compose field, and the recipient
+   * sees it if the sender didn't. `extractEditPhrase` takes it back off on the
+   * way in, so the round trip costs nothing.
+   */
   protected async copyEditPhrase(): Promise<void> {
     const phrase = this.session.editPhrase();
     if (!phrase) return;
-    this.copied.set(await this.toast.copy(phrase, 'Copied — store it somewhere safe'));
+    const warned = $localize`⚠️ Menagerie EDIT phrase — never share this. Anyone who has it can change or delete your profile.`;
+    this.copied.set(
+      await this.toast.copy(`${warned}\n${phrase}`, 'Copied — store it somewhere safe'),
+    );
   }
 
   protected toggleAck(event: Event): void {

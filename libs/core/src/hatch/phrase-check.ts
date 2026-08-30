@@ -122,7 +122,17 @@ function diagnose(
   };
 }
 
-/** Instant check of a view phrase against the public grammar. */
+/**
+ * Instant check of a view phrase against the public grammar.
+ *
+ * NEVER make this better by asking the server. A view phrase belongs to
+ * someone else, so the string in the box may be anything they sent — and
+ * deriving the EDIT locator to produce a sharper message would turn this
+ * field into an oracle that confirms "yes, that opens a real profile" for
+ * whoever pasted it. The only locator this path may derive is the view one,
+ * which for anything but a view phrase resolves to nothing. That is the
+ * whole point.
+ */
 export function diagnoseViewPhrase(text: string): PhraseDiagnosis {
   return diagnose(text, VIEW_PHRASE_WORDS, (i) => VIEW_SLOTS[i]);
 }
@@ -142,18 +152,59 @@ export async function diagnoseEditPhrase(text: string): Promise<PhraseDiagnosis>
  * The diagnosis as one sentence for a person: what is wrong, where, and the
  * correction when there is an unambiguous one. Null when nothing is wrong.
  */
-export function describePhrase(diagnosis: PhraseDiagnosis, label: string): string | null {
+export function describePhrase(
+  diagnosis: PhraseDiagnosis,
+  label: string,
+  wrongLength?: string,
+): string | null {
   if (diagnosis.ok) return null;
   const { problems, expectedWords, actualWords } = diagnosis;
-  const first = problems[0];
-  if (first) {
-    const where = `word ${first.index + 1}`;
-    const fix = first.suggestion ? ` Did you mean “${first.suggestion}”?` : '';
-    return `“${first.word}” isn’t ${first.expects} Menagerie uses (${where}).${fix}`;
+
+  // Length first, and length ONLY.
+  //
+  // Word-level help is meaningful once the shape is right and meaningless
+  // before it: told that word 1 of a five-word string "isn't an adjective
+  // Menagerie uses", a person learns nothing they can act on. It is also a
+  // small oracle — enumerating which words are and aren't in the lists
+  // teaches the shape of the system to whoever is holding the string. So
+  // anything of the wrong length gets one uniform answer, whether it is a
+  // fragment, junk, or something that was never a view phrase at all.
+  if (actualWords !== expectedWords) {
+    if (wrongLength) return wrongLength;
+    const short = actualWords < expectedWords;
+    return (
+      `A ${label} is ${expectedWords} words — that’s ${actualWords}. ` +
+      (short ? 'Something may be missing.' : 'There may be an extra word.')
+    );
   }
-  const short = actualWords < expectedWords;
-  return (
-    `A ${label} is ${expectedWords} words — that’s ${actualWords}. ` +
-    (short ? 'Something may be missing.' : 'There may be an extra word.')
-  );
+
+  const first = problems[0];
+  if (!first) return null;
+  const where = `word ${first.index + 1}`;
+  const fix = first.suggestion ? ` Did you mean “${first.suggestion}”?` : '';
+  return `“${first.word}” isn’t ${first.expects} Menagerie uses (${where}).${fix}`;
+}
+
+/**
+ * The five words of an edit phrase, out of whatever they arrived wrapped in.
+ *
+ * The copy button puts a warning above the phrase, so the warning travels
+ * into the chat window where the app has no other reach. That decoration has
+ * to survive the round trip: pasted back into the login field it arrives as
+ * one line, because a single-line input flattens newlines, so this works on
+ * the word tail rather than on lines — and translated warnings vary in length
+ * and shape, which rules out matching the wrapper itself.
+ *
+ * A prefix is stripped only when the last five words are ALL real EFF words.
+ * Someone who genuinely typed seven words of their own phrase gets null and
+ * the ordinary "an edit phrase is five words" message, rather than having two
+ * of them silently discarded.
+ */
+export async function extractEditPhrase(text: string): Promise<string | null> {
+  const words = normalizePassphrase(text).split(' ').filter(Boolean);
+  if (words.length === EDIT_PHRASE_WORDS) return words.join(' ');
+  if (words.length < EDIT_PHRASE_WORDS) return null;
+  const { WORDS } = await import('../crypto/eff-wordlist');
+  const tail = words.slice(-EDIT_PHRASE_WORDS);
+  return tail.every((word) => WORDS.includes(word)) ? tail.join(' ') : null;
 }

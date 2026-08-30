@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { describePhrase, diagnoseEditPhrase } from '@moxy/core';
+import { describePhrase, diagnoseEditPhrase, extractEditPhrase } from '@moxy/core';
 import { ToastService } from '@moxy/ui';
 import { ProfileSessionStore } from '../stores/profile-session.store';
 
@@ -66,9 +66,13 @@ export class EditLoginComponent {
 
   protected async login(event: Event, phrase: string, remember: boolean): Promise<void> {
     event.preventDefault();
+    // The copy button hands out the phrase under a warning line, so accept it
+    // back with the warning still attached rather than failing on the paste
+    // this app itself produced.
+    const typed = (await extractEditPhrase(phrase)) ?? phrase;
     // A phrase with a word the EFF list doesn't have cannot open anything, and
     // saying so takes microseconds where the KDF below takes seconds.
-    const message = describePhrase(await diagnoseEditPhrase(phrase), 'edit phrase');
+    const message = describePhrase(await diagnoseEditPhrase(typed), 'edit phrase');
     if (message) {
       this.problem.set(message);
       return;
@@ -76,7 +80,7 @@ export class EditLoginComponent {
     this.problem.set(null);
     this.busy.set(true);
     try {
-      if (await this.session.login(phrase)) {
+      if (await this.session.login(typed)) {
         if (remember) this.session.setRemember(true);
         await this.router.navigate(['/me']);
       } else {
