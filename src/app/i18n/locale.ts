@@ -1,4 +1,3 @@
-import { loadTranslations } from '@angular/localize';
 import { loadMessages, type MessageBag } from '@mng/core';
 
 /**
@@ -66,7 +65,8 @@ export async function installLocale(locale = preferredLocale()): Promise<string>
     const res = await fetch(`i18n/${locale}.json`, { cache: 'no-cache' });
     if (!res.ok) return SOURCE_LOCALE;
     const catalogue = (await res.json()) as Catalogue;
-    if (catalogue.template) loadTranslations(catalogue.template);
+    if (catalogue.template)
+      (await import('@angular/localize')).loadTranslations(catalogue.template);
     if (catalogue.domain) loadMessages(catalogue.domain);
     return locale;
   } catch {

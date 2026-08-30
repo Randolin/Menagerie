@@ -1,4 +1,5 @@
 import { bootstrapApplication } from '@angular/platform-browser';
+import { warmPhraseKdf } from '@mng/core';
 import { appConfig } from './app/app.config';
 import { App } from './app/app';
 import { installLocale } from './app/i18n/locale';
@@ -17,4 +18,14 @@ if ('serviceWorker' in navigator) {
   addEventListener('load', () => {
     void navigator.serviceWorker.register('sw.js').catch(() => undefined);
   });
+}
+
+// Argon2 is fetched on demand rather than in the initial bundle, which keeps
+// ~28 kB off the first paint. Warm it once the page is idle so the service
+// worker has it cached before anyone unlocks a profile — including offline,
+// where an unfetched chunk would be a lockout. See warmPhraseKdf.
+if ('requestIdleCallback' in globalThis) {
+  requestIdleCallback(() => warmPhraseKdf(), { timeout: 4000 });
+} else {
+  addEventListener('load', () => warmPhraseKdf());
 }

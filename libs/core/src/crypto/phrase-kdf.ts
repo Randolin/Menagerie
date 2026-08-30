@@ -11,7 +11,11 @@
 //
 // This is real cryptography (unlike the match-token curtain): AES-256-GCM
 // with no server-side recovery. Losing the phrase loses the data.
-import { argon2id } from 'hash-wasm';
+//
+// `hash-wasm` is imported inside the derivation rather than at the top of this
+// file: it is ~28 kB nobody needs to read the landing page, and every path
+// that does derive is already waiting seconds for the result. `warmPhraseKdf`
+// below is the other half of that trade.
 import { bytesToB64url } from '../codec/base64url';
 
 export const PHRASE_KDF_PARAMS = {
@@ -29,6 +33,22 @@ export interface PhraseKeys {
   readonly token: string;
 }
 
+/**
+ * Fetch the Argon2 module without deriving anything.
+ *
+ * Deferring it off the critical path would quietly cost something real
+ * otherwise: the service worker caches what has been fetched, not what might
+ * be, so a chunk still unfetched when the network goes away is a profile that
+ * cannot be unlocked offline. Warming it once the page is idle keeps the
+ * first paint light and leaves the cache in the state it was in before.
+ *
+ * Failure is silent and harmless — the derivation imports it again, and that
+ * is the import that has to succeed.
+ */
+export function warmPhraseKdf(): void {
+  void import('hash-wasm').catch(() => undefined);
+}
+
 export function normalizePassphrase(pass: string): string {
   return pass
     .trim()
@@ -41,6 +61,7 @@ export async function derivePhraseKeys(
   passphrase: string,
   domainSalt: string,
 ): Promise<PhraseKeys> {
+  const { argon2id } = await import('hash-wasm');
   const bytes = await argon2id({
     password: normalizePassphrase(passphrase),
     salt: new TextEncoder().encode(domainSalt),
