@@ -8,7 +8,7 @@ import type { ComparePanelComponent } from '../compare-panels.token';
   selector: 'moxy-desires-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="card">
+    <div class="panel">
       <h2 i18n>Desires — mutual only</h2>
       @if (model().withTokensCount === 1) {
         <p i18n class="sub">

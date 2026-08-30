@@ -9,7 +9,7 @@ import type { ComparePanelComponent } from '../compare-panels.token';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ChartTableComponent, ScaleStripComponent],
   template: `
-    <div class="card">
+    <div class="panel">
       <h2 i18n>Values, side by side</h2>
       <p i18n class="sub">Each dot is a person. Distance between dots is the actual gap.</p>
       @for (row of rows(); track row.item.id) {

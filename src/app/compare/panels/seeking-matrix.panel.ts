@@ -8,7 +8,7 @@ import type { ComparePanelComponent } from '../compare-panels.token';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [InterestMatrixComponent],
   template: `
-    <div class="card">
+    <div class="panel">
       <h2 i18n>What each of you is open to</h2>
       <p i18n class="sub">Highlighted rows are mutual — everyone answered is at least “Curious”.</p>
       <!-- No "read as a table" here: moxy-interest-matrix already IS a table,

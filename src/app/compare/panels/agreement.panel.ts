@@ -14,7 +14,7 @@ function answerText(item: Item, v: AnswerValue): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [AgreementStripComponent],
   template: `
-    <div class="card">
+    <div class="panel">
       <h2 i18n>Agreement, item by item</h2>
       <p i18n class="sub">
         Every question you both answered, placed by how closely your answers sit. Hover a dot to see

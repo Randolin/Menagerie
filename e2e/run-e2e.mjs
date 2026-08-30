@@ -317,6 +317,10 @@ try {
   }
   if (demoBody.includes('On Pronouns')) fail('narrative frames identity as a difference');
   if (!demoBody.includes('Cuddling')) fail('demo does not reveal the mutual desire');
+  // ...and reveals it outright. A newcomer deciding whether this is worth
+  // five minutes does not go looking behind a disclosure first.
+  if (!(await page.isVisible('text=Cuddling')))
+    fail('demo hides the mutual desire behind the fold');
   // Desires are mutual-only: a one-sided answer must not appear anywhere.
   if (demoBody.includes('Massage')) fail('demo revealed a one-sided desire');
   await shot(page, '01b-demo-unconfigured.png');
@@ -736,6 +740,15 @@ try {
   await page.fill('input[aria-label="Paste a view phrase or link"]', viewPhraseB);
   await page.click('form button:has-text("Add")');
   await page.waitForSelector('text=Overall alignment', { timeout: 30000 });
+
+  // The fold is the point of the layout, and `textContent` cannot see it: a
+  // closed <details> still yields its text, so the needle list below would
+  // pass just as happily with everything buried. Drive the disclosure instead
+  // — open it, read the page, then close it and check the evidence went away.
+  const more = 'summary:has-text("See the detail")';
+  await page.waitForSelector(more, { timeout: 30000 });
+  await page.click(more);
+  await page.waitForSelector('text=Answer by answer', { state: 'visible', timeout: 30000 });
   const compareBody = await page.textContent('body');
   for (const needle of [
     personaName,
@@ -756,6 +769,14 @@ try {
   }
   if (compareBody.includes('Impact play')) fail('one-sided desire leaked in compare');
   await shot(page, '06-compare.png');
+
+  await page.click(more);
+  await page.waitForSelector('text=Answer by answer', { state: 'hidden', timeout: 10000 });
+  // What stays above the fold is the answer, not the evidence for it: the
+  // headline, the sentences, and the mutual reveal, which is nowhere else.
+  for (const lead of ['Overall alignment', 'Fit is scored twice', 'Desires — mutual only']) {
+    if (!(await page.isVisible(`text=${lead}`))) fail('fell behind the fold: ' + lead);
+  }
 
   // --- the loop closes: send your creature back ----------------------------
   // A is comparing against B and B can be booped, so the offer is live. It

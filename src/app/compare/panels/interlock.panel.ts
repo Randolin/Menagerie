@@ -17,7 +17,7 @@ interface FlowView {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FlowComponent],
   template: `
-    <div class="card">
+    <div class="panel">
       <h2 i18n>Care interlock</h2>
       <p i18n class="sub">
         Not similarity — coverage: what one naturally gives, laid against what the other needs to

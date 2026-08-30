@@ -43,10 +43,21 @@ export const appConfig: ApplicationConfig = {
       // better.
       visible: (model) => model.payloads.length === 2 && model.pair !== null,
     }),
+    // In the lead, not behind the fold: the mutual reveal is not evidence for
+    // the headline number, it is a second answer to a second question, and it
+    // is the one thing on the page that is nowhere else. Burying it would put
+    // a click between someone and the part they came for.
+    provideComparePanel({
+      id: 'desires',
+      order: 15,
+      loadComponent: () => import('./compare/panels/desires.panel').then((m) => m.DesiresPanel),
+      visible: (model) => model.withTokensCount >= 1,
+    }),
     provideComparePanel({
       id: 'interlock',
       order: 18,
       loadComponent: () => import('./compare/panels/interlock.panel').then((m) => m.InterlockPanel),
+      detail: true,
       visible: (model) => model.interlocks.some((row) => row.detailA || row.detailB),
     }),
     provideComparePanel({
@@ -54,6 +65,7 @@ export const appConfig: ApplicationConfig = {
       order: 20,
       loadComponent: () =>
         import('./compare/panels/values-strips.panel').then((m) => m.ValuesStripsPanel),
+      detail: true,
       visible: (model) => {
         const grid = model.grid.find((g) => g.section.id === 'values');
         return Boolean(grid && grid.rows.some((r) => r.answeredCount > 0));
@@ -64,21 +76,17 @@ export const appConfig: ApplicationConfig = {
       order: 30,
       loadComponent: () =>
         import('./compare/panels/seeking-matrix.panel').then((m) => m.SeekingMatrixPanel),
+      detail: true,
       visible: (model) => {
         const grid = model.grid.find((g) => g.section.id === 'seeking');
         return Boolean(grid && grid.rows.some((r) => r.answeredCount > 0));
       },
     }),
     provideComparePanel({
-      id: 'desires',
-      order: 40,
-      loadComponent: () => import('./compare/panels/desires.panel').then((m) => m.DesiresPanel),
-      visible: (model) => model.withTokensCount >= 1,
-    }),
-    provideComparePanel({
       id: 'agreement',
       order: 45,
       loadComponent: () => import('./compare/panels/agreement.panel').then((m) => m.AgreementPanel),
+      detail: true,
       visible: (model) =>
         model.payloads.length === 2 &&
         model.grid.some((g) => g.rows.some((r) => r.sim !== null && r.answeredCount === 2)),
@@ -88,6 +96,7 @@ export const appConfig: ApplicationConfig = {
       order: 50,
       loadComponent: () =>
         import('./compare/panels/answer-grid.panel').then((m) => m.AnswerGridPanel),
+      detail: true,
     }),
   ],
 };

@@ -16,7 +16,7 @@ const GRID_SECTIONS = ['about', 'lifestyle', 'connection', 'structure', 'plans']
          cards holding one or two rows each: all the chrome of a panel with
          none of the weight, which is what made the page read as a stack of
          equals rather than a document with a shape. -->
-    <div class="card grid-section">
+    <div class="panel grid-section">
       <h2 i18n>Answer by answer</h2>
       @for (g of sections(); track g.section.id) {
         <h3 class="grid-subhead">{{ title(g.section) }}</h3>
