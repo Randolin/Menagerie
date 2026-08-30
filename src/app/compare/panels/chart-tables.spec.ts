@@ -2,6 +2,8 @@ import { type Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { buildDemoCast, personaFromViewPhrase } from '@mng/core';
 import { buildCompareModel, type CompareModel, type CompareSlot } from '../compare-model';
+import { AgreementPanel } from './agreement.panel';
+import { InterlockPanel } from './interlock.panel';
 import { SeekingMatrixPanel } from './seeking-matrix.panel';
 import { ValuesStripsPanel } from './values-strips.panel';
 
@@ -70,6 +72,44 @@ describe('chart tables', () => {
     expect(el.querySelector('details.chart-table')).toBeNull();
     const friendship = tableRows(el).find((row) => row[0] === 'Friendship');
     expect(friendship?.slice(0, 3)).toEqual(['Friendship', 'Into it', 'Into it']);
+  });
+
+  // The strip keeps the question and both answers in an SVG <title>, which is
+  // a hover tooltip — nothing at all on a phone, where there is also no room
+  // for the dots to be more than a few pixels wide. For this panel the table
+  // is not the fallback; for most readers it is the panel.
+  it('gives the agreement strip every dot as a readable row', () => {
+    const el = render(AgreementPanel, model);
+    const headers = [...el.querySelectorAll('thead th')].map((th) => th.textContent?.trim());
+    expect(headers).toEqual(['Question', 'brave-azure-otter', 'calm-bright-owl', 'Agreement']);
+
+    const rows = tableRows(el);
+    // One row per dot, and no dot without a row.
+    const dots = el.querySelectorAll('.agree-row svg circle');
+    expect(dots.length).toBeGreaterThan(0);
+    expect(rows.length).toBe(dots.length);
+    for (const row of rows) {
+      expect(row[1]).not.toBe('');
+      expect(row[2]).not.toBe('');
+      expect(row[3]).toMatch(/^\d{1,3}%$/);
+    }
+  });
+
+  it('gives each interlock direction its needs as met-or-not rows', () => {
+    const el = render(InterlockPanel, model);
+    // One table per direction — the heading above each says whose needs.
+    const tables = el.querySelectorAll('details.chart-table');
+    expect(tables.length).toBe(el.querySelectorAll('mng-flow').length);
+    expect(tables.length).toBeGreaterThan(0);
+
+    const rows = tableRows(el);
+    expect(rows.length).toBeGreaterThan(0);
+    // "Not offered", never a blank: a dangling need is the finding, and a
+    // table that leaves the cell empty reads as missing data instead.
+    for (const row of rows) {
+      expect(row[1]).toMatch(/^(Yes|Not offered)$/);
+    }
+    expect(rows.some((row) => row[1] === 'Not offered')).toBe(true);
   });
 
   it('marks an unanswered scale as absent rather than as zero', async () => {

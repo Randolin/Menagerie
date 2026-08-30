@@ -20,6 +20,7 @@ import type { ComparePanelComponent } from '../compare-panels.token';
         />
       }
       <mng-chart-table
+        i18n-caption
         caption="Each values scale, with every profile's answer out of the scale maximum"
         [columns]="tableColumns()"
         [rows]="tableRows()"
@@ -35,7 +36,7 @@ export class ValuesStripsPanel implements ComparePanelComponent {
     return grid ? grid.rows.filter((r) => r.answeredCount > 0) : [];
   });
 
-  protected readonly tableColumns = computed(() => ['Value', ...this.model().names]);
+  protected readonly tableColumns = computed(() => [$localize`Value`, ...this.model().names]);
 
   protected readonly tableRows = computed(() =>
     this.rows().map((row) => [

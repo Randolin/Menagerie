@@ -1,6 +1,6 @@
 // @mng/ui public API — the design-system components and browser utilities.
 
-export { MAX_COMPARE, seriesVar } from './charts/series';
+export { MAX_COMPARE, pct, seriesVar } from './charts/series';
 export { PersonKeyComponent } from './charts/person-key.component';
 export { ScaleStripComponent } from './charts/scale-strip.component';
 export { InterestMatrixComponent } from './charts/interest-matrix.component';

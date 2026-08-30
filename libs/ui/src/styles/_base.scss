@@ -1454,7 +1454,9 @@ textarea {
   color: var(--accent);
   font-weight: 650;
 }
-.detail-more > summary:hover {
+/* Only the label, not the line explaining it — underlining both makes the
+   explanation look like a second link. */
+.detail-more > summary:hover > span:first-child {
   text-decoration: underline;
 }
 .detail-more > summary .fine {

@@ -53,8 +53,14 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 })
 export class ChartTableComponent {
   /** The disclosure's own label — what opening it gets you. */
-  readonly summary = input('Read this as a table');
-  /** Describes the table to a screen reader; never shown. */
+  readonly summary = input($localize`Read this as a table`);
+  /**
+   * Describes the table to a screen reader; never shown.
+   *
+   * It is the only copy on this component a caller supplies, and it is copy —
+   * so a static `caption="…"` needs an `i18n-caption` sibling like any other
+   * attribute. `i18n-copy.spec.ts` enforces that.
+   */
   readonly caption = input.required<string>();
   readonly columns = input.required<readonly string[]>();
   /** Each row's first cell is its header — the thing the row is about. */

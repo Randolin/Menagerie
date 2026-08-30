@@ -1123,6 +1123,28 @@ try {
   await mobile.waitForSelector('text=Hatch a profile');
   await shot(mobile, '08-mobile-landing.png');
 
+  // The comparison is the page with the most on it and the page most likely to
+  // be read on a phone in bed, which is the combination nothing else here
+  // covers: the shots above are wide-and-light or one page or the other. The
+  // demo route renders the same panels against the same code with no session
+  // to seed, so this costs one page load.
+  step = 'compare-mobile-dark';
+  const compareDark = await freshPage(main.url, {
+    viewport: { width: 390, height: 844 },
+    colorScheme: 'dark',
+  });
+  await compareDark.goto(`${BASE}#/demo`);
+  for (const expected of ['Overall alignment', 'In words', 'See the detail']) {
+    await compareDark.waitForSelector(`text=${expected}`, { timeout: 30000 });
+  }
+  await shot(compareDark, '09-compare-mobile-dark.png');
+  await compareDark.click('summary:has-text("See the detail")');
+  await compareDark.waitForSelector('text=Answer by answer', {
+    state: 'visible',
+    timeout: 30000,
+  });
+  await shot(compareDark, '09b-compare-mobile-dark-open.png');
+
   // --- zero knowledge at rest: raw server DB holds no plaintext --------------
   step = 'zero-knowledge-at-rest';
   main.proc.kill('SIGTERM'); // clean close checkpoints WAL into the main file
