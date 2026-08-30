@@ -1,4 +1,4 @@
-// @moxy/ui public API — the design-system components and browser utilities.
+// @mng/ui public API — the design-system components and browser utilities.
 
 export { MAX_COMPARE, seriesVar } from './charts/series';
 export { PersonKeyComponent } from './charts/person-key.component';

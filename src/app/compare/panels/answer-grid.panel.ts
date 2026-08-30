@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { itemLabel, sectionTitle, type GridSection } from '@moxy/core';
-import { AnswerTextComponent, SimDotComponent, seriesVar } from '@moxy/ui';
+import { itemLabel, sectionTitle, type GridSection } from '@mng/core';
+import { AnswerTextComponent, SimDotComponent, seriesVar } from '@mng/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
 
@@ -8,7 +8,7 @@ const GRID_SECTIONS = ['about', 'lifestyle', 'connection', 'structure', 'plans']
 
 /** Everything else, in the open — the table-view twin of the charts. */
 @Component({
-  selector: 'moxy-answer-grid-panel',
+  selector: 'mng-answer-grid-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [AnswerTextComponent, SimDotComponent],
   template: `
@@ -23,7 +23,7 @@ const GRID_SECTIONS = ['about', 'lifestyle', 'connection', 'structure', 'plans']
         @for (row of answeredRows(g); track row.item.id) {
           <div class="grid-row">
             <div class="grid-item-label">
-              <moxy-sim-dot [sim]="row.sim" />
+              <mng-sim-dot [sim]="row.sim" />
               {{ label(row.item) }}
             </div>
             <div class="grid-answers">
@@ -34,7 +34,7 @@ const GRID_SECTIONS = ['about', 'lifestyle', 'connection', 'structure', 'plans']
                     [style.background]="color($index)"
                     [title]="model().names[$index]"
                   ></span>
-                  <moxy-answer-text [item]="row.item" [value]="v" />
+                  <mng-answer-text [item]="row.item" [value]="v" />
                 </div>
               }
             </div>

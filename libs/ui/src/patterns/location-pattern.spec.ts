@@ -1,7 +1,7 @@
 // Pattern generation: every family draws, drawing is reproducible, and the
 // geometry carries no more of the tail than the family name already does.
 import { describe, expect, test } from 'vitest';
-import { PLACE_FAMILIES, bannerStyleFor, personaFromViewPhrase, tailPlaceOf } from '@moxy/core';
+import { PLACE_FAMILIES, bannerStyleFor, personaFromViewPhrase, tailPlaceOf } from '@mng/core';
 import { locationPattern, PATTERN_HEIGHT, PATTERN_WIDTH } from './location-pattern';
 import { mulberry32 } from './rng';
 

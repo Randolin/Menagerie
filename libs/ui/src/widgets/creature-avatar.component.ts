@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { personaHabitat, type Persona } from '@moxy/core';
+import { personaHabitat, type Persona } from '@mng/core';
 import { CreatureIconComponent } from './creature-icon.component';
 
 /**
@@ -24,7 +24,7 @@ import { CreatureIconComponent } from './creature-icon.component';
  * here derives from HEAD words only — the tail must never reach a pixel.
  */
 @Component({
-  selector: 'moxy-creature-avatar',
+  selector: 'mng-creature-avatar',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CreatureIconComponent],
   template: `
@@ -37,7 +37,7 @@ import { CreatureIconComponent } from './creature-icon.component';
       [attr.title]="persona()?.name"
     >
       <span class="creature-avatar-face">
-        <moxy-creature-icon
+        <mng-creature-icon
           [emoji]="persona()?.emoji ?? fallbackEmoji()"
           [animal]="persona()?.words?.[2] ?? null"
           [size]="iconSize()"

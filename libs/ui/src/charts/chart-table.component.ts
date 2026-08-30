@@ -14,7 +14,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
  * with, or is looking at a strip on a phone where the dot labels collide.
  */
 @Component({
-  selector: 'moxy-chart-table',
+  selector: 'mng-chart-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <details class="chart-table">

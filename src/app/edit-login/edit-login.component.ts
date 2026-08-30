@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { describePhrase, diagnoseEditPhrase, extractEditPhrase } from '@moxy/core';
-import { ToastService } from '@moxy/ui';
+import { describePhrase, diagnoseEditPhrase, extractEditPhrase } from '@mng/core';
+import { ToastService } from '@mng/ui';
 import { ProfileSessionStore } from '../stores/profile-session.store';
 
 /** Where guarded routes land without a session. */
 @Component({
-  selector: 'moxy-edit-login',
+  selector: 'mng-edit-login',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
   template: `

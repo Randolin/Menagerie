@@ -3,7 +3,7 @@ import { ToastService } from './toast.service';
 
 /** Render once in the app shell; shows whatever ToastService was last asked to say. */
 @Component({
-  selector: 'moxy-toast',
+  selector: 'mng-toast',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div

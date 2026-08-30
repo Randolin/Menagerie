@@ -1,13 +1,13 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { extractGroupPhrase } from '@moxy/core';
-import { ToastService } from '@moxy/ui';
+import { extractGroupPhrase } from '@mng/core';
+import { ToastService } from '@mng/ui';
 import { ProfileSessionStore } from '../stores/profile-session.store';
 import { GroupMembershipStore } from '../stores/group-membership.store';
 
 /** The groups you belong to, and the door into a new one. */
 @Component({
-  selector: 'moxy-groups',
+  selector: 'mng-groups',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
   template: `

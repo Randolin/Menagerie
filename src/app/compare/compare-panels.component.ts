@@ -33,7 +33,7 @@ interface ResolvedPanel {
  * opens a filing cabinet to find out how a date went.
  */
 @Component({
-  selector: 'moxy-compare-panels',
+  selector: 'mng-compare-panels',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgComponentOutlet],
   template: `

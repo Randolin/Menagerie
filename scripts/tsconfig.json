@@ -10,8 +10,8 @@
     "noEmit": true,
     "types": ["node"],
     "paths": {
-      "@moxy/core": ["../libs/core/src/index.ts"],
-      "@moxy/core/wordlist": ["../libs/core/src/crypto/eff-wordlist.ts"]
+      "@mng/core": ["../libs/core/src/index.ts"],
+      "@mng/core/wordlist": ["../libs/core/src/crypto/eff-wordlist.ts"]
     }
   },
   "include": ["./**/*.ts"]

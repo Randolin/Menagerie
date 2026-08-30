@@ -1,6 +1,6 @@
-// Structural guard: @moxy/core must stay framework-free. If this fails,
+// Structural guard: @mng/core must stay framework-free. If this fails,
 // someone imported Angular (or another framework/DOM library) into the
-// domain layer — move that code to @moxy/ui or the app instead.
+// domain layer — move that code to @mng/ui or the app instead.
 import { describe, expect, test } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -18,7 +18,7 @@ function* walk(dir: string): Generator<string> {
 }
 
 describe('framework-freeness', () => {
-  test('no Angular/rxjs/zone imports anywhere in @moxy/core', () => {
+  test('no Angular/rxjs/zone imports anywhere in @mng/core', () => {
     const offenders: string[] = [];
     for (const file of walk(SRC)) {
       const text = readFileSync(file, 'utf8');

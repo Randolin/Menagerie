@@ -14,7 +14,7 @@ export interface AgreementRow {
  * accent hue (person colors stay reserved for identity elsewhere).
  */
 @Component({
-  selector: 'moxy-agreement-strip',
+  selector: 'mng-agreement-strip',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="agree-head">

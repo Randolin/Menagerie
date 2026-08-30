@@ -8,7 +8,7 @@ import { clamp01 } from './series';
  * arc for a filled check state.
  */
 @Component({
-  selector: 'moxy-ring',
+  selector: 'mng-ring',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <svg

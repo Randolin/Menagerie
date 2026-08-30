@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { FlowComponent } from '@moxy/ui';
+import { FlowComponent } from '@mng/ui';
 import type { CompareModel, InterlockDetail } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
 
@@ -13,7 +13,7 @@ interface FlowView {
 
 /** The care interlock, drawn as a mechanism: offers meeting needs. */
 @Component({
-  selector: 'moxy-interlock-panel',
+  selector: 'mng-interlock-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FlowComponent],
   template: `
@@ -31,7 +31,7 @@ interface FlowView {
               <span i18n class="fine">{{ flow.pct }}% covered</span>
             }
           </h3>
-          <moxy-flow
+          <mng-flow
             [options]="flow.detail.options"
             [gives]="flow.detail.gives"
             [needs]="flow.detail.needs"

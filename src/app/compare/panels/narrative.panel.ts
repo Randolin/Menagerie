@@ -5,7 +5,7 @@ import { buildNarrative } from '../narrative';
 
 /** The comparison in sentences — and the only part of it a screen reader can read. */
 @Component({
-  selector: 'moxy-narrative-panel',
+  selector: 'mng-narrative-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel">

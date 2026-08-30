@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { CreatureAvatarComponent, QrCodeComponent } from '@moxy/ui';
+import { CreatureAvatarComponent, QrCodeComponent } from '@mng/ui';
 import { ProfileSessionStore } from '../stores/profile-session.store';
 
 /**
@@ -16,7 +16,7 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
  * route is behind the session guard: a view-only visitor can never reach it.
  */
 @Component({
-  selector: 'moxy-backup-card',
+  selector: 'mng-backup-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, CreatureAvatarComponent, QrCodeComponent],
   template: `
@@ -44,7 +44,7 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
       <div class="card backup-card">
         <div class="backup-head">
           @if (session.persona(); as persona) {
-            <moxy-creature-avatar [persona]="persona" [size]="64" />
+            <mng-creature-avatar [persona]="persona" [size]="64" />
             <div>
               <h2 style="margin:0">{{ persona.name }}</h2>
               <p i18n class="fine" style="margin:2px 0 0">Menagerie profile · saved {{ today }}</p>
@@ -60,7 +60,7 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
         <div class="code-box">{{ view }}</div>
         @if (session.viewUrl(); as url) {
           <div class="backup-qr">
-            <moxy-qr-code [text]="url" [persona]="session.persona()" />
+            <mng-qr-code [text]="url" [persona]="session.persona()" />
           </div>
         }
 

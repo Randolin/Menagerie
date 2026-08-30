@@ -1,6 +1,6 @@
 import { type Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { buildDemoCast, personaFromViewPhrase } from '@moxy/core';
+import { buildDemoCast, personaFromViewPhrase } from '@mng/core';
 import { buildCompareModel, type CompareModel, type CompareSlot } from '../compare-model';
 import { SeekingMatrixPanel } from './seeking-matrix.panel';
 import { ValuesStripsPanel } from './values-strips.panel';

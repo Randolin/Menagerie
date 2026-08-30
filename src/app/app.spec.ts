@@ -64,7 +64,7 @@ describe('App shell', () => {
     const chip = el.querySelector('.session-chip');
     expect(chip?.textContent).toContain('amber-azure-fox');
     expect(chip?.getAttribute('href')).toBe('/me');
-    expect(chip?.querySelector('moxy-creature-avatar')).not.toBeNull();
+    expect(chip?.querySelector('mng-creature-avatar')).not.toBeNull();
     expect(el.textContent).toContain('Log out');
   });
 

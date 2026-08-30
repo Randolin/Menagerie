@@ -1,5 +1,5 @@
 import { loadTranslations } from '@angular/localize';
-import { loadMessages, type MessageBag } from '@moxy/core';
+import { loadMessages, type MessageBag } from '@mng/core';
 
 /**
  * Pick a language and install it, before anything renders.

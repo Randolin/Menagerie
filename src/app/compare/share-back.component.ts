@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import type { BoopReachability } from '@moxy/core';
+import type { BoopReachability } from '@mng/core';
 import { BoopComposerComponent } from '../boop/boop-composer.component';
 
 /**
@@ -21,7 +21,7 @@ import { BoopComposerComponent } from '../boop/boop-composer.component';
  * proposes, the person disposes, and the de-anonymization ladder is untouched.
  */
 @Component({
-  selector: 'moxy-share-back',
+  selector: 'mng-share-back',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [BoopComposerComponent],
   template: `
@@ -32,7 +32,7 @@ import { BoopComposerComponent } from '../boop/boop-composer.component';
         don’t have yours, a boop can carry it — tick <strong>Include my view phrase</strong> below
         and they’ll see your creature and can compare from their side.
       </p>
-      <moxy-boop-composer [target]="target()" [label]="name()" [emoji]="emoji()" />
+      <mng-boop-composer [target]="target()" [label]="name()" [emoji]="emoji()" />
     </div>
   `,
 })

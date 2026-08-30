@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import { offeredItems, type Section } from '@moxy/core';
+import { offeredItems, type Section } from '@mng/core';
 import { DraftStore } from '../stores/draft.store';
 import { QuestionRowComponent } from '../survey/items/question-row.component';
 
@@ -17,7 +17,7 @@ import { QuestionRowComponent } from '../survey/items/question-row.component';
  * label/control grid so the card stays aligned.
  */
 @Component({
-  selector: 'moxy-category-card',
+  selector: 'mng-category-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [QuestionRowComponent],
   template: `
@@ -89,7 +89,7 @@ import { QuestionRowComponent } from '../survey/items/question-row.component';
         -->
         <div class="q-table" [class.q-interest]="isInterest()" [class.q-scale]="isScale()">
           @for (item of items(); track item.id) {
-            <moxy-question-row [item]="item" />
+            <mng-question-row [item]="item" />
           }
         </div>
       }

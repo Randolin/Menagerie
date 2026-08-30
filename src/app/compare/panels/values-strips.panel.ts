@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { SCALE_MAX, itemLabel, type ScaleItem } from '@moxy/core';
-import { ChartTableComponent, ScaleStripComponent } from '@moxy/ui';
+import { SCALE_MAX, itemLabel, type ScaleItem } from '@mng/core';
+import { ChartTableComponent, ScaleStripComponent } from '@mng/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
 
 @Component({
-  selector: 'moxy-values-strips-panel',
+  selector: 'mng-values-strips-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ChartTableComponent, ScaleStripComponent],
   template: `
@@ -13,13 +13,13 @@ import type { ComparePanelComponent } from '../compare-panels.token';
       <h2 i18n>Values, side by side</h2>
       <p i18n class="sub">Each dot is a person. Distance between dots is the actual gap.</p>
       @for (row of rows(); track row.item.id) {
-        <moxy-scale-strip
+        <mng-scale-strip
           [item]="asScale(row.item)"
           [answers]="row.answers"
           [names]="model().names"
         />
       }
-      <moxy-chart-table
+      <mng-chart-table
         caption="Each values scale, with every profile's answer out of the scale maximum"
         [columns]="tableColumns()"
         [rows]="tableRows()"

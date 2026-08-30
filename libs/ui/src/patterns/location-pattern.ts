@@ -16,7 +16,7 @@
 // no runtime canvas, no measurement, no external library, and identical markup
 // on server and client. Colour is NOT set here — every shape inherits
 // currentColor and the stylesheet owns the palette (one authority per concern).
-import type { PlaceFamily } from '@moxy/core';
+import type { PlaceFamily } from '@mng/core';
 import { mulberry32, range, round } from './rng';
 import { shrinkPolygon, voronoiCells, type Point } from './voronoi';
 

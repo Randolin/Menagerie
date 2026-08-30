@@ -9,7 +9,7 @@ import { seriesVar } from './series';
  * receiver's series color; all text wears text tokens.
  */
 @Component({
-  selector: 'moxy-flow',
+  selector: 'mng-flow',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <svg

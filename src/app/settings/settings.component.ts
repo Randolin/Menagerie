@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
-import { ToastService } from '@moxy/ui';
+import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@mng/core';
+import { ToastService } from '@mng/ui';
 import { ProfileSessionStore } from '../stores/profile-session.store';
 import { MetricsStore } from '../stores/metrics.store';
 
@@ -11,7 +11,7 @@ import { MetricsStore } from '../stores/metrics.store';
  * itself, which is why it no longer sits under the answers.
  */
 @Component({
-  selector: 'moxy-settings',
+  selector: 'mng-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
   template: `

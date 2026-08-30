@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@moxy/core';
+import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN } from '@mng/core';
 
 @Component({
-  selector: 'moxy-about',
+  selector: 'mng-about',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
   template: `

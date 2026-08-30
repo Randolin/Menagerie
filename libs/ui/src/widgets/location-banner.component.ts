@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import type { BannerStyle } from '@moxy/core';
+import type { BannerStyle } from '@mng/core';
 import { locationPattern, PATTERN_HEIGHT, PATTERN_WIDTH } from '../patterns/location-pattern';
 
 /**
@@ -17,7 +17,7 @@ import { locationPattern, PATTERN_HEIGHT, PATTERN_WIDTH } from '../patterns/loca
  * it would add noise without adding information.
  */
 @Component({
-  selector: 'moxy-location-banner',
+  selector: 'mng-location-banner',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (banner(); as s) {

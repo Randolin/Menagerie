@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { coreItems, MemoryStorage, type Persona } from '@moxy/core';
+import { coreItems, MemoryStorage, type Persona } from '@mng/core';
 import { DashboardComponent } from './dashboard.component';
 import { APP_STORAGE } from '../stores/storage.token';
 import { DraftStore } from '../stores/draft.store';

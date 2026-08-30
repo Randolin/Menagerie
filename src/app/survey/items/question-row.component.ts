@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import { importanceLabel, itemLabel, scaleEnds, type Item } from '@moxy/core';
+import { importanceLabel, itemLabel, scaleEnds, type Item } from '@mng/core';
 import { DraftStore } from '../../stores/draft.store';
 import { ItemEditorComponent } from './item-editor.component';
 import { WeightControlComponent } from './weight-control.component';
@@ -17,7 +17,7 @@ import { WeightControlComponent } from './weight-control.component';
  * mark itself. Expanding is per-row and keyboard reachable.
  */
 @Component({
-  selector: 'moxy-question-row',
+  selector: 'mng-question-row',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ItemEditorComponent, WeightControlComponent],
   template: `
@@ -39,11 +39,11 @@ import { WeightControlComponent } from './weight-control.component';
         }
       </div>
       <div class="q-control">
-        <moxy-item-editor [item]="item()" />
+        <mng-item-editor [item]="item()" />
       </div>
       @if (open() && answered()) {
         <div class="q-weight">
-          <moxy-weight-control [item]="item()" />
+          <mng-weight-control [item]="item()" />
         </div>
       }
     </div>

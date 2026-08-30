@@ -22,7 +22,7 @@ import {
   type GroupDeposit,
   type Persona,
   type ProfilePayload,
-} from '@moxy/core';
+} from '@mng/core';
 import {
   CreatureIconComponent,
   MAX_COMPARE,
@@ -30,7 +30,7 @@ import {
   SubjectCardComponent,
   ToastService,
   errorText,
-} from '@moxy/ui';
+} from '@mng/ui';
 import { CompareStore } from '../stores/compare.store';
 import { DraftStore } from '../stores/draft.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
@@ -58,7 +58,7 @@ interface LoadedGroup {
  * All decryption and comparison happens in this tab.
  */
 @Component({
-  selector: 'moxy-group',
+  selector: 'mng-group',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, CreatureIconComponent, QrCodeComponent, SubjectCardComponent],
   template: `
@@ -69,7 +69,7 @@ interface LoadedGroup {
         <a i18n class="btn" routerLink="/">Go to the start</a>
       </div>
     } @else if (view.value(); as g) {
-      <moxy-subject-card
+      <mng-subject-card
         [persona]="g.persona"
         [phrase]="g.phrase"
         [title]="g.persona?.name ?? 'A group'"
@@ -93,9 +93,9 @@ interface LoadedGroup {
               </button>
             </div>
           </div>
-          <moxy-qr-code [text]="inviteUrl(g)" [persona]="g.persona" />
+          <mng-qr-code [text]="inviteUrl(g)" [persona]="g.persona" />
         </div>
-      </moxy-subject-card>
+      </mng-subject-card>
 
       <div class="card">
         <h2 i18n>Members ({{ g.members.length }})</h2>
@@ -116,7 +116,7 @@ interface LoadedGroup {
                     />
                   }
                   <span style="display:inline-flex;align-items:center;gap:5px"
-                    ><moxy-creature-icon [emoji]="m.emoji ?? '🥚'" [size]="18" /> {{ m.name }}</span
+                    ><mng-creature-icon [emoji]="m.emoji ?? '🥚'" [size]="18" /> {{ m.name }}</span
                   >
                   @if (m.isMe) {
                     <span i18n class="fine">(you)</span>

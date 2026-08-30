@@ -20,7 +20,7 @@ const PATHS: Readonly<Record<IconName, string>> = {
 };
 
 @Component({
-  selector: 'moxy-icon',
+  selector: 'mng-icon',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <svg

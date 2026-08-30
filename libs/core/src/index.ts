@@ -1,4 +1,4 @@
-// @moxy/core public API — pure TypeScript, zero framework dependencies.
+// @mng/core public API — pure TypeScript, zero framework dependencies.
 // (no-angular.spec.ts enforces that claim.)
 
 export * from './schema/types';

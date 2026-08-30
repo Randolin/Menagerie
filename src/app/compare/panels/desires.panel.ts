@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { interestLabel, itemLabel } from '@moxy/core';
-import { seriesVar } from '@moxy/ui';
+import { interestLabel, itemLabel } from '@mng/core';
+import { seriesVar } from '@mng/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
 
 @Component({
-  selector: 'moxy-desires-panel',
+  selector: 'mng-desires-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel">

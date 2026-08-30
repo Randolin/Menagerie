@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
-import { ANIMALS } from '@moxy/core';
+import { ANIMALS } from '@mng/core';
 import { creaturePixelSvg } from '../creatures/pixel-art';
 
 /**
@@ -22,7 +22,7 @@ import { creaturePixelSvg } from '../creatures/pixel-art';
  * sanitization is sound (same reasoning as the QR component).
  */
 @Component({
-  selector: 'moxy-creature-icon',
+  selector: 'mng-creature-icon',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (svg(); as s) {

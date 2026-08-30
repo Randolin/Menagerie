@@ -5,15 +5,15 @@ import {
   itemLabel,
   type AnswerValue,
   type InterestItem,
-} from '@moxy/core';
-import { OptionGroupDirective } from '@moxy/ui';
+} from '@mng/core';
+import { OptionGroupDirective } from '@mng/ui';
 
 @Component({
-  selector: 'moxy-interest-editor',
+  selector: 'mng-interest-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [OptionGroupDirective],
   template: `
-    <div class="pip-row" moxyOptionGroup role="group" [attr.aria-label]="label()">
+    <div class="pip-row" mngOptionGroup role="group" [attr.aria-label]="label()">
       @for (level of levels(); track level.value) {
         <button
           type="button"

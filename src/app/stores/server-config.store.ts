@@ -1,5 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { HatchClient } from '@moxy/core';
+import { HatchClient } from '@mng/core';
 import { APP_STORAGE } from './storage.token';
 
 /**

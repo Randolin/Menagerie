@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { bannerStyleFor, tailPlaceOf, type Persona } from '@moxy/core';
+import { bannerStyleFor, tailPlaceOf, type Persona } from '@mng/core';
 import { LocationBannerComponent } from './location-banner.component';
 import { CreatureAvatarComponent } from './creature-avatar.component';
 import { habitatClass } from './persona-decor';
@@ -15,15 +15,15 @@ import { habitatClass } from './persona-decor';
  * tail off screens whose viewer has no phrase.
  */
 @Component({
-  selector: 'moxy-subject-card',
+  selector: 'mng-subject-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [LocationBannerComponent, CreatureAvatarComponent],
   host: { '[class]': 'hostClass()' },
   template: `
-    <moxy-location-banner [banner]="banner()" />
+    <mng-location-banner [banner]="banner()" />
     <h2 class="profile-head">
       @if (persona(); as persona) {
-        <moxy-creature-avatar [persona]="persona" [size]="44" />
+        <mng-creature-avatar [persona]="persona" [size]="44" />
         <span class="persona-name">{{ persona.name }}</span>
       } @else {
         {{ title() }}

@@ -6,7 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN, SECTIONS, coreItems } from '@moxy/core';
+import { GC_EMPTY_HUMAN, GC_IDLE_HUMAN, SECTIONS, coreItems } from '@mng/core';
 import {
   IconComponent,
   QrCodeComponent,
@@ -14,7 +14,7 @@ import {
   SubjectCardComponent,
   ToastService,
   shareText,
-} from '@moxy/ui';
+} from '@mng/ui';
 import { RouterLink } from '@angular/router';
 import { CategoryCardComponent } from '../profile/category-card.component';
 import { AddCategoryComponent } from '../profile/add-category.component';
@@ -24,7 +24,7 @@ import { DraftStore } from '../stores/draft.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
 
 @Component({
-  selector: 'moxy-dashboard',
+  selector: 'mng-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,
@@ -53,7 +53,7 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
             [attr.aria-label]="copied() ? 'Edit phrase copied' : 'Copy edit phrase'"
             [title]="copied() ? 'Copied' : 'Copy edit phrase'"
           >
-            <moxy-icon [name]="copied() ? 'check' : 'copy'" />
+            <mng-icon [name]="copied() ? 'check' : 'copy'" />
           </button>
         </div>
         <label class="ack-row">
@@ -80,7 +80,7 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
       </div>
     }
 
-    <moxy-subject-card
+    <mng-subject-card
       [persona]="session.persona()"
       [phrase]="session.viewPhrase()"
       i18n-title
@@ -109,7 +109,7 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
                 i18n-title
                 title="Share view link"
               >
-                <moxy-icon name="share" />
+                <mng-icon name="share" />
               </button>
             }
             <button
@@ -120,7 +120,7 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
               i18n-title
               title="Copy view link"
             >
-              <moxy-icon name="link" />
+              <mng-icon name="link" />
             </button>
             <button
               class="btn btn-icon"
@@ -130,7 +130,7 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
               i18n-title
               title="Copy the phrase on its own"
             >
-              <moxy-icon name="copy" />
+              <mng-icon name="copy" />
             </button>
           </div>
           <p class="fine" style="margin-top:10px">
@@ -142,14 +142,14 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
           </p>
         </div>
         @if (session.viewUrl(); as url) {
-          <moxy-qr-code
+          <mng-qr-code
             [text]="url"
             [persona]="session.persona()"
             [shareAs]="session.persona()?.name ?? null"
           />
         }
       </div>
-    </moxy-subject-card>
+    </mng-subject-card>
 
     @if (showMilestone()) {
       <div class="card" role="status">
@@ -176,7 +176,7 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
     <div class="profile-head">
       <h2 i18n>My answers</h2>
       <span class="fine core-marker" [class.core-done]="coreDone()">
-        <moxy-ring [fraction]="coreFraction()" [size]="20" label="core completion" />
+        <mng-ring [fraction]="coreFraction()" [size]="20" label="core completion" />
         @if (coreDone()) {
           <span i18n>Core complete — comparisons have their footing</span>
         } @else {
@@ -189,12 +189,12 @@ import { ProfileSessionStore } from '../stores/profile-session.store';
     </div>
 
     @for (s of addedSections(); track s.id) {
-      <moxy-category-card [section]="s" />
+      <mng-category-card [section]="s" />
     }
 
-    <moxy-add-category />
+    <mng-add-category />
 
-    <moxy-save-bar />
+    <mng-save-bar />
 
     @if (!addedSections().length) {
       <p i18n class="fine" style="margin:10px 4px">

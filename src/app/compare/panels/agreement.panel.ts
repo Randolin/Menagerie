@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { answerChips, itemLabel, sectionTitle, type AnswerValue, type Item } from '@moxy/core';
-import { AgreementStripComponent, type AgreementRow } from '@moxy/ui';
+import { answerChips, itemLabel, sectionTitle, type AnswerValue, type Item } from '@mng/core';
+import { AgreementStripComponent, type AgreementRow } from '@mng/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
 
@@ -10,7 +10,7 @@ function answerText(item: Item, v: AnswerValue): string {
 
 /** The shape of the agreement: every shared answer as a dot by similarity. */
 @Component({
-  selector: 'moxy-agreement-panel',
+  selector: 'mng-agreement-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [AgreementStripComponent],
   template: `
@@ -20,7 +20,7 @@ function answerText(item: Item, v: AnswerValue): string {
         Every question you both answered, placed by how closely your answers sit. Hover a dot to see
         the question and both answers.
       </p>
-      <moxy-agreement-strip [rows]="rows()" />
+      <mng-agreement-strip [rows]="rows()" />
     </div>
   `,
 })

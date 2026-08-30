@@ -39,12 +39,12 @@ describe('the backup card', () => {
     const el = render();
     expect(el.querySelector('.code-box')?.textContent).toContain(VIEW);
     expect(el.querySelector('.passphrase-box')?.textContent).toContain(EDIT);
-    expect(el.querySelector('moxy-creature-avatar')).not.toBeNull();
+    expect(el.querySelector('mng-creature-avatar')).not.toBeNull();
     expect(el.textContent).toContain('brave-azure-otter');
   });
 
   it('renders the view QR, not a bare link', () => {
-    expect(render().querySelector('moxy-qr-code')).not.toBeNull();
+    expect(render().querySelector('mng-qr-code')).not.toBeNull();
   });
 
   // Printing the edit phrase hands someone full control on paper. Saying so

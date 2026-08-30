@@ -39,7 +39,7 @@ import {
   type SavedGroupMembership,
   type SentBoop,
   type ViewKeys,
-} from '@moxy/core';
+} from '@mng/core';
 import { clone } from './clone';
 import { APP_STORAGE } from './storage.token';
 import { ConnectivityStore } from './connectivity.store';

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@a
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { CreatureAvatarComponent, ToastComponent, ToastService } from '@moxy/ui';
+import { CreatureAvatarComponent, ToastComponent, ToastService } from '@mng/ui';
 import { PageTitleStrategy } from './page-title.strategy';
 import { ThemeStore } from './stores/theme.store';
 import { ProfileSessionStore } from './stores/profile-session.store';

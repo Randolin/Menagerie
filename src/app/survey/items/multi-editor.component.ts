@@ -1,13 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { itemLabel, optionLabels, type AnswerValue, type MultiItem } from '@moxy/core';
-import { OptionGroupDirective } from '@moxy/ui';
+import { itemLabel, optionLabels, type AnswerValue, type MultiItem } from '@mng/core';
+import { OptionGroupDirective } from '@mng/ui';
 
 @Component({
-  selector: 'moxy-multi-editor',
+  selector: 'mng-multi-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [OptionGroupDirective],
   template: `
-    <div class="opt-grid" moxyOptionGroup role="group" [attr.aria-label]="label()">
+    <div class="opt-grid" mngOptionGroup role="group" [attr.aria-label]="label()">
       @for (opt of options(); track $index) {
         <button class="opt" [attr.aria-pressed]="selected().has($index)" (click)="toggle($index)">
           {{ opt }}

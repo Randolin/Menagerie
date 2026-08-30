@@ -14,7 +14,7 @@
 // plaintext answers to disk, which is a product decision and not a caching
 // one.
 
-const VERSION = 'moxy-shell-v1';
+const VERSION = 'menagerie-shell-v1';
 
 self.addEventListener('install', () => {
   // Nothing to precache: asset filenames are content-hashed by the build, so

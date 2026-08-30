@@ -32,8 +32,9 @@ contributions may be fine to rewrite instead.
 - The frozen crypto vectors in `crypto/phrase-kdf.spec.ts` and
   `hatch/hatch.spec.ts` pin every credential derivation. If your change
   breaks them, the change is wrong — never the fixtures.
-- Internal identifiers keep the historical `moxy` name (storage keys, env
-  vars, headers, path aliases) — see the README's historical note.
+- Storage keys (`menagerie.*`) and wire headers (`x-menagerie-*`) are durable
+  interfaces: renaming a storage key logs everyone out, and renaming a header
+  needs the app and the server deployed together. Version, don't rename.
 
 ## Invariants that aren't obvious from the code you're editing
 

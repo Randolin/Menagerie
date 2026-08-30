@@ -6,14 +6,14 @@ import {
   diagnoseViewPhrase,
   extractEditPhrase,
   extractViewPhrase,
-} from '@moxy/core';
-import { ToastService } from '@moxy/ui';
+} from '@mng/core';
+import { ToastService } from '@mng/ui';
 import { ProfileSessionStore } from '../stores/profile-session.store';
 import { ServerConfigStore } from '../stores/server-config.store';
 
 /** The whole front door: exactly three actions. */
 @Component({
-  selector: 'moxy-landing',
+  selector: 'mng-landing',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
   template: `

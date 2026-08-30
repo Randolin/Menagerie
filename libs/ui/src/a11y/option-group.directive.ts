@@ -27,7 +27,7 @@ const MOVES: Record<string, number> = {
  * The tab stop follows the selection, so returning to a question by Tab lands
  * on the answer that is already given rather than back at the first option.
  */
-@Directive({ selector: '[moxyOptionGroup]' })
+@Directive({ selector: '[mngOptionGroup]' })
 export class OptionGroupDirective {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 

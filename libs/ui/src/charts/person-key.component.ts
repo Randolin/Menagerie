@@ -8,7 +8,7 @@ import { seriesVar } from './series';
  * beside the name as decoration, never replacing the dot.
  */
 @Component({
-  selector: 'moxy-person-key',
+  selector: 'mng-person-key',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CreatureIconComponent],
   template: `
@@ -17,7 +17,7 @@ import { seriesVar } from './series';
         <span class="person-chip" role="listitem">
           <span class="person-dot" [style.background]="color($index)"></span>
           @if (emojis()?.[$index]; as emoji) {
-            <moxy-creature-icon [emoji]="emoji" [size]="14" aria-hidden="true" />
+            <mng-creature-icon [emoji]="emoji" [size]="14" aria-hidden="true" />
           }
           <span class="person-name">{{ name }}</span>
         </span>

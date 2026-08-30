@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { ANIMALS, ANIMAL_HABITATS, HABITAT_META } from '@moxy/core';
-import { CreatureIconComponent } from '@moxy/ui';
+import { ANIMALS, ANIMAL_HABITATS, HABITAT_META } from '@mng/core';
+import { CreatureIconComponent } from '@mng/ui';
 
 /**
  * The full pixel menagerie — every animal a creature name can end with.
@@ -22,7 +22,7 @@ import { CreatureIconComponent } from '@moxy/ui';
       <div class="creature-grid">
         @for (animal of animals; track animal.name) {
           <div class="creature-cell">
-            <moxy-creature-icon [emoji]="animal.emoji ?? '🐾'" [animal]="animal.name" [size]="64" />
+            <mng-creature-icon [emoji]="animal.emoji ?? '🐾'" [animal]="animal.name" [size]="64" />
             <span class="fine">{{ animal.name }}</span>
             <span class="fine creature-habitat">{{ habitatMotif($index) }}</span>
           </div>

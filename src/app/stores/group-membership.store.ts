@@ -13,7 +13,7 @@ import {
   randomLocator,
   randomToken,
   type SavedGroupMembership,
-} from '@moxy/core';
+} from '@mng/core';
 import { DraftStore } from './draft.store';
 import { ProfileSessionStore } from './profile-session.store';
 

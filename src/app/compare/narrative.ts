@@ -15,7 +15,7 @@
 //    is often read side by side, and the second person has a name too.
 //  - Say what is NOT covered. A number computed from nine shared answers
 //    should not sound like a number computed from ninety.
-import { answerChips, COMPLEMENT_PAIRS, itemLabel, type AnswerValue, type Item } from '@moxy/core';
+import { answerChips, COMPLEMENT_PAIRS, itemLabel, type AnswerValue, type Item } from '@mng/core';
 import type { CompareModel } from './compare-model';
 
 export type NarrativeTone = 'plain' | 'attention';

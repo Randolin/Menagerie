@@ -12,7 +12,7 @@
 // live schema on every test run and fails when they drift.
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { sourceCatalogue } from '@moxy/core';
+import { sourceCatalogue } from '@mng/core';
 
 const OUT = fileURLToPath(new URL('../libs/core/src/i18n/messages.en.json', import.meta.url));
 

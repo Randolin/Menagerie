@@ -122,13 +122,13 @@ const spawnMoxyServer = async (env) => {
   return { proc, url };
 };
 
-const dbPath = join(tmpdir(), `moxy-e2e-${process.pid}.db`);
+const dbPath = join(tmpdir(), `menagerie-e2e-${process.pid}.db`);
 const main = await spawnMoxyServer({ MENAGERIE_DB_PATH: dbPath });
 // Fast-sweeping GC server on a file DB. Timestamps are hour-coarse and the
 // sweep grants that hour back as slack (TTLs are minimum lifetimes), so
 // short TTLs alone can't expire anything — the test backdates created_at
 // through a second SQLite connection instead, exactly like a real aged row.
-const gcDbPath = join(tmpdir(), `moxy-e2e-gc-${process.pid}.db`);
+const gcDbPath = join(tmpdir(), `menagerie-e2e-gc-${process.pid}.db`);
 const gc = await spawnMoxyServer({
   MENAGERIE_DB_PATH: gcDbPath,
   MENAGERIE_GC_EMPTY_MS: '3000',
@@ -138,7 +138,7 @@ const gc = await spawnMoxyServer({
 // Metrics server with k=1 so a single contributor clears the floor. Its own
 // instance also keeps the MAIN db's at-rest scan strict: aggregate counters
 // are plaintext BY DESIGN, and only exist where someone opted in.
-const metricsDbPath = join(tmpdir(), `moxy-e2e-metrics-${process.pid}.db`);
+const metricsDbPath = join(tmpdir(), `menagerie-e2e-metrics-${process.pid}.db`);
 const metricsSrv = await spawnMoxyServer({
   MENAGERIE_DB_PATH: metricsDbPath,
   MENAGERIE_METRICS_K: '1',
@@ -784,7 +784,7 @@ try {
   // must never perform the attachment tick on anyone's behalf.
   step = 'share-back';
   {
-    const panel = page.locator('moxy-share-back');
+    const panel = page.locator('mng-share-back');
     await panel.waitFor({ timeout: 30000 });
     const offer = await panel.textContent();
     if (!offer.includes('Send your creature back')) fail('share-back offer missing its heading');
@@ -809,7 +809,7 @@ try {
     await page.waitForSelector('.profile-head', { timeout: 45000 });
     await page.goto(`${BASE}#/compare`);
     await page.waitForSelector('text=Overall alignment', { timeout: 60000 });
-    if (await page.locator('moxy-share-back').count()) {
+    if (await page.locator('mng-share-back').count()) {
       fail('share-back re-offered a creature it had already sent');
     }
 
