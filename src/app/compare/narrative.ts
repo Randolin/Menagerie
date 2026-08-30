@@ -1,6 +1,6 @@
 // The comparison, in sentences.
 //
-// Three jobs, one module. It is the non-visual equivalent of the radar, the
+// Three jobs, one module. It is the non-visual equivalent of the meters, the
 // strips and the matrix, which a screen reader cannot read at all. It is
 // legible under stress, and people read compatibility results under stress.
 // And it is the part someone will quote to the person they compared with,

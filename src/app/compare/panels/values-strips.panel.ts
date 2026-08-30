@@ -1,18 +1,17 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { SCALE_MAX, itemLabel, type ScaleItem } from '@moxy/core';
-import { ChartTableComponent, PersonKeyComponent, ScaleStripComponent } from '@moxy/ui';
+import { ChartTableComponent, ScaleStripComponent } from '@moxy/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
 
 @Component({
   selector: 'moxy-values-strips-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ChartTableComponent, PersonKeyComponent, ScaleStripComponent],
+  imports: [ChartTableComponent, ScaleStripComponent],
   template: `
     <div class="card">
       <h2 i18n>Values, side by side</h2>
       <p i18n class="sub">Each dot is a person. Distance between dots is the actual gap.</p>
-      <moxy-person-key [names]="model().names" [emojis]="model().emojis" />
       @for (row of rows(); track row.item.id) {
         <moxy-scale-strip
           [item]="asScale(row.item)"

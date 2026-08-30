@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { getItem, SECTIONS, sectionTitle } from '@moxy/core';
 import {
-  DumbbellComponent,
   MeterComponent,
   PairMatrixComponent,
   PersonKeyComponent,
@@ -13,13 +12,7 @@ import type { ComparePanelComponent } from '../compare-panels.token';
 @Component({
   selector: 'moxy-headline-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    DumbbellComponent,
-    MeterComponent,
-    PairMatrixComponent,
-    PersonKeyComponent,
-    StatTileComponent,
-  ],
+  imports: [MeterComponent, PairMatrixComponent, PersonKeyComponent, StatTileComponent],
   template: `
     <div class="card">
       <h2 i18n>The headline</h2>
@@ -48,22 +41,9 @@ import type { ComparePanelComponent } from '../compare-panels.token';
           />
         }
       </div>
-      @if (fits(); as f) {
-        <div style="margin-top:14px">
-          <h3 i18n style="margin-bottom:6px">Fit, each way</h3>
-          <p i18n class="fine" style="margin-top:0">
-            Weighted by what each of you said matters — honestly different numbers.
-          </p>
-          <moxy-dumbbell
-            [scoreA]="f.a"
-            [scoreB]="f.b"
-            [labelA]="'Fit for ' + model().names[0]"
-            [labelB]="'Fit for ' + model().names[1]"
-          />
-        </div>
-      }
       @if (model().pair) {
         <div style="margin-top:14px">
+          <h3 i18n style="margin-bottom:8px">Where you line up</h3>
           @for (s of scoredSections(); track s.id) {
             <moxy-meter [score]="s.score" [label]="s.title" />
           }
@@ -88,16 +68,6 @@ export class HeadlinePanel implements ComparePanelComponent {
   });
 
   protected readonly coverage = computed(() => this.model().pair?.coverage ?? 0);
-
-  /** Directional fits — shown when the two directions actually differ. */
-  protected readonly fits = computed(() => {
-    const pair = this.model().pair;
-    if (!pair || pair.fitA.overall == null || pair.fitB.overall == null) return null;
-    const a = Math.round(pair.fitA.overall * 100);
-    const b = Math.round(pair.fitB.overall * 100);
-    if (a === b && a === this.overallPct()) return null;
-    return { a: pair.fitA.overall, b: pair.fitB.overall };
-  });
 
   /** Human sentences for violated dealbreakers, each named to its holder. */
   protected readonly alerts = computed(() => {

@@ -11,7 +11,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
  *
  * Not only for screen readers. A table is also what someone reaches for when
  * they distrust a shape, or want to quote one row to the person they compared
- * with, or is looking at a radar on a phone where the axis labels collide.
+ * with, or is looking at a strip on a phone where the dot labels collide.
  */
 @Component({
   selector: 'moxy-chart-table',

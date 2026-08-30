@@ -1419,6 +1419,20 @@ textarea {
 }
 
 /* answer grid */
+/* Section names inside the single answer card. Quieter than an h2 — they
+   divide a document, they do not start one. */
+.grid-subhead {
+  margin: 22px 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.grid-subhead:first-of-type {
+  margin-top: 12px;
+}
+
 .grid-section {
   margin-bottom: 6px;
 }

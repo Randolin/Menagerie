@@ -302,7 +302,7 @@ try {
   // as the model resolves, but every panel is a lazily loaded component that
   // arrives afterwards — snapshotting the body in between reads a page that is
   // still filling in, which is a race that only shows up on a slow runner.
-  for (const expected of ['Overall alignment', 'Mutual desires', 'Fit, each way', 'In words']) {
+  for (const expected of ['Overall alignment', 'Mutual desires', 'Where you line up', 'In words']) {
     await page.waitForSelector(`text=${expected}`, { timeout: 30000 });
   }
   const demoBody = await page.textContent('body');
@@ -744,13 +744,13 @@ try {
     'Desires — mutual only',
     'Rope',
     'shared answers',
-    'Values fingerprint',
-    `Fit for ${personaName}`,
+    'Values, side by side',
+    'Fit is scored twice', // the dumbbell is gone; the prose carries direction
     'marked it a dealbreaker', // A's alcohol dealbreaker vs B's "Socially"
     'Care interlock',
     'unmet', // flow diagram: A leaves B's "Acts" need dangling
     'Agreement, item by item',
-    'Fit, each way',
+    'Where you line up',
   ]) {
     if (!compareBody.includes(needle)) fail('compare missing: ' + needle);
   }

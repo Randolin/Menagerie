@@ -2,7 +2,6 @@ import { type Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { buildDemoCast, personaFromViewPhrase } from '@moxy/core';
 import { buildCompareModel, type CompareModel, type CompareSlot } from '../compare-model';
-import { FingerprintPanel } from './fingerprint.panel';
 import { SeekingMatrixPanel } from './seeking-matrix.panel';
 import { ValuesStripsPanel } from './values-strips.panel';
 
@@ -45,14 +44,18 @@ describe('chart tables', () => {
     await TestBed.configureTestingModule({}).compileComponents();
   });
 
-  it('gives the fingerprint its axes as rows and its people as columns', () => {
-    const el = render(FingerprintPanel, model);
+  // Inherited from the radar's table when the radar went. The values data
+  // did not go with it — the strips show the same scales, legibly — so the
+  // assertion moved to the panel that carries it now rather than being
+  // deleted along with the chart it was written for.
+  it('gives the values table its scales as rows and its people as columns', () => {
+    const el = render(ValuesStripsPanel, model);
     const headers = [...el.querySelectorAll('thead th')].map((th) => th.textContent?.trim());
     expect(headers).toEqual(['Value', 'brave-azure-otter', 'calm-bright-owl']);
 
     const rows = tableRows(el);
     expect(rows.length).toBeGreaterThanOrEqual(3);
-    // Values are the answers themselves, not the 0..1 the radar draws with.
+    // The answers themselves, not the 0..1 the strip positions dots with.
     for (const row of rows) {
       expect(row[1]).toMatch(/^\d\/\d$/);
       expect(row[2]).toMatch(/^\d\/\d$/);

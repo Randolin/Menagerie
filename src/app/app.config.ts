@@ -5,7 +5,6 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideRouter, TitleStrategy, withHashLocation } from '@angular/router';
-import { getSection } from '@moxy/core';
 import { routes } from './app.routes';
 import { provideComparePanel } from './compare/compare-panels.token';
 import { PageTitleStrategy } from './page-title.strategy';
@@ -43,24 +42,6 @@ export const appConfig: ApplicationConfig = {
       // sentence is a paragraph of caveats, and the pairwise matrix says it
       // better.
       visible: (model) => model.payloads.length === 2 && model.pair !== null,
-    }),
-    provideComparePanel({
-      id: 'fingerprint',
-      order: 15,
-      loadComponent: () =>
-        import('./compare/panels/fingerprint.panel').then((m) => m.FingerprintPanel),
-      // Needs at least three values scales everyone answered to draw shapes.
-      visible: (model) => {
-        const values = getSection('values');
-        if (!values || model.payloads.length < 2) return false;
-        return (
-          values.items.filter(
-            (item) =>
-              item.type === 'scale' &&
-              model.payloads.every((p) => typeof p.a[item.id] === 'number'),
-          ).length >= 3
-        );
-      },
     }),
     provideComparePanel({
       id: 'interlock',
