@@ -23,14 +23,14 @@ import {
   type Persona,
   type ProfilePayload,
   type ScaleItem,
-} from '@moxy/core';
+} from '@mng/core';
 import {
   AnswerTextComponent,
   ScaleStripComponent,
   SubjectCardComponent,
   ToastService,
   errorText,
-} from '@moxy/ui';
+} from '@mng/ui';
 import { BoopComposerComponent } from '../boop/boop-composer.component';
 import { CompareStore } from '../stores/compare.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
@@ -57,7 +57,7 @@ interface LoadedProfile {
 
 /** What a shared view phrase, link, or scanned QR opens. */
 @Component({
-  selector: 'moxy-view',
+  selector: 'mng-view',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,
@@ -74,7 +74,7 @@ interface LoadedProfile {
         <a i18n class="btn" routerLink="/">Go to the start</a>
       </div>
     } @else if (view.value(); as v) {
-      <moxy-subject-card [persona]="v.persona" [phrase]="v.phrase" [title]="v.name + '’s profile'">
+      <mng-subject-card [persona]="v.persona" [phrase]="v.phrase" [title]="v.name + '’s profile'">
         <p i18n class="sub">
           A Menagerie profile — anonymous by design, stored only as ciphertext the server can’t
           read.
@@ -100,7 +100,7 @@ interface LoadedProfile {
         @if (session.active()) {
           @if (v.payload.k; as reach) {
             <div style="margin-top:12px">
-              <moxy-boop-composer
+              <mng-boop-composer
                 [target]="reach"
                 [label]="v.name"
                 [emoji]="v.persona?.emoji ?? '🥚'"
@@ -112,7 +112,7 @@ interface LoadedProfile {
             </p>
           }
         }
-      </moxy-subject-card>
+      </mng-subject-card>
 
       @if (v.sections.length === 0) {
         <div class="card">
@@ -124,7 +124,7 @@ interface LoadedProfile {
           <h2>{{ group.title }}</h2>
           @for (entry of group.items; track entry.item.id) {
             @if (entry.item.type === 'scale') {
-              <moxy-scale-strip
+              <mng-scale-strip
                 [item]="asScale(entry.item)"
                 [answers]="[$any(entry.value)]"
                 [names]="[v.name]"
@@ -140,7 +140,7 @@ interface LoadedProfile {
                   }
                 </div>
                 <div class="grid-answers">
-                  <moxy-answer-text [item]="entry.item" [value]="$any(entry.value)" />
+                  <mng-answer-text [item]="entry.item" [value]="$any(entry.value)" />
                 </div>
               </div>
             }

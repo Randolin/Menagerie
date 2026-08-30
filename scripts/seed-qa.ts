@@ -53,7 +53,7 @@ import {
   type SavedGroupMembership,
   type SentBoop,
   type ViewKeys,
-} from '@moxy/core';
+} from '@mng/core';
 import {
   QA_BOOPS,
   QA_GROUPS,

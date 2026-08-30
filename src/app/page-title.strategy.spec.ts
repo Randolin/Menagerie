@@ -4,7 +4,7 @@ import { provideRouter, Router, TitleStrategy } from '@angular/router';
 import { App } from './app';
 import { PageTitleStrategy } from './page-title.strategy';
 
-@Component({ selector: 'moxy-stub-page', template: '<h1>stub</h1>' })
+@Component({ selector: 'mng-stub-page', template: '<h1>stub</h1>' })
 class StubPage {}
 
 /**

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { MemoryStorage } from '@moxy/core';
+import { MemoryStorage } from '@mng/core';
 import { SaveBarComponent } from './save-bar.component';
 import { APP_STORAGE } from '../stores/storage.token';
 import { DraftStore } from '../stores/draft.store';

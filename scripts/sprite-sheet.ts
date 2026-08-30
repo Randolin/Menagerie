@@ -11,7 +11,7 @@
 // the mammoth's tusks two. Guessing from the letters does not work.
 import { parseArgs } from 'node:util';
 import { writeFileSync } from 'node:fs';
-import { ANIMALS } from '@moxy/core';
+import { ANIMALS } from '@mng/core';
 import { CREATURE_SPRITES } from '../libs/ui/src/creatures/pixel-grids';
 import { spriteSvg } from '../libs/ui/src/creatures/pixel-art';
 

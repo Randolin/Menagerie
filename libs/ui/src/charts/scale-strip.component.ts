@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { SCALE_MAX, scaleEnds, type AnswerValue, type ScaleItem } from '@moxy/core';
+import { SCALE_MAX, scaleEnds, type AnswerValue, type ScaleItem } from '@mng/core';
 import { seriesVar } from './series';
 
 interface StripDot {
@@ -14,7 +14,7 @@ interface StripDot {
  * stack vertically with surface rings.
  */
 @Component({
-  selector: 'moxy-scale-strip',
+  selector: 'mng-scale-strip',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="strip-row">

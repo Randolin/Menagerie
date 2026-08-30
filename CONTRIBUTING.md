@@ -32,10 +32,30 @@ contributions may be fine to rewrite instead.
 - The frozen crypto vectors in `crypto/phrase-kdf.spec.ts` and
   `hatch/hatch.spec.ts` pin every credential derivation. If your change
   breaks them, the change is wrong — never the fixtures.
-- Internal identifiers keep the historical `moxy` name (storage keys, env
-  vars, headers, path aliases) — see the README's historical note.
+- Storage keys (`menagerie.*`) and wire headers (`x-menagerie-*`) are durable
+  interfaces: renaming a storage key logs everyone out, and renaming a header
+  needs the app and the server deployed together. Version, don't rename.
 
 ## Invariants that aren't obvious from the code you're editing
+
+- **The bundle budget is a regression alarm, not an aspiration.** `angular.json`
+  warns at 550 kB and fails at 650 kB of _raw_ initial bytes, against a real
+  figure of ~526 kB (~134 kB over the wire, which is the number a reader
+  actually pays). Angular and the router dominate that: the larger of the two
+  initial chunks carries no product copy at all. The old 500 kB warning was the
+  framework's template default rather than a measurement of anything here, and
+  it fired on every single build, which is how a build warning becomes
+  invisible. Two things are deliberately deferred out of the initial graph and
+  should stay that way: Argon2 (`crypto/phrase-kdf.ts` imports `hash-wasm`
+  inside the async derivation — the landing page never derives, and every path
+  that does is already waiting seconds) and `loadTranslations`
+  (`i18n/locale.ts` imports `@angular/localize` only when a catalogue is
+  actually being installed, which never happens for the source locale).
+  Together they are ~32 kB off the first paint. Argon2's chunk is warmed on
+  idle (`warmPhraseKdf`, called from `main.ts`) because the service worker
+  caches what has been fetched and not what might be — deferring it without
+  warming it would turn an offline unlock into a lockout. If the warning
+  fires, find what got pulled eager rather than raising the number.
 
 - The wire-contract files (`libs/core/src/*/{hatch,group,metrics,boop}-api.ts`
   and `hatch/constants.ts`) must stay **import-free**: the server loads them

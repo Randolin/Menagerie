@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { getItem, type ChoiceItem, type ScaleItem } from '@moxy/core';
+import { getItem, type ChoiceItem, type ScaleItem } from '@mng/core';
 import { ChoiceEditorComponent } from './choice-editor.component';
 import { ScaleEditorComponent } from './scale-editor.component';
 import { WeightControlComponent } from './weight-control.component';

@@ -7,8 +7,8 @@ import {
   signal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { buildDemoCast, personaFromViewPhrase } from '@moxy/core';
-import { CreatureAvatarComponent, ToastService } from '@moxy/ui';
+import { buildDemoCast, personaFromViewPhrase } from '@mng/core';
+import { CreatureAvatarComponent, ToastService } from '@mng/ui';
 import { buildCompareModel, type CompareSlot } from '../compare/compare-model';
 import { ComparePanelsComponent } from '../compare/compare-panels.component';
 import { ProfileSessionStore } from '../stores/profile-session.store';
@@ -23,7 +23,7 @@ import { ServerConfigStore } from '../stores/server-config.store';
  * a fictional pair — no network, no session, nothing stored.
  */
 @Component({
-  selector: 'moxy-demo',
+  selector: 'mng-demo',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, ComparePanelsComponent, CreatureAvatarComponent],
   template: `
@@ -48,7 +48,7 @@ import { ServerConfigStore } from '../stores/server-config.store';
         <div class="btn-row" style="align-items:center;gap:14px;flex-wrap:wrap">
           @for (persona of personas(); track persona.name) {
             <span style="display:inline-flex;align-items:center;gap:8px">
-              <moxy-creature-avatar [persona]="persona" [size]="34" />
+              <mng-creature-avatar [persona]="persona" [size]="34" />
               <strong>{{ persona.name }}</strong>
             </span>
           }
@@ -60,7 +60,7 @@ import { ServerConfigStore } from '../stores/server-config.store';
         </p>
       </div>
 
-      <moxy-compare-panels [model]="model" />
+      <mng-compare-panels [model]="model" />
 
       <div class="card">
         <h2 i18n>Your turn</h2>

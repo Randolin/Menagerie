@@ -8,7 +8,7 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
-import type { Persona } from '@moxy/core';
+import type { Persona } from '@mng/core';
 import qrcode from 'qrcode-generator';
 import { blobPath } from './qr-path';
 import { IconComponent } from './icon.component';
@@ -39,7 +39,7 @@ let gradientSeq = 0;
  * bypassing sanitization here is sound.
  */
 @Component({
-  selector: 'moxy-qr-code',
+  selector: 'mng-qr-code',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IconComponent],
   template: `
@@ -54,7 +54,7 @@ let gradientSeq = 0;
             i18n-title
             title="Save or share the QR code as an image"
           >
-            <moxy-icon [name]="canShare ? 'share' : 'download'" />
+            <mng-icon [name]="canShare ? 'share' : 'download'" />
             @if (busy()) {
               <span i18n>Working…</span>
             } @else if (canShare) {
@@ -73,12 +73,12 @@ let gradientSeq = 0;
   // encapsulation attributes would never reach it.
   encapsulation: ViewEncapsulation.None,
   styles: `
-    moxy-qr-code .qr-svg > svg {
+    mng-qr-code .qr-svg > svg {
       width: 208px;
       height: 208px;
       display: block;
     }
-    moxy-qr-code .qr-share {
+    mng-qr-code .qr-share {
       margin-top: 10px;
       width: 100%;
     }

@@ -8,7 +8,7 @@ import type {
   ItemId,
   Section,
   Weights,
-} from '@moxy/core';
+} from '@mng/core';
 
 /**
  * The working answer set the item editors bind to — in-memory only. The

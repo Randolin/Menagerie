@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { ANIMALS } from '@moxy/core';
+import { ANIMALS } from '@mng/core';
 import { CREATURE_SPRITES } from './pixel-grids';
 import { creaturePixelSvg, creatureSpriteRects, spriteRects, spriteSvg } from './pixel-art';
 

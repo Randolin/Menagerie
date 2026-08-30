@@ -8,7 +8,7 @@
 // drawn as an avatar, and an emoji beside it was a second, worse picture of
 // the same animal. Habitat still shows — as the avatar's backdrop texture and
 // the card's accent class — just not as a glyph.
-import { personaHabitat, type Persona } from '@moxy/core';
+import { personaHabitat, type Persona } from '@mng/core';
 
 /** `habitat-<name>` for the card's motif, or '' when there's no persona. */
 export function habitatClass(persona: Persona | null | undefined): string {

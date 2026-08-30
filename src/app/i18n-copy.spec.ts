@@ -27,7 +27,7 @@ const APP = dirname(fileURLToPath(import.meta.url));
 const UI = join(APP, '../../libs/ui/src');
 
 /** Attributes a person reads. Anything here needs an i18n-<attr> sibling. */
-const TRANSLATABLE_ATTRS = ['aria-label', 'placeholder', 'title', 'alt'] as const;
+const TRANSLATABLE_ATTRS = ['aria-label', 'placeholder', 'title', 'alt', 'caption'] as const;
 
 /** Two consecutive letters — enough to be a word, never punctuation. */
 const IS_COPY = /[A-Za-z]{2}/;

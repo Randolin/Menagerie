@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { interestLabel, itemLabel, type GridRow } from '@moxy/core';
+import { interestLabel, itemLabel, type GridRow } from '@mng/core';
 import { seriesVar } from './series';
 
 interface MatrixRow {
@@ -15,7 +15,7 @@ interface MatrixRow {
  * works alone.
  */
 @Component({
-  selector: 'moxy-interest-matrix',
+  selector: 'mng-interest-matrix',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="matrix-wrap">

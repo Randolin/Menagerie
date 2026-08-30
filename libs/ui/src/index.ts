@@ -1,6 +1,6 @@
-// @moxy/ui public API — the design-system components and browser utilities.
+// @mng/ui public API — the design-system components and browser utilities.
 
-export { MAX_COMPARE, seriesVar } from './charts/series';
+export { MAX_COMPARE, pct, seriesVar } from './charts/series';
 export { PersonKeyComponent } from './charts/person-key.component';
 export { ScaleStripComponent } from './charts/scale-strip.component';
 export { InterestMatrixComponent } from './charts/interest-matrix.component';
@@ -12,9 +12,7 @@ export { SimDotComponent } from './charts/sim-dot.component';
 export { AnswerTextComponent } from './charts/answer-text.component';
 export { PairMatrixComponent } from './charts/pair-matrix.component';
 export { RingComponent } from './charts/ring.component';
-export { RadarComponent, type RadarSeries } from './charts/radar.component';
 export { FlowComponent } from './charts/flow.component';
-export { DumbbellComponent } from './charts/dumbbell.component';
 export { AgreementStripComponent, type AgreementRow } from './charts/agreement-strip.component';
 
 export { ToastService } from './widgets/toast.service';

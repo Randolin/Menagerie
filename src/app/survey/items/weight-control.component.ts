@@ -7,8 +7,8 @@ import {
   itemLabel,
   type ImportanceWeight,
   type Item,
-} from '@moxy/core';
-import { OptionGroupDirective } from '@moxy/ui';
+} from '@mng/core';
+import { OptionGroupDirective } from '@mng/ui';
 import { DraftStore } from '../../stores/draft.store';
 
 /**
@@ -18,13 +18,13 @@ import { DraftStore } from '../../stores/draft.store';
  * scales stop at "matters a lot" (there is no acceptable-set for a slider).
  */
 @Component({
-  selector: 'moxy-weight-control',
+  selector: 'mng-weight-control',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [OptionGroupDirective],
   template: `
     <!-- aria-pressed, not just a class: which importance is set was visible
          only as a highlight, so a screen reader could not tell at all. -->
-    <div class="weight-row" moxyOptionGroup role="group" [attr.aria-label]="importanceLabel()">
+    <div class="weight-row" mngOptionGroup role="group" [attr.aria-label]="importanceLabel()">
       <span i18n class="fine">Importance:</span>
       <button
         i18n
@@ -49,7 +49,7 @@ import { DraftStore } from '../../stores/draft.store';
       }
     </div>
     @if (weight() === 3) {
-      <div class="weight-accept" moxyOptionGroup role="group" [attr.aria-label]="acceptLabel()">
+      <div class="weight-accept" mngOptionGroup role="group" [attr.aria-label]="acceptLabel()">
         <span i18n class="fine">I could match with:</span>
         @for (opt of acceptOptions(); track $index) {
           <button

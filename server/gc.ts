@@ -1,5 +1,5 @@
 // Garbage collection: sweep once at startup, then on an interval. Policy
-// lives in @moxy/core's hatch constants so the in-app warning copy and the
+// lives in @mng/core's hatch constants so the in-app warning copy and the
 // server can't drift apart. Any store with a compatible sweep() rides the
 // same schedule (profiles, group rosters).
 export interface Sweepable {

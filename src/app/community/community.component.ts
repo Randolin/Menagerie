@@ -8,8 +8,8 @@ import {
   itemLabel,
   optionLabels,
   type MetricsRecord,
-} from '@moxy/core';
-import { errorText } from '@moxy/ui';
+} from '@mng/core';
+import { errorText } from '@mng/ui';
 import { DraftStore } from '../stores/draft.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
 import { ServerConfigStore } from '../stores/server-config.store';
@@ -26,7 +26,7 @@ interface RateRow {
  * randomized-response estimates and labeled as such.
  */
 @Component({
-  selector: 'moxy-community',
+  selector: 'mng-community',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
   template: `

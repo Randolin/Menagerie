@@ -122,13 +122,13 @@ const spawnMoxyServer = async (env) => {
   return { proc, url };
 };
 
-const dbPath = join(tmpdir(), `moxy-e2e-${process.pid}.db`);
+const dbPath = join(tmpdir(), `menagerie-e2e-${process.pid}.db`);
 const main = await spawnMoxyServer({ MENAGERIE_DB_PATH: dbPath });
 // Fast-sweeping GC server on a file DB. Timestamps are hour-coarse and the
 // sweep grants that hour back as slack (TTLs are minimum lifetimes), so
 // short TTLs alone can't expire anything — the test backdates created_at
 // through a second SQLite connection instead, exactly like a real aged row.
-const gcDbPath = join(tmpdir(), `moxy-e2e-gc-${process.pid}.db`);
+const gcDbPath = join(tmpdir(), `menagerie-e2e-gc-${process.pid}.db`);
 const gc = await spawnMoxyServer({
   MENAGERIE_DB_PATH: gcDbPath,
   MENAGERIE_GC_EMPTY_MS: '3000',
@@ -138,7 +138,7 @@ const gc = await spawnMoxyServer({
 // Metrics server with k=1 so a single contributor clears the floor. Its own
 // instance also keeps the MAIN db's at-rest scan strict: aggregate counters
 // are plaintext BY DESIGN, and only exist where someone opted in.
-const metricsDbPath = join(tmpdir(), `moxy-e2e-metrics-${process.pid}.db`);
+const metricsDbPath = join(tmpdir(), `menagerie-e2e-metrics-${process.pid}.db`);
 const metricsSrv = await spawnMoxyServer({
   MENAGERIE_DB_PATH: metricsDbPath,
   MENAGERIE_METRICS_K: '1',
@@ -302,7 +302,7 @@ try {
   // as the model resolves, but every panel is a lazily loaded component that
   // arrives afterwards — snapshotting the body in between reads a page that is
   // still filling in, which is a race that only shows up on a slow runner.
-  for (const expected of ['Overall alignment', 'Mutual desires', 'Fit, each way', 'In words']) {
+  for (const expected of ['Overall alignment', 'Mutual desires', 'Where you line up', 'In words']) {
     await page.waitForSelector(`text=${expected}`, { timeout: 30000 });
   }
   const demoBody = await page.textContent('body');
@@ -317,6 +317,10 @@ try {
   }
   if (demoBody.includes('On Pronouns')) fail('narrative frames identity as a difference');
   if (!demoBody.includes('Cuddling')) fail('demo does not reveal the mutual desire');
+  // ...and reveals it outright. A newcomer deciding whether this is worth
+  // five minutes does not go looking behind a disclosure first.
+  if (!(await page.isVisible('text=Cuddling')))
+    fail('demo hides the mutual desire behind the fold');
   // Desires are mutual-only: a one-sided answer must not appear anywhere.
   if (demoBody.includes('Massage')) fail('demo revealed a one-sided desire');
   await shot(page, '01b-demo-unconfigured.png');
@@ -736,6 +740,15 @@ try {
   await page.fill('input[aria-label="Paste a view phrase or link"]', viewPhraseB);
   await page.click('form button:has-text("Add")');
   await page.waitForSelector('text=Overall alignment', { timeout: 30000 });
+
+  // The fold is the point of the layout, and `textContent` cannot see it: a
+  // closed <details> still yields its text, so the needle list below would
+  // pass just as happily with everything buried. Drive the disclosure instead
+  // — open it, read the page, then close it and check the evidence went away.
+  const more = 'summary:has-text("See the detail")';
+  await page.waitForSelector(more, { timeout: 30000 });
+  await page.click(more);
+  await page.waitForSelector('text=Answer by answer', { state: 'visible', timeout: 30000 });
   const compareBody = await page.textContent('body');
   for (const needle of [
     personaName,
@@ -744,18 +757,26 @@ try {
     'Desires — mutual only',
     'Rope',
     'shared answers',
-    'Values fingerprint',
-    `Fit for ${personaName}`,
+    'Values, side by side',
+    'Fit is scored twice', // the dumbbell is gone; the prose carries direction
     'marked it a dealbreaker', // A's alcohol dealbreaker vs B's "Socially"
     'Care interlock',
     'unmet', // flow diagram: A leaves B's "Acts" need dangling
     'Agreement, item by item',
-    'Fit, each way',
+    'Where you line up',
   ]) {
     if (!compareBody.includes(needle)) fail('compare missing: ' + needle);
   }
   if (compareBody.includes('Impact play')) fail('one-sided desire leaked in compare');
   await shot(page, '06-compare.png');
+
+  await page.click(more);
+  await page.waitForSelector('text=Answer by answer', { state: 'hidden', timeout: 10000 });
+  // What stays above the fold is the answer, not the evidence for it: the
+  // headline, the sentences, and the mutual reveal, which is nowhere else.
+  for (const lead of ['Overall alignment', 'Fit is scored twice', 'Desires — mutual only']) {
+    if (!(await page.isVisible(`text=${lead}`))) fail('fell behind the fold: ' + lead);
+  }
 
   // --- the loop closes: send your creature back ----------------------------
   // A is comparing against B and B can be booped, so the offer is live. It
@@ -763,7 +784,7 @@ try {
   // must never perform the attachment tick on anyone's behalf.
   step = 'share-back';
   {
-    const panel = page.locator('moxy-share-back');
+    const panel = page.locator('mng-share-back');
     await panel.waitFor({ timeout: 30000 });
     const offer = await panel.textContent();
     if (!offer.includes('Send your creature back')) fail('share-back offer missing its heading');
@@ -788,7 +809,7 @@ try {
     await page.waitForSelector('.profile-head', { timeout: 45000 });
     await page.goto(`${BASE}#/compare`);
     await page.waitForSelector('text=Overall alignment', { timeout: 60000 });
-    if (await page.locator('moxy-share-back').count()) {
+    if (await page.locator('mng-share-back').count()) {
       fail('share-back re-offered a creature it had already sent');
     }
 
@@ -1101,6 +1122,28 @@ try {
   const mobile = await freshPage(main.url, { viewport: { width: 390, height: 844 } });
   await mobile.waitForSelector('text=Hatch a profile');
   await shot(mobile, '08-mobile-landing.png');
+
+  // The comparison is the page with the most on it and the page most likely to
+  // be read on a phone in bed, which is the combination nothing else here
+  // covers: the shots above are wide-and-light or one page or the other. The
+  // demo route renders the same panels against the same code with no session
+  // to seed, so this costs one page load.
+  step = 'compare-mobile-dark';
+  const compareDark = await freshPage(main.url, {
+    viewport: { width: 390, height: 844 },
+    colorScheme: 'dark',
+  });
+  await compareDark.goto(`${BASE}#/demo`);
+  for (const expected of ['Overall alignment', 'In words', 'See the detail']) {
+    await compareDark.waitForSelector(`text=${expected}`, { timeout: 30000 });
+  }
+  await shot(compareDark, '09-compare-mobile-dark.png');
+  await compareDark.click('summary:has-text("See the detail")');
+  await compareDark.waitForSelector('text=Answer by answer', {
+    state: 'visible',
+    timeout: 30000,
+  });
+  await shot(compareDark, '09b-compare-mobile-dark-open.png');
 
   // --- zero knowledge at rest: raw server DB holds no plaintext --------------
   step = 'zero-knowledge-at-rest';

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
-import type { AnswerValue, Item } from '@moxy/core';
+import type { AnswerValue, Item } from '@mng/core';
 import { DraftStore } from '../../stores/draft.store';
 import { ChoiceEditorComponent } from './choice-editor.component';
 import { MultiEditorComponent } from './multi-editor.component';
@@ -12,7 +12,7 @@ import { InterestEditorComponent } from './interest-editor.component';
  * plus the typed editors keeps that a template-compile-time concern.
  */
 @Component({
-  selector: 'moxy-item-editor',
+  selector: 'mng-item-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ChoiceEditorComponent,
@@ -24,16 +24,16 @@ import { InterestEditorComponent } from './interest-editor.component';
     <div class="item-block">
       @switch (item().type) {
         @case ('choice') {
-          <moxy-choice-editor [item]="$any(item())" [value]="value()" (valueChange)="set($event)" />
+          <mng-choice-editor [item]="$any(item())" [value]="value()" (valueChange)="set($event)" />
         }
         @case ('multi') {
-          <moxy-multi-editor [item]="$any(item())" [value]="value()" (valueChange)="set($event)" />
+          <mng-multi-editor [item]="$any(item())" [value]="value()" (valueChange)="set($event)" />
         }
         @case ('scale') {
-          <moxy-scale-editor [item]="$any(item())" [value]="value()" (valueChange)="set($event)" />
+          <mng-scale-editor [item]="$any(item())" [value]="value()" (valueChange)="set($event)" />
         }
         @case ('interest') {
-          <moxy-interest-editor
+          <mng-interest-editor
             [item]="$any(item())"
             [value]="value()"
             (valueChange)="set($event)"

@@ -1,6 +1,6 @@
 // The comparison, in sentences.
 //
-// Three jobs, one module. It is the non-visual equivalent of the radar, the
+// Three jobs, one module. It is the non-visual equivalent of the meters, the
 // strips and the matrix, which a screen reader cannot read at all. It is
 // legible under stress, and people read compatibility results under stress.
 // And it is the part someone will quote to the person they compared with,
@@ -15,7 +15,7 @@
 //    is often read side by side, and the second person has a name too.
 //  - Say what is NOT covered. A number computed from nine shared answers
 //    should not sound like a number computed from ninety.
-import { answerChips, COMPLEMENT_PAIRS, itemLabel, type AnswerValue, type Item } from '@moxy/core';
+import { answerChips, COMPLEMENT_PAIRS, itemLabel, type AnswerValue, type Item } from '@mng/core';
 import type { CompareModel } from './compare-model';
 
 export type NarrativeTone = 'plain' | 'attention';

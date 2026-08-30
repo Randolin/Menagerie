@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { MemoryStorage, type BoopReachability, type Persona } from '@moxy/core';
+import { MemoryStorage, type BoopReachability, type Persona } from '@mng/core';
 import { signal } from '@angular/core';
 import { CompareComponent } from './compare.component';
 import { CompareStore } from '../stores/compare.store';
@@ -183,7 +183,7 @@ describe('the share-back offer', () => {
     store.model.set(model([slot(MINE), slot(THEIRS, { reach: REACH })]));
     const fixture = TestBed.createComponent(CompareComponent);
     fixture.detectChanges();
-    const panel = (fixture.nativeElement as HTMLElement).querySelector('moxy-share-back .card');
+    const panel = (fixture.nativeElement as HTMLElement).querySelector('mng-share-back .card');
     expect(panel?.classList.contains('no-print')).toBe(true);
   });
 });

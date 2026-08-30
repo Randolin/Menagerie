@@ -1,5 +1,5 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
-import { decryptBlob, encryptBlob, type Acceptable, type Answers, type Weights } from '@moxy/core';
+import { decryptBlob, encryptBlob, type Acceptable, type Answers, type Weights } from '@mng/core';
 import { DraftStore } from './draft.store';
 import { APP_STORAGE } from './storage.token';
 

@@ -3,7 +3,7 @@ import { pct, seriesVar } from './series';
 
 /** Pairwise overall-affinity table for 3+ people. Scores are 0..1 or null. */
 @Component({
-  selector: 'moxy-pair-matrix',
+  selector: 'mng-pair-matrix',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="matrix-wrap">

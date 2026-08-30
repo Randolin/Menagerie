@@ -13,6 +13,12 @@ import { describe, expect, it } from 'vitest';
  * Reads the token file rather than a rendered page: the values are the
  * contract, and a headless browser would only tell us the same numbers more
  * slowly.
+ *
+ * This asks whether each colour is legible ON the page. Its sibling,
+ * `series-cvd.spec.ts`, asks whether the person slots are distinguishable
+ * FROM EACH OTHER — a different question, and answering only this one is how
+ * the palette once ended up with two slots a protanope could not tell apart.
+ * Change a series hue and satisfy both.
  */
 const TOKENS = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '_tokens.scss'), 'utf8');
 

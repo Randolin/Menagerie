@@ -3,7 +3,7 @@ import { pct } from './series';
 
 /** Similarity meter: sequential fill on a lighter same-ramp track. */
 @Component({
-  selector: 'moxy-meter',
+  selector: 'mng-meter',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="meter-row">

@@ -7,7 +7,7 @@ import { pct } from './series';
  * beside it — color never carries the reading alone.
  */
 @Component({
-  selector: 'moxy-sim-dot',
+  selector: 'mng-sim-dot',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (sim() === null) {

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { SECTIONS, sectionBlurb, sectionTitle, type Section } from '@moxy/core';
+import { SECTIONS, sectionBlurb, sectionTitle, type Section } from '@mng/core';
 import { DraftStore } from '../stores/draft.store';
 
 /**
@@ -11,7 +11,7 @@ import { DraftStore } from '../stores/draft.store';
  * only ever one screen.
  */
 @Component({
-  selector: 'moxy-add-category',
+  selector: 'mng-add-category',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (missing().length) {

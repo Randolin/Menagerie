@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { itemLabel, sectionTitle, type GridSection } from '@moxy/core';
-import { AnswerTextComponent, SimDotComponent, seriesVar } from '@moxy/ui';
+import { itemLabel, sectionTitle, type GridSection } from '@mng/core';
+import { AnswerTextComponent, SimDotComponent, seriesVar } from '@mng/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
 
@@ -8,17 +8,22 @@ const GRID_SECTIONS = ['about', 'lifestyle', 'connection', 'structure', 'plans']
 
 /** Everything else, in the open — the table-view twin of the charts. */
 @Component({
-  selector: 'moxy-answer-grid-panel',
+  selector: 'mng-answer-grid-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [AnswerTextComponent, SimDotComponent],
   template: `
-    @for (g of sections(); track g.section.id) {
-      <div class="card grid-section">
-        <h2>{{ title(g.section) }}</h2>
+    <!-- One card, not one per section. These were three to five identical
+         cards holding one or two rows each: all the chrome of a panel with
+         none of the weight, which is what made the page read as a stack of
+         equals rather than a document with a shape. -->
+    <div class="panel grid-section">
+      <h2 i18n>Answer by answer</h2>
+      @for (g of sections(); track g.section.id) {
+        <h3 class="grid-subhead">{{ title(g.section) }}</h3>
         @for (row of answeredRows(g); track row.item.id) {
           <div class="grid-row">
             <div class="grid-item-label">
-              <moxy-sim-dot [sim]="row.sim" />
+              <mng-sim-dot [sim]="row.sim" />
               {{ label(row.item) }}
             </div>
             <div class="grid-answers">
@@ -29,14 +34,14 @@ const GRID_SECTIONS = ['about', 'lifestyle', 'connection', 'structure', 'plans']
                     [style.background]="color($index)"
                     [title]="model().names[$index]"
                   ></span>
-                  <moxy-answer-text [item]="row.item" [value]="v" />
+                  <mng-answer-text [item]="row.item" [value]="v" />
                 </div>
               }
             </div>
           </div>
         }
-      </div>
-    }
+      }
+    </div>
   `,
 })
 export class AnswerGridPanel implements ComparePanelComponent {

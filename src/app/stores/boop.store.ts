@@ -12,7 +12,7 @@ import {
   type BoopContact,
   type BoopReachability,
   type SentBoop,
-} from '@moxy/core';
+} from '@mng/core';
 import { ProfileSessionStore, type IncomingBoop } from './profile-session.store';
 
 /**

@@ -15,7 +15,7 @@ import {
   type PairScores,
   type Persona,
   type ProfilePayload,
-} from '@moxy/core';
+} from '@mng/core';
 
 /** One fetched-and-decrypted comparison source (or its failure). */
 export interface CompareSlot {

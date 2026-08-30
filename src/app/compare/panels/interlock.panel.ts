@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { FlowComponent } from '@moxy/ui';
+import { ChartTableComponent, FlowComponent } from '@mng/ui';
 import type { CompareModel, InterlockDetail } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
 
@@ -13,11 +13,11 @@ interface FlowView {
 
 /** The care interlock, drawn as a mechanism: offers meeting needs. */
 @Component({
-  selector: 'moxy-interlock-panel',
+  selector: 'mng-interlock-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FlowComponent],
+  imports: [ChartTableComponent, FlowComponent],
   template: `
-    <div class="card">
+    <div class="panel">
       <h2 i18n>Care interlock</h2>
       <p i18n class="sub">
         Not similarity — coverage: what one naturally gives, laid against what the other needs to
@@ -31,12 +31,18 @@ interface FlowView {
               <span i18n class="fine">{{ flow.pct }}% covered</span>
             }
           </h3>
-          <moxy-flow
+          <mng-flow
             [options]="flow.detail.options"
             [gives]="flow.detail.gives"
             [needs]="flow.detail.needs"
             [matched]="flow.detail.matched"
             [person]="flow.person"
+          />
+          <mng-chart-table
+            i18n-caption
+            caption="Each thing this person needs, and whether the other one naturally gives it"
+            [columns]="tableColumns()"
+            [rows]="tableRows(flow)"
           />
         </div>
       }
@@ -45,6 +51,24 @@ interface FlowView {
 })
 export class InterlockPanel implements ComparePanelComponent {
   readonly model = input.required<CompareModel>();
+
+  protected readonly tableColumns = computed(() => [$localize`Need`, $localize`Given?`]);
+
+  /**
+   * The ribbons in words: one row per need, met or not.
+   *
+   * The diagram carries a `role="img"` summary that counts the covered needs,
+   * which says how well it went and not what happened. Two of these tables sit
+   * on the page — one per direction — and the direction is in the heading
+   * above each, which is why the columns do not repeat it.
+   */
+  protected tableRows(flow: FlowView): string[][] {
+    const label = (i: number) => flow.detail.options[i] ?? '?';
+    return flow.detail.needs.map((need) => [
+      label(need),
+      flow.detail.matched.includes(need) ? $localize`Yes` : $localize`Not offered`,
+    ]);
+  }
 
   protected readonly flows = computed<FlowView[]>(() => {
     const m = this.model();

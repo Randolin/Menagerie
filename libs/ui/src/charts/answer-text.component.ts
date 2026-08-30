@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { answerChips, type AnswerValue, type Item } from '@moxy/core';
+import { answerChips, type AnswerValue, type Item } from '@mng/core';
 
 /**
  * Renders any open answer as readable text chips — the "table view twin" of
@@ -7,7 +7,7 @@ import { answerChips, type AnswerValue, type Item } from '@moxy/core';
  * new item type is a compile error until it renders.
  */
 @Component({
-  selector: 'moxy-answer-text',
+  selector: 'mng-answer-text',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (chips(); as chips) {

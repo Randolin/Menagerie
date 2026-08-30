@@ -1,4 +1,4 @@
-import { buildDemoCast, personaFromViewPhrase } from '@moxy/core';
+import { buildDemoCast, personaFromViewPhrase } from '@mng/core';
 import { buildCompareModel, type CompareSlot } from './compare-model';
 import { buildNarrative } from './narrative';
 

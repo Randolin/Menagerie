@@ -4,8 +4,8 @@ import {
   extractViewPhrase,
   personaFromViewPhrase,
   type ProfilePayload,
-} from '@moxy/core';
-import { MAX_COMPARE, errorText } from '@moxy/ui';
+} from '@mng/core';
+import { MAX_COMPARE, errorText } from '@mng/ui';
 import { buildCompareModel, type CompareModel, type CompareSlot } from '../compare/compare-model';
 import { ServerConfigStore } from './server-config.store';
 

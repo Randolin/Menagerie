@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { SCALE_MAX, scaleEnds, type AnswerValue, type ScaleItem } from '@moxy/core';
-import { OptionGroupDirective } from '@moxy/ui';
+import { SCALE_MAX, scaleEnds, type AnswerValue, type ScaleItem } from '@mng/core';
+import { OptionGroupDirective } from '@mng/ui';
 
 /** 0–SCALE_MAX between two anchors; clicking the selected tick clears the answer. */
 @Component({
-  selector: 'moxy-scale-editor',
+  selector: 'mng-scale-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [OptionGroupDirective],
   template: `
@@ -12,7 +12,7 @@ import { OptionGroupDirective } from '@moxy/ui';
       <span class="scale-side">{{ ends()[0] }}</span>
       <div
         class="pip-row"
-        moxyOptionGroup
+        mngOptionGroup
         role="group"
         [attr.aria-label]="ends()[0] + ' versus ' + ends()[1]"
       >

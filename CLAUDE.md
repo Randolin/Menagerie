@@ -31,11 +31,11 @@ guarded (`messages.spec.ts` fails on drift), the template half is not.
 
 ## Layout and dependency rules
 
-- `libs/core` (`@moxy/core`) — pure TypeScript domain: schema, phrase
+- `libs/core` (`@mng/core`) — pure TypeScript domain: schema, phrase
   minting + KDF, crypto envelopes, match scoring, personas, HatchClient.
   Zero framework imports; `no-angular.spec.ts` fails the build otherwise.
-- `libs/ui` (`@moxy/ui`) — SCSS tokens/base partials plus standalone
-  components (charts, widgets). May import `@moxy/core`, never `src/app`.
+- `libs/ui` (`@mng/ui`) — SCSS tokens/base partials plus standalone
+  components (charts, widgets). May import `@mng/core`, never `src/app`.
 - `src/app` — routes, signal stores under `stores/`, feature components.
   Persistence, crypto, and server I/O belong in stores or core, not in
   components; components hold view state and delegate.
@@ -72,6 +72,15 @@ guarded (`messages.spec.ts` fails on drift), the template half is not.
   conventions that gate it are in `docs/animal-plan.md` and
   `docs/pixel-art-guide.md`; index-aligned tables (`ADJ_B_HUES`,
   `ANIMAL_HABITATS`) must grow in the same commit, guarded by specs.
+- Every word a phrase can be MINTED from must survive `normalizePassphrase`
+  as a single word. It splits on hyphens as well as spaces — a view phrase has
+  to normalize the same written either way — so a hyphenated entry makes a
+  five-word phrase measure as six, and the length guards standing in front of
+  the KDF then refuse a phrase the KDF would have opened. The EFF list has
+  four such words; they are filtered at selection time in
+  `crypto/passphrase.ts`, never removed from the vendored list, and
+  `passphrase.spec.ts` is the tripwire for the next one. Fix minting, never
+  `normalizePassphrase` — how it splits is a frozen KDF input.
 - The entropy ledger in `hatch/phrases.ts` must be recomputed before
   anything new derives from a view phrase's tail.
 - User-facing copy is addressable, and stays that way. Schema words are read
@@ -86,11 +95,11 @@ guarded (`messages.spec.ts` fails on drift), the template half is not.
   a static `title`/`aria-label`/`placeholder`/`alt` with no `i18n-` sibling.
   Message keys come from frozen item ids and option indexes — never from the
   English — which is what lets a translation survive relabelling.
-- The old `moxy` name survives only in the path aliases (`@moxy/*`) and the
-  component selector prefix (`moxy-`). Both are ordinary code and safe to
-  rename — nothing derives from them. This used to be a hard invariant
-  because the KDF salts spelled the name out; they don't any more, which is
-  the whole point of `crypto/domains.ts`.
+- Nothing in the tree carries the old `moxy` name any more: the path aliases
+  are `@mng/*` and the selector prefix is `mng-`. Both were always ordinary
+  code — nothing derives from them — and renaming them was a find-and-replace.
+  That is only true because the KDF salts stopped spelling the product's name,
+  which is the whole point of `crypto/domains.ts`.
 - `menagerie.*` browser-storage keys and `x-menagerie-*` wire headers are
   durable interfaces, not frozen ones: renaming a storage key logs everyone
   out and drops a remembered edit phrase (a lockout, for anyone who never
@@ -104,7 +113,7 @@ guarded (`messages.spec.ts` fails on drift), the template half is not.
 - Components: standalone, `ChangeDetectionStrategy.OnPush`, signal
   `input()`/`output()` — no decorators for I/O, no `NgModule`s. Single-file
   components with inline templates (only the root `App` differs). Selector
-  prefix `moxy-`. Derive view values with `computed()` rather than method
+  prefix `mng-`. Derive view values with `computed()` rather than method
   calls in templates.
 - Compare panels are a marked extension point: `*.panel.ts` files under
   `src/app/compare/panels/`, registered via `provideComparePanel` in
@@ -112,7 +121,7 @@ guarded (`messages.spec.ts` fails on drift), the template half is not.
 - Reuse the shared helpers rather than re-rolling them: `answerChips`,
   `interestLabel`, `importanceLabel`, `SCALE_MAX`, `currentEpoch`,
   `fetchViewPayload` (core); `clamp01`, `pct`, `seriesVar`, `MAX_COMPARE`,
-  `errorText`, `ToastService.error`/`.copy`, `moxy-subject-card` (ui);
+  `errorText`, `ToastService.error`/`.copy`, `mng-subject-card` (ui);
   `server/db-util.ts` (server). If a third copy of something appears,
   extract it instead.
 - Styling: design tokens and shared classes live in `libs/ui/src/styles/`;

@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { BOOP_INTENTS, CONTACT_PLATFORMS, extractViewPhrase } from '@moxy/core';
-import { CreatureIconComponent, ToastService } from '@moxy/ui';
+import { BOOP_INTENTS, CONTACT_PLATFORMS, extractViewPhrase } from '@mng/core';
+import { CreatureIconComponent, ToastService } from '@mng/ui';
 import { BoopComposerComponent } from '../boop/boop-composer.component';
 import { CompareStore } from '../stores/compare.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
@@ -14,7 +14,7 @@ import { BoopStore } from '../stores/boop.store';
  * — which is exactly why they used to make /me feel like a filing cabinet.
  */
 @Component({
-  selector: 'moxy-menagerie',
+  selector: 'mng-menagerie',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, BoopComposerComponent, CreatureIconComponent],
   template: `
@@ -108,7 +108,7 @@ import { BoopStore } from '../stores/boop.store';
         <div class="grid-row" style="align-items:flex-start">
           <div class="grid-item-label">
             <span i18n>says it’s from</span>
-            <moxy-creature-icon
+            <mng-creature-icon
               [emoji]="boop.content.from.emoji"
               [animal]="boop.content.from.animal ?? null"
               [size]="18"
@@ -154,7 +154,7 @@ import { BoopStore } from '../stores/boop.store';
               }
             }
             @if (boop.content.replyBox) {
-              <moxy-boop-composer [replyTo]="boop" />
+              <mng-boop-composer [replyTo]="boop" />
             }
             <button
               i18n
@@ -175,7 +175,7 @@ import { BoopStore } from '../stores/boop.store';
         @for (sent of session.sentBoops(); track sent.id) {
           <div class="grid-row" style="align-items:flex-start">
             <div class="grid-item-label">
-              <moxy-creature-icon [emoji]="sent.emoji" [size]="18" /> {{ sent.label }}
+              <mng-creature-icon [emoji]="sent.emoji" [size]="18" /> {{ sent.label }}
               <span class="fine">
                 @if (sent.status === 'answered') {
                   <span i18n>↩️ replied</span>

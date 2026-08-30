@@ -6,8 +6,8 @@ import {
   HatchError,
   validContactHandle,
   type BoopReachability,
-} from '@moxy/core';
-import { ToastService, errorText } from '@moxy/ui';
+} from '@mng/core';
+import { ToastService, errorText } from '@mng/ui';
 import { ProfileSessionStore, type IncomingBoop } from '../stores/profile-session.store';
 import { BoopStore } from '../stores/boop.store';
 
@@ -21,7 +21,7 @@ type Phase = 'idle' | 'staging' | 'composing' | 'sending' | 'done';
  * for the timing rationale).
  */
 @Component({
-  selector: 'moxy-boop-composer',
+  selector: 'mng-boop-composer',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [],
   template: `

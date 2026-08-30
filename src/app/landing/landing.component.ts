@@ -4,15 +4,16 @@ import {
   describePhrase,
   diagnoseEditPhrase,
   diagnoseViewPhrase,
+  extractEditPhrase,
   extractViewPhrase,
-} from '@moxy/core';
-import { ToastService } from '@moxy/ui';
+} from '@mng/core';
+import { ToastService } from '@mng/ui';
 import { ProfileSessionStore } from '../stores/profile-session.store';
 import { ServerConfigStore } from '../stores/server-config.store';
 
 /** The whole front door: exactly three actions. */
 @Component({
-  selector: 'moxy-landing',
+  selector: 'mng-landing',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
   template: `
@@ -162,14 +163,16 @@ export class LandingComponent {
 
   protected async edit(event: Event, input: HTMLInputElement): Promise<void> {
     event.preventDefault();
-    const message = describePhrase(await diagnoseEditPhrase(input.value), 'edit phrase');
+    // Accept the phrase back with the copy button's warning still attached.
+    const typed = (await extractEditPhrase(input.value)) ?? input.value;
+    const message = describePhrase(await diagnoseEditPhrase(typed), 'edit phrase');
     if (message) {
       this.editProblem.set(message);
       return;
     }
     this.editProblem.set(null);
     try {
-      if (await this.session.login(input.value)) {
+      if (await this.session.login(typed)) {
         await this.router.navigate(['/me']);
       } else {
         this.toast.show($localize`No profile answers to that phrase.`, 'error');
@@ -183,11 +186,19 @@ export class LandingComponent {
     event.preventDefault();
     const phrase = extractViewPhrase(input.value);
     if (!phrase) {
-      // The grammar check already knows which word is wrong; "that doesn't
-      // look like a phrase" made the person hunt for it themselves.
+      // Two audiences, one box. Someone typing a six-word phrase off a card
+      // gets the word-level correction — it is their typo and they can fix it.
+      // Anything of the wrong shape gets the same neutral line whatever it
+      // actually is, because that input came from somebody ELSE: the person
+      // reading this cannot fix it, and the only useful move is to go back to
+      // whoever sent it. Naming what they are holding would be worse than
+      // useless — see the note on diagnoseViewPhrase.
       this.viewProblem.set(
-        describePhrase(diagnoseViewPhrase(input.value), 'view phrase') ??
-          'That doesn’t look like a Menagerie view phrase or link.',
+        describePhrase(
+          diagnoseViewPhrase(input.value),
+          'view phrase',
+          $localize`That isn’t a view phrase, so there’s nothing to open. Ask whoever shared it for their six-word view phrase.`,
+        ) ?? $localize`That doesn’t look like a Menagerie view phrase or link.`,
       );
       return;
     }

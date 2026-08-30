@@ -15,7 +15,7 @@
       },
       "root": "",
       "sourceRoot": "src",
-      "prefix": "app",
+      "prefix": "mng",
       "architect": {
         "build": {
           "builder": "@angular/build:application",
@@ -37,8 +37,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "550kB",
+                  "maximumError": "650kB"
                 },
                 {
                   "type": "anyComponentStyle",

@@ -1,14 +1,14 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { interestLabel, itemLabel } from '@moxy/core';
-import { seriesVar } from '@moxy/ui';
+import { interestLabel, itemLabel } from '@mng/core';
+import { seriesVar } from '@mng/ui';
 import type { CompareModel } from '../compare-model';
 import type { ComparePanelComponent } from '../compare-panels.token';
 
 @Component({
-  selector: 'moxy-desires-panel',
+  selector: 'mng-desires-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="card">
+    <div class="panel">
       <h2 i18n>Desires — mutual only</h2>
       @if (model().withTokensCount === 1) {
         <p i18n class="sub">

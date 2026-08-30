@@ -2,7 +2,7 @@
 //
 // Node strips types from .ts files on its own (22.18+), but it will not
 // invent an extension: core's internal imports are extensionless
-// (`./wordlists`) because a bundler resolves them, and the `@moxy/*` aliases
+// (`./wordlists`) because a bundler resolves them, and the `@mng/*` aliases
 // exist only in tsconfig. This hook teaches Node both, in-thread and with no
 // npm dependency — the same "plain Node, no deps" posture as server/.
 //
@@ -15,9 +15,9 @@ const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
 // Mirrors tsconfig.json "paths" — keep the two in step.
 const ALIASES = {
-  '@moxy/core': 'libs/core/src/index.ts',
-  '@moxy/core/wordlist': 'libs/core/src/crypto/eff-wordlist.ts',
-  '@moxy/ui': 'libs/ui/src/index.ts',
+  '@mng/core': 'libs/core/src/index.ts',
+  '@mng/core/wordlist': 'libs/core/src/crypto/eff-wordlist.ts',
+  '@mng/ui': 'libs/ui/src/index.ts',
 };
 
 const HAS_EXTENSION = /\.[cm]?[jt]s$/;

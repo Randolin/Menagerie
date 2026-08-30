@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { buildMetricsBuckets, currentEpoch, deriveMetricsToken, HatchError } from '@moxy/core';
+import { buildMetricsBuckets, currentEpoch, deriveMetricsToken, HatchError } from '@mng/core';
 import { DraftStore } from './draft.store';
 import { ProfileSessionStore } from './profile-session.store';
 

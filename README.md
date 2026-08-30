@@ -132,11 +132,11 @@ For local development, point the app at a local server: run
 ### Architecture
 
 ```
-libs/core   @moxy/core — pure TypeScript domain library, zero framework
+libs/core   @mng/core — pure TypeScript domain library, zero framework
             imports (schema, phrase minting + KDF, blob envelope, match
             tokens, scoring, HatchClient). A guard spec fails the build if
             anything Angular sneaks in.
-libs/ui     @moxy/ui — the design system: SCSS token/base partials and
+libs/ui     @mng/ui — the design system: SCSS token/base partials and
             standalone chart components (dot strips, interest matrix,
             meters, styled QR…).
 src/app     The Angular app: hash routing (static-host friendly, QR-scan
@@ -152,12 +152,13 @@ e2e         Playwright suite run against the production build via a dumb
             zero-knowledge-at-rest scan of the raw database.
 ```
 
-> **Historical note:** the project was once called _moxy_, and the name still
-> survives in two purely internal places — the path aliases (`@moxy/core`,
-> `@moxy/ui`) and the component selector prefix (`moxy-`). Both are ordinary
-> code and safe to rename; they simply haven't been.
+> **Historical note:** the project was once called _moxy_, and for a while the
+> name outlived the rebrand in the path aliases and the component selector
+> prefix. It no longer does: they are `@mng/*` and `mng-` now, and the rename
+> was a find-and-replace with a green build at the end — which was the point
+> of the paragraph below, demonstrated.
 >
-> Nothing else carries it. In particular the cryptographic domain-separation
+> Nothing carries the old name. In particular the cryptographic domain-separation
 > constants — which used to spell the old name into a salt — are now opaque
 > tokens in `libs/core/src/crypto/domains.ts`. That file is the _only_ place
 > in the repository whose values can never change, and it says so at length:

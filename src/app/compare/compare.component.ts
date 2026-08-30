@@ -7,14 +7,14 @@ import {
   untracked,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { ToastService, seriesVar } from '@moxy/ui';
+import { ToastService, seriesVar } from '@mng/ui';
 import { CompareStore } from '../stores/compare.store';
 import { ProfileSessionStore } from '../stores/profile-session.store';
 import { ComparePanelsComponent } from './compare-panels.component';
 import { ShareBackComponent } from './share-back.component';
 
 @Component({
-  selector: 'moxy-compare',
+  selector: 'mng-compare',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ComparePanelsComponent, RouterLink, ShareBackComponent],
   template: `
@@ -90,9 +90,9 @@ import { ShareBackComponent } from './share-back.component';
 
     @if (store.model(); as m) {
       @if (m.payloads.length >= 2) {
-        <moxy-compare-panels [model]="m" />
+        <mng-compare-panels [model]="m" />
         @if (shareBack(); as back) {
-          <moxy-share-back [target]="back.target" [name]="back.name" [emoji]="back.emoji" />
+          <mng-share-back [target]="back.target" [name]="back.name" [emoji]="back.emoji" />
         }
       } @else {
         <div class="card">

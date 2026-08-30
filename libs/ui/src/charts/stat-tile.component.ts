@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 @Component({
-  selector: 'moxy-stat-tile',
+  selector: 'mng-stat-tile',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="stat-tile">

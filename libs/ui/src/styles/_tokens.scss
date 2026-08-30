@@ -35,15 +35,21 @@
   --danger-soft: rgba(208, 59, 59, 0.08);
   --warn-soft: rgba(236, 131, 90, 0.14);
 
+  /* Person slots. Two constraints pull against each other here, and an
+     earlier pass measured only one of them: these must be legible ON the page
+     (contrast >= 3:1) AND distinguishable FROM EACH OTHER, including to a
+     reader with colour-vision deficiency. Darkening slots 3 and 4 to fix the
+     first quietly destroyed the second — orange and amber landed 2.5 apart
+     under protanopia, which is the same colour.
+
+     Slot 4 is no longer amber for that reason: no lightness of it clears
+     orange. Slot 3's window turns out to be one step wide — #169b6c is
+     already a warning and #159265 a failure — which is exactly why
+     series-cvd.spec.ts measures this instead of trusting a comment. */
   --series-1: #2a78d6;
   --series-2: #eb6834;
-  /* Was #1baf7a — 2.7:1, under the same bar. Found by the spec across all
-     four hues, not by eye: the ones that fail are not the ones that look
-     faint, they are the ones whose luminance happens to sit near the page's. */
-  --series-3: #158f63;
-  /* Was #eda100 — 2.1:1, below even the 3:1 that non-text graphics need, so
-     a fourth person's line was effectively invisible on a light background. */
-  --series-4: #ad7500;
+  --series-3: #18a473;
+  --series-4: #8a4194;
 
   --ramp-1: #86b6ef;
   --ramp-2: #2a78d6;
@@ -79,10 +85,13 @@
   --danger-soft: rgba(230, 103, 103, 0.12);
   --warn-soft: rgba(236, 131, 90, 0.16);
 
+  /* The same four hues stepped for the dark surface, not an automatic flip.
+     Dark's lightness band is narrower, so slot 4 sits lighter and warmer here
+     than its light-mode step to keep clear of slot 1. */
   --series-1: #3987e5;
   --series-2: #d95926;
   --series-3: #199e70;
-  --series-4: #c98500;
+  --series-4: #a05ab0;
 
   --ramp-1: #184f95;
   --ramp-2: #2a78d6;

@@ -6,7 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { ToastService } from '@moxy/ui';
+import { ToastService } from '@mng/ui';
 import { ProfileSessionStore } from '../stores/profile-session.store';
 
 /** Long enough to register, short enough not to become furniture. */
@@ -33,7 +33,7 @@ const SAVED_FLASH_MS = 2200;
  * clutter this redesign removed.
  */
 @Component({
-  selector: 'moxy-save-bar',
+  selector: 'mng-save-bar',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (session.dirty() && session.saveState() === 'offline') {

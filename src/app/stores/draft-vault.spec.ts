@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { MemoryStorage } from '@moxy/core';
+import { MemoryStorage } from '@mng/core';
 import { DraftStore } from './draft.store';
 import { DraftVault } from './draft-vault';
 import { APP_STORAGE } from './storage.token';
