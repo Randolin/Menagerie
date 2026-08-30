@@ -13,7 +13,14 @@ import { seriesVar } from './series';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <svg [attr.viewBox]="'0 0 ' + W + ' ' + height()" role="img" [attr.aria-label]="described()">
-      <text i18n [attr.x]="0" [attr.y]="12" text-anchor="start" font-size="10" fill="var(--muted)">
+      <text
+        i18n
+        [attr.x]="0"
+        [attr.y]="12"
+        text-anchor="start"
+        class="flow-col"
+        fill="var(--muted)"
+      >
         gives
       </text>
       <text
@@ -21,7 +28,7 @@ import { seriesVar } from './series';
         [attr.x]="RIGHT_X"
         [attr.y]="12"
         text-anchor="start"
-        font-size="10"
+        class="flow-col"
         fill="var(--muted)"
       >
         needs
@@ -32,7 +39,7 @@ import { seriesVar } from './series';
           [attr.y]="rowY(i)"
           text-anchor="start"
           dominant-baseline="middle"
-          font-size="11.5"
+          class="flow-label"
           fill="var(--ink)"
         >
           {{ label(g) }}
@@ -44,7 +51,7 @@ import { seriesVar } from './series';
           [attr.y]="rowY(i)"
           text-anchor="start"
           dominant-baseline="middle"
-          font-size="11.5"
+          class="flow-label"
           [attr.fill]="isMatched(n) ? 'var(--ink)' : 'var(--muted)'"
         >
           {{ label(n) }}
@@ -53,9 +60,9 @@ import { seriesVar } from './series';
           <text
             i18n
             [attr.x]="RIGHT_X"
-            [attr.y]="rowY(i) + 11"
+            [attr.y]="rowY(i) + UNMET_DY"
             text-anchor="start"
-            font-size="9"
+            class="flow-unmet"
             fill="var(--muted)"
           >
             unmet
@@ -88,6 +95,37 @@ import { seriesVar } from './series';
       display: block;
       max-width: 440px;
     }
+    /* Type sizes live here rather than on font-size attributes, because they
+       have to change with the viewport and an attribute cannot. In SVG a CSS
+       font-size is in USER units, so these are viewBox numbers, not CSS px —
+       what a reader sees is the number times the viewBox scale. */
+    .flow-col {
+      font-size: 10px;
+    }
+    .flow-label {
+      font-size: 11.5px;
+    }
+    .flow-unmet {
+      font-size: 9px;
+    }
+
+    /* A 420-unit box in a phone's ~320px column scales to about 0.77, which
+       took an 11.5-unit label to roughly 9 CSS px and the "unmet" tag to 7 —
+       small enough that the diagram stopped being readable and started being
+       decoration. Scaling the type up in user units lands it back where it
+       sits on a desktop. */
+    @media (max-width: 560px) {
+      .flow-col {
+        font-size: 13px;
+      }
+      .flow-label {
+        font-size: 15px;
+      }
+      .flow-unmet {
+        font-size: 11.5px;
+      }
+    }
+
     svg {
       width: 100%;
       height: auto;
@@ -111,6 +149,17 @@ export class FlowComponent {
   protected readonly RIGHT_X = 260;
   private readonly TOP = 24;
   private readonly ROW = 30;
+
+  /**
+   * Baseline of the "unmet" tag below its need's centre line.
+   *
+   * It was 11, tuned against a 9-unit tag under an 11.5-unit label. Growing
+   * the type for phones (see the styles) made the tag land inside the label
+   * above it, because this offset is a template expression and no media query
+   * reaches it. 16 clears the larger pair and still sits well inside the
+   * 30-unit row.
+   */
+  protected readonly UNMET_DY = 16;
 
   /** Copy in a binding — no `i18n-` form exists, so `$localize` it here. */
   protected readonly described = computed(
