@@ -29,10 +29,14 @@ export interface AgreementRow {
           role="img"
           [attr.aria-label]="row.label + ': ' + row.dots.length + ' shared answers'"
         >
+          <!-- Edge to edge, not inset by PAD: the "differ"/"aligned" legend is
+               positioned in CSS and cannot know how the viewBox scaled, so the
+               track has to end where the row ends for the two to line up. PAD
+               still keeps the dots themselves off the edge. -->
           <line
-            [attr.x1]="PAD"
+            [attr.x1]="0"
             [attr.y1]="H / 2"
-            [attr.x2]="W - PAD"
+            [attr.x2]="W"
             [attr.y2]="H / 2"
             stroke="var(--border)"
             stroke-width="2"
@@ -77,9 +81,33 @@ export interface AgreementRow {
       font-size: 12.5px;
       color: var(--ink-2);
     }
+    /* height:auto is load-bearing. With a fixed height the 420×26 viewBox
+       meets that height first and lands centred in whatever width is left —
+       a track floating in the middle of the column with the axis legend
+       nowhere near its ends. Scaling by width instead fills the row, and
+       scales uniformly, so the dots stay round and grow into a real hit
+       target on a wide screen. */
     svg {
       flex: 1;
-      height: 26px;
+      width: 100%;
+      height: auto;
+    }
+
+    /* On a phone the label column is most of the row. Give the track the
+       whole width and put the label above it, as the meters do. */
+    @media (max-width: 560px) {
+      .agree-head {
+        margin-left: 0;
+      }
+      .agree-row {
+        display: block;
+        margin: 10px 0;
+      }
+      .agree-label {
+        display: block;
+        width: auto;
+        text-align: left;
+      }
     }
   `,
 })

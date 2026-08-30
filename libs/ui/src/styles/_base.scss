@@ -1202,6 +1202,25 @@ textarea {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 14px 16px;
+  height: 100%;
+}
+/* The grid items are the component host elements, not the .stat-tile div
+   inside them — so anything positional has to be addressed through `>` and
+   the tile itself has to fill the height the grid stretched its host to. */
+.stat-row > * {
+  display: block;
+}
+
+/* Three tiles in two columns leave the third stranded at half width beside a
+   gap, which reads as a layout that broke rather than one that wrapped. Pin
+   the column count so the odd one out can span the row instead. */
+@media (max-width: 560px) {
+  .stat-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stat-row > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
 }
 .stat-label {
   font-size: 13.5px;
@@ -1245,6 +1264,29 @@ textarea {
   color: var(--ink-2);
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+/* On a phone the 130px label column is wider than the bar it labels, which
+   inverts the row: the bar carries the number, the label only names it. Give
+   the bar the whole width and put the label and value on a line above it. */
+@media (max-width: 560px) {
+  .meter-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'label value'
+      'track track';
+    row-gap: 5px;
+    column-gap: 10px;
+  }
+  .meter-label {
+    grid-area: label;
+  }
+  .meter-value {
+    grid-area: value;
+  }
+  .meter-track {
+    grid-area: track;
+  }
 }
 
 /* dot strips (values) */
@@ -1430,11 +1472,20 @@ textarea {
    carries the dealbreaker alerts — and the rest are told apart by their
    headings and the space around them, which is what headings are for. */
 .panel {
-  /* The card's own inset, so a heading in a panel and a heading in a card sit
-     on the same left edge. Without it the fold is visible as a ragged margin,
-     which is the opposite of what removing the chrome was for. */
-  padding: 0 clamp(18px, 3vw, 28px);
+  /* No inset. A card's padding is the box holding its contents off its own
+     border; a panel has no border, so borrowing that padding only pushes it
+     out of the page's text column — where the h1, the lede and every other
+     unboxed thing already live. One column for what is not in a box, and the
+     boxes inset their own contents. */
   margin: 0 0 40px;
+}
+/* A measure, for the same reason: without a card to end them, these
+   paragraphs run the full 900px, which is about 110 characters and past the
+   point where a line is easy to come back from. Charts are components, not
+   <p>, so they keep the whole width — and a notice is a box, which lines up
+   with the other boxes rather than with the prose. */
+.panel > p:not(.notice) {
+  max-width: 68ch;
 }
 
 /* The page's one disclosure. Everything past the headline and the sentences
@@ -1450,7 +1501,7 @@ textarea {
   align-items: baseline;
   gap: 10px;
   flex-wrap: wrap;
-  padding: 16px clamp(18px, 3vw, 28px);
+  padding: 16px 0;
   color: var(--accent);
   font-weight: 650;
 }
