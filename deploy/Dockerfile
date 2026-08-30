@@ -8,6 +8,14 @@ FROM node:24-slim
 # import in server/ MUST have a COPY line here — server/deploy.spec.ts
 # fails the suite if the two drift apart.
 WORKDIR /app
+# Three lines of package.json, and not the repo's own: it declares the module
+# type so the container resolves `.ts` exactly as the repo does. Without it
+# Node has to guess, and a file that happens to parse as CommonJS would load
+# one way here and another way in CI — the sort of divergence that is only
+# ever found in production. The repo's package.json is deliberately NOT
+# copied: this image installs nothing, and its dependency list would only
+# invalidate the layer cache. `server/deploy.spec.ts` keeps the two in step.
+COPY deploy/server-package.json package.json
 COPY server/ server/
 COPY libs/core/src/hatch/hatch-api.ts libs/core/src/hatch/hatch-api.ts
 COPY libs/core/src/hatch/constants.ts libs/core/src/hatch/constants.ts

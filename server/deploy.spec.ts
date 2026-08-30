@@ -30,4 +30,25 @@ describe('deploy image', () => {
       }
     }
   });
+
+  // The repo declares `"type": "module"`, which is what tells Node how to read
+  // the server's `.ts` files. The image installs nothing and does not copy the
+  // repo's package.json, so it ships a three-line one of its own — and if the
+  // two ever disagree, the container resolves modules differently from every
+  // test that ever ran against them.
+  test('the image declares the same module type as the repo', () => {
+    const repo = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
+      type?: string;
+    };
+    const image = JSON.parse(readFileSync(join(root, 'deploy', 'server-package.json'), 'utf8')) as {
+      type?: string;
+    };
+    expect(image.type, 'deploy/server-package.json must match the repo root').toBe(repo.type);
+
+    const dockerfile = readFileSync(join(root, 'deploy', 'Dockerfile'), 'utf8');
+    expect(
+      /^COPY\s+deploy\/server-package\.json\s+package\.json\s*$/m.test(dockerfile),
+      'deploy/Dockerfile must COPY deploy/server-package.json to /app/package.json',
+    ).toBe(true);
+  });
 });

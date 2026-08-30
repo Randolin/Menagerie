@@ -1,0 +1,5 @@
+{
+  "name": "menagerie-sync-server",
+  "private": true,
+  "type": "module"
+}
