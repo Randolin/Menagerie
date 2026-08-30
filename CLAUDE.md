@@ -72,6 +72,15 @@ guarded (`messages.spec.ts` fails on drift), the template half is not.
   conventions that gate it are in `docs/animal-plan.md` and
   `docs/pixel-art-guide.md`; index-aligned tables (`ADJ_B_HUES`,
   `ANIMAL_HABITATS`) must grow in the same commit, guarded by specs.
+- Every word a phrase can be MINTED from must survive `normalizePassphrase`
+  as a single word. It splits on hyphens as well as spaces — a view phrase has
+  to normalize the same written either way — so a hyphenated entry makes a
+  five-word phrase measure as six, and the length guards standing in front of
+  the KDF then refuse a phrase the KDF would have opened. The EFF list has
+  four such words; they are filtered at selection time in
+  `crypto/passphrase.ts`, never removed from the vendored list, and
+  `passphrase.spec.ts` is the tripwire for the next one. Fix minting, never
+  `normalizePassphrase` — how it splits is a frozen KDF input.
 - The entropy ledger in `hatch/phrases.ts` must be recomputed before
   anything new derives from a view phrase's tail.
 - User-facing copy is addressable, and stays that way. Schema words are read

@@ -7,7 +7,9 @@
 // by design — anyone who sees the persona chip learns them), so the secret
 // budget is the tail: exactly 36 bits, priced by the memory-hard Argon2id
 // KDF — a deliberate curtain, documented in-app. Edit phrase: 5 EFF words
-// (~65 bits) — the strong credential.
+// (~64.6 bits) — the strong credential. Minting draws from the 7,772 of the
+// list's 7,776 words that survive normalization intact; see passphrase.ts for
+// why the other four cannot be minted and what it cost to exclude them.
 //
 // BIT LEDGER (why the tail may now tint a banner at all):
 //   head   log2(128 · 128 · 300)  = 22.23 bits, public by design
