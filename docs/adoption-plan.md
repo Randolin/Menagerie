@@ -245,6 +245,19 @@ walked past them.
 The prerequisite (merging D1 + D3 so this plan starts from a green `main`) is
 done — PR #30.
 
+**Both waves shipped.** The successor is `evidence-plan.md`, whose diagnosis is
+that there is nothing useful left to learn by building — and whose first item
+is the one thing this product still cannot do, which is hear back.
+
+That i18n follow-on has a sequel worth recording here, because it is the same
+lesson a second time. The guard written after three misses said, in its own
+comment, that a bound attribute was "caught by the interpolation rule or by the
+reviewer" — but a binding is not an interpolation, so nothing checked them.
+Twenty untranslatable strings were sitting in `[title]` and `[attr.aria-label]`
+when someone finally looked: every chart's screen-reader description, the scale
+editor's pip labels, both Remove buttons. A guard that names its own blind spot
+in a comment has not closed it.
+
 ## Invariants this plan touches
 
 None of the frozen contracts. Three softer ones worth stating:
